@@ -1,0 +1,35 @@
+{
+  "version": "0.1.0",
+  "evidence": {
+    "minimum_distinct_participants": null,
+    "require_source_locator": true,
+    "require_human_strength_approval": true,
+    "allow_synthetic_quotes": false
+  },
+  "privacy": {
+    "default_classification": "internal",
+    "require_consent_for_transcripts": true,
+    "redact_before_public_output": true,
+    "allowed_public_fixture_types": [
+      "synthetic",
+      "explicitly-licensed"
+    ]
+  },
+  "actions": {
+    "external_write_default": false,
+    "require_human_approval_for": [
+      "email",
+      "direct_message",
+      "publish",
+      "delete",
+      "refund",
+      "deploy"
+    ]
+  },
+  "metrics": {
+    "allow_unattributed_benchmarks": false,
+    "require_baseline_or_unknown": true,
+    "require_target_owner": true,
+    "require_counter_metric": true
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "research_question": "팀이 고객 신호를 성장 판단으로 연결할 때 어디서 증거를 잃는가?",
+  "segment": "고객 인터뷰와 CS 데이터를 직접 다루는 초기 SaaS 팀",
+  "exclusions": [
+    "현재 고객 데이터 공유에 동의하지 않은 팀"
+  ],
+  "external_send": false
+}

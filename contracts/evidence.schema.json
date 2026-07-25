@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/evidence.schema.json",
+  "title": "Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidence_id",
+    "source_id",
+    "source_type",
+    "observed_at",
+    "excerpt",
+    "locator",
+    "interpretation",
+    "strength",
+    "privacy",
+    "created_by",
+    "approved_by"
+  ],
+  "properties": {
+    "evidence_id": {
+      "type": "string",
+      "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "participant_id": {
+      "type": ["string", "null"]
+    },
+    "source_type": {
+      "enum": ["interview", "support_ticket", "review", "survey", "analytics"]
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "excerpt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "locator": {
+      "type": "object",
+      "required": ["file"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "line": {"type": ["integer", "null"], "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "interpretation": {
+      "type": "string"
+    },
+    "strength": {
+      "enum": ["awaiting_human_tag", "weak", "medium", "strong"]
+    },
+    "privacy": {
+      "enum": ["public", "internal", "restricted"]
+    },
+    "created_by": {
+      "enum": ["human", "model", "deterministic"]
+    },
+    "approved_by": {
+      "type": ["string", "null"]
+    }
+  }
+}

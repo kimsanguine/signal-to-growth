@@ -1,0 +1,4 @@
+interface:
+  display_name: "Triage Customer Signals"
+  short_description: "Normalize and route customer signals safely"
+  default_prompt: "Use $triage-customer-signals to classify these customer signals safely."

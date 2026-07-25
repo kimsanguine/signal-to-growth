@@ -1,0 +1,22 @@
+{
+  "name": "signal-to-growth",
+  "interface": {
+    "displayName": "Signal to Growth"
+  },
+  "plugins": [
+    {
+      "name": "signal-to-growth",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/kimsanguine/signal-to-growth.git"
+      },
+      "description": "Turn customer evidence into measurable, human-approved growth actions.",
+      "version": "0.1.0",
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

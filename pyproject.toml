@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "signal-to-growth"
+version = "0.1.0"
+description = "Evidence-driven skills that turn customer signals into measurable growth."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Sanggeun Kim" }
+]
+keywords = [
+  "agent-skills",
+  "customer-research",
+  "product-growth",
+  "saas"
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "jsonschema>=4.23,<5"
+]
+
+[project.urls]
+Homepage = "https://github.com/kimsanguine/signal-to-growth"
+Repository = "https://github.com/kimsanguine/signal-to-growth"
+Issues = "https://github.com/kimsanguine/signal-to-growth/issues"
+
+[project.scripts]
+signal-to-growth = "signal_growth.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

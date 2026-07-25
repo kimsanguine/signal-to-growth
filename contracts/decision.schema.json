@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/decision.schema.json",
+  "title": "Growth Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_id",
+    "made_at",
+    "status",
+    "hypothesis",
+    "evidence_ids",
+    "counterevidence",
+    "alternatives",
+    "owner",
+    "review_at",
+    "success_condition",
+    "stop_condition",
+    "causal_confidence",
+    "approved_by",
+    "supersedes"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
+    },
+    "made_at": {"type": "string", "format": "date-time"},
+    "status": {
+      "enum": ["draft", "awaiting_human_review", "approved", "rejected", "superseded"]
+    },
+    "hypothesis": {"type": "string", "minLength": 1},
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "counterevidence": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "alternatives": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1
+    },
+    "owner": {"type": "string", "minLength": 1},
+    "review_at": {"type": "string", "format": "date-time"},
+    "success_condition": {"type": "string", "minLength": 1},
+    "stop_condition": {"type": "string", "minLength": 1},
+    "causal_confidence": {"enum": ["unknown", "low", "medium", "high"]},
+    "approved_by": {"type": ["string", "null"]},
+    "supersedes": {"type": ["string", "null"]}
+  }
+}

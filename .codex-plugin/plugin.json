@@ -1,0 +1,39 @@
+{
+  "name": "signal-to-growth",
+  "version": "0.1.0",
+  "description": "Turn customer evidence into measurable, human-approved growth actions.",
+  "author": {
+    "name": "Sanggeun Kim",
+    "url": "https://github.com/kimsanguine"
+  },
+  "homepage": "https://github.com/kimsanguine/signal-to-growth",
+  "repository": "https://github.com/kimsanguine/signal-to-growth",
+  "license": "MIT",
+  "keywords": [
+    "customer-research",
+    "product-growth",
+    "saas",
+    "evidence",
+    "agent-skills"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Signal to Growth",
+    "shortDescription": "Customer evidence to measurable growth",
+    "longDescription": "Evidence-driven skills for customer research, signal triage, metrics, decisions, answer visibility, content, and first-user learning loops.",
+    "developerName": "Sanggeun Kim",
+    "category": "Productivity",
+    "capabilities": [
+      "Research",
+      "Analysis",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/kimsanguine/signal-to-growth",
+    "brandColor": "#126E5A",
+    "defaultPrompt": [
+      "Turn these customer interviews into traceable growth evidence.",
+      "Design a measurable first-user loop from this evidence.",
+      "Audit this growth decision for unsupported assumptions."
+    ]
+  }
+}

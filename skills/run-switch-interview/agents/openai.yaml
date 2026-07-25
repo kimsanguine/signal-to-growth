@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Switch Interview"
+  short_description: "Design behavior-based customer interviews"
+  default_prompt: "Use $run-switch-interview to create a neutral Switch Interview guide."

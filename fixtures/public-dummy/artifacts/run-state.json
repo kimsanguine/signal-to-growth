@@ -1,0 +1,27 @@
+{
+  "run_id": "RUN-20260725-001",
+  "updated_at": "2026-07-25T15:00:00+09:00",
+  "objective": "고객 증거를 첫 사용자 activation 실험으로 연결한다.",
+  "phase": "outcome-review",
+  "status": "awaiting_human_review",
+  "completed_skills": [
+    "plan-customer-reach",
+    "run-switch-interview",
+    "synthesize-interviews",
+    "triage-customer-signals",
+    "define-growth-metrics",
+    "record-growth-decision"
+  ],
+  "blocked_reasons": [
+    "관찰 기간을 채운 cohort가 아직 없다."
+  ],
+  "approvals": {
+    "decision": "fixture-reviewer",
+    "external_write": null
+  },
+  "artifact_versions": {
+    "evidence": "0.1.0",
+    "metric": "0.1.0",
+    "decision": "0.1.0"
+  }
+}

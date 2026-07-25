@@ -1,0 +1,4 @@
+interface:
+  display_name: "Synthesize Interviews"
+  short_description: "Create traceable themes from interview evidence"
+  default_prompt: "Use $synthesize-interviews to turn these transcripts into traceable evidence."

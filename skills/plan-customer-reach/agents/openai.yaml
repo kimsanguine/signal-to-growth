@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan Customer Reach"
+  short_description: "Plan ethical, draft-only customer outreach"
+  default_prompt: "Use $plan-customer-reach to plan a consent-aware customer recruitment campaign."

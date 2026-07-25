@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/signal.schema.json",
+  "title": "Customer Signal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "signal_id",
+    "source_id",
+    "observed_at",
+    "channel",
+    "category",
+    "severity",
+    "summary",
+    "source_evidence_ids",
+    "privacy",
+    "status"
+  ],
+  "properties": {
+    "signal_id": {
+      "type": "string",
+      "pattern": "^SIG-[0-9]{8}-[0-9]{3,}$"
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "channel": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1
+    },
+    "severity": {
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
+      },
+      "uniqueItems": true
+    },
+    "privacy": {
+      "enum": ["public", "internal", "restricted"]
+    },
+    "status": {
+      "enum": ["new", "awaiting_human_review", "approved", "closed"]
+    }
+  }
+}

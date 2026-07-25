@@ -1,0 +1,4 @@
+interface:
+  display_name: "Record Growth Decision"
+  short_description: "Log evidence-backed growth decisions"
+  default_prompt: "Use $record-growth-decision to record this decision and its evidence."

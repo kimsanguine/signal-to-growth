@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/run-state.schema.json",
+  "title": "Growth Loop Run State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "updated_at",
+    "objective",
+    "phase",
+    "status",
+    "completed_skills",
+    "blocked_reasons",
+    "approvals",
+    "artifact_versions"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "pattern": "^RUN-[0-9]{8}-[0-9]{3,}$"
+    },
+    "updated_at": {"type": "string", "format": "date-time"},
+    "objective": {"type": "string", "minLength": 1},
+    "phase": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": ["draft", "active", "awaiting_human_review", "blocked", "complete"]
+    },
+    "completed_skills": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "blocked_reasons": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "approvals": {
+      "type": "object"
+    },
+    "artifact_versions": {
+      "type": "object"
+    }
+  }
+}

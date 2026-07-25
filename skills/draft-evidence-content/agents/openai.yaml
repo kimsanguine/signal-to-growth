@@ -1,0 +1,4 @@
+interface:
+  display_name: "Draft Evidence Content"
+  short_description: "Draft content with claim-to-source traceability"
+  default_prompt: "Use $draft-evidence-content to create a source-backed content draft."

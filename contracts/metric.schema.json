@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/metric.schema.json",
+  "title": "Growth Metric Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "metric_id",
+    "name",
+    "purpose",
+    "entity",
+    "population",
+    "numerator",
+    "denominator",
+    "window",
+    "value_event",
+    "data_source",
+    "query_version",
+    "baseline",
+    "target",
+    "target_source",
+    "owner",
+    "counter_metric_ids"
+  ],
+  "properties": {
+    "metric_id": {
+      "type": "string",
+      "pattern": "^MET-[0-9]{8}-[0-9]{3,}$"
+    },
+    "name": {"type": "string", "minLength": 1},
+    "purpose": {"type": "string", "minLength": 1},
+    "entity": {"type": "string", "minLength": 1},
+    "population": {"type": "string", "minLength": 1},
+    "numerator": {"type": "string", "minLength": 1},
+    "denominator": {"type": "string", "minLength": 1},
+    "window": {"type": "string", "minLength": 1},
+    "value_event": {"type": "string", "minLength": 1},
+    "data_source": {"type": "string", "minLength": 1},
+    "query_version": {"type": "string", "minLength": 1},
+    "baseline": {"type": ["object", "null"]},
+    "target": {"type": ["object", "null"]},
+    "target_source": {"type": ["string", "null"]},
+    "owner": {"type": "string", "minLength": 1},
+    "counter_metric_ids": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    }
+  }
+}

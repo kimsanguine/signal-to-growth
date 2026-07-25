@@ -1,0 +1,1 @@
+{"signal_id":"SIG-20260725-001","source_id":"SRC-20260725-002","observed_at":"2026-07-25T11:00:00+09:00","channel":"interview","category":"onboarding-friction","severity":"medium","summary":"초기 설정 실패가 해지 맥락에서 반복적으로 선행했다는 후보 신호","source_evidence_ids":["EV-20260725-002"],"privacy":"public","status":"approved"}

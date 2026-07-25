@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/outcome.schema.json",
+  "title": "Growth Outcome",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "outcome_id",
+    "action_id",
+    "metric_id",
+    "observed_at",
+    "value",
+    "interpretation",
+    "evidence_ids",
+    "recorded_by"
+  ],
+  "properties": {
+    "outcome_id": {
+      "type": "string",
+      "pattern": "^OUT-[0-9]{8}-[0-9]{3,}$"
+    },
+    "action_id": {
+      "type": "string",
+      "pattern": "^ACT-[0-9]{8}-[0-9]{3,}$"
+    },
+    "metric_id": {
+      "type": "string",
+      "pattern": "^MET-[0-9]{8}-[0-9]{3,}$"
+    },
+    "observed_at": {"type": "string", "format": "date-time"},
+    "value": {},
+    "interpretation": {"type": "string", "minLength": 1},
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
+      },
+      "uniqueItems": true
+    },
+    "recorded_by": {"type": "string", "minLength": 1}
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/action.schema.json",
+  "title": "Growth Action",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "action_id",
+    "decision_id",
+    "created_at",
+    "action_type",
+    "status",
+    "owner",
+    "metric_ids",
+    "external_write",
+    "approved_by"
+  ],
+  "properties": {
+    "action_id": {
+      "type": "string",
+      "pattern": "^ACT-[0-9]{8}-[0-9]{3,}$"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "action_type": {
+      "enum": ["draft_outreach", "publish_content", "first_user_experiment", "analysis"]
+    },
+    "status": {
+      "enum": ["draft", "awaiting_human_review", "approved", "executed", "blocked"]
+    },
+    "owner": {"type": "string", "minLength": 1},
+    "metric_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^MET-[0-9]{8}-[0-9]{3,}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "external_write": {"type": "boolean"},
+    "approved_by": {"type": ["string", "null"]}
+  }
+}

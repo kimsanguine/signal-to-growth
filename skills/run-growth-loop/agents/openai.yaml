@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Growth Loop"
+  short_description: "Route evidence through the growth workflow"
+  default_prompt: "Use $run-growth-loop to inspect the artifacts and route the next growth step."

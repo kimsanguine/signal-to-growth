@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design First User Loop"
+  short_description: "Design measurable first-user experiments"
+  default_prompt: "Use $design-first-user-loop to design a measurable first-user loop."

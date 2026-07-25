@@ -1,0 +1,4 @@
+interface:
+  display_name: "Define Growth Metrics"
+  short_description: "Define measurable SaaS growth contracts"
+  default_prompt: "Use $define-growth-metrics to define measurable SaaS growth metrics."

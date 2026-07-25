@@ -1,0 +1,1 @@
+{"action_id":"ACT-20260725-001","decision_id":"DEC-20260725-001","created_at":"2026-07-25T14:30:00+09:00","action_type":"analysis","status":"executed","owner":"product-owner","metric_ids":["MET-20260725-001","MET-20260725-002"],"external_write":false,"approved_by":"fixture-reviewer"}

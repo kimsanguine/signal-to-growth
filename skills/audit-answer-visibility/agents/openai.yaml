@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit Answer Visibility"
+  short_description: "Audit answer visibility with dated evidence"
+  default_prompt: "Use $audit-answer-visibility to audit this page with dated observations."
