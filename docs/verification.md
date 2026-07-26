@@ -36,8 +36,20 @@ Results:
 | Supabase Performance Advisor | two expected INFO notices: unused expiry index on an empty table and default Auth connection allocation |
 | Vercel WSGI route discovery | passed locally with `vercel dev` |
 | Vercel preview build | passed with the Python 3.12 runtime |
-| Hosted root route | passed locally; returns only safe service metadata |
+| Hosted root route | passed on preview; returns only safe service metadata |
 | Unconfigured hosted endpoint | `/api/health` and `/api/kakao/skill` both failed closed with HTTP 503 |
+| Configured hosted health | preview returned HTTP 200 with `status=configured` |
+| Kakao request authentication | an incorrect synthetic `x-api-key` returned HTTP 401 |
+| Kakao-to-Supabase preview E2E | two identical authorized synthetic requests returned HTTP 200 and Kakao `version=2.0` |
+| Live idempotency | the repeated `X-Request-Id` produced exactly one Supabase test row |
+| Vercel runtime log | preview recorded health HTTP 200 and two Kakao skill HTTP 200 requests without payload or secret output |
+
+Hosted verification target:
+
+- environment: Vercel Preview only, not Production;
+- URL: `https://signal-to-growth-g5g0f6x1h-sanguine-s-projects.vercel.app`;
+- synthetic request ID: `request-mcp-e2e-20260726-001`;
+- persisted result: one row after two authorized requests.
 
 The universal installer was exercised from the local checkout in an isolated
 temporary project and did not change user-level plugin state. Official Claude
@@ -80,12 +92,23 @@ Confirmed locally:
 - `accepted != delivered`, non-regressing state, and separate fallback attempts;
 - reply/send capabilities disabled by policy.
 
+Confirmed on an isolated hosted test stack on 2026-07-26:
+
+- Vercel preview deployment reached `READY` with Python 3.12;
+- `GET /api/health` returned HTTP 200 and `status=configured`;
+- an incorrect synthetic `x-api-key` failed closed with HTTP 401;
+- two authorized sends of the public Kakao fixture returned HTTP 200 and
+  Kakao `version=2.0`;
+- Supabase stored one row for the repeated `X-Request-Id`, preserving the
+  approval reference and seven-day deletion-eligibility marker;
+- Supabase Security Advisor returned no findings;
+- Supabase Performance Advisor retained two INFO notices: the expiry index is
+  unused on the new test table, and Auth uses an absolute connection allocation.
+
 Not verified:
 
 - a real Channel Talk or Naver test account;
-- a deployed public HTTPS endpoint and actual Supabase insert;
 - a Kakao Channel development-channel round trip;
-- repeated identical Kakao utterances to confirm live `X-Request-Id` identity behavior;
 - Kakao ConsultTalk migration or live conversation ingestion;
 - provider credential health, callback behavior, scheduled cleanup, and production retention;
 - any external reply or send.

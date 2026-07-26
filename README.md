@@ -245,6 +245,13 @@ SUPABASE_SECRET_KEY
 5. Supabase에서 같은 `event_id`가 한 행만 저장됐는지 확인합니다.
 6. Kakao Chatbot Admin Center의 skill URL과 test header를 등록한 뒤 개발 채널에서 왕복을 확인합니다.
 
+2026-07-26 기준 1~5단계는 격리된 Supabase test project와 Vercel
+Preview에서 실제로 검증했습니다. `health=200/configured`, 잘못된
+`x-api-key=401`, 정상 합성 요청 두 회 모두 `200/version=2.0`, 같은
+`X-Request-Id`의 저장 행은 한 건이었습니다. 6단계인 Kakao 개발 채널
+왕복은 아직 별도 검증 대상입니다. 실행 증거와 남은 경계는
+[Verification](docs/verification.md)에 기록합니다.
+
 이 table은 RLS를 활성화하고 `anon`·`authenticated` 권한을 제거하며,
 두 browser role에 명시적인 deny policy도 적용합니다.
 `sb_secret_...` key는 backend 전용이며 브라우저나 교안에 노출하지 않습니다.
