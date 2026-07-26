@@ -216,3 +216,16 @@ eval/
 
 이 다섯 항목은 정식 runtime case 실행 전에 고정한다. 이미 완료한 정적
 기준선은 remediation 대상을 찾기 위한 별도 단계로 유지한다.
+
+### 재개 시 기본 제안
+
+다음 값은 실행 승인을 대신하지 않는 기본 제안이다.
+
+- snapshot: 실행 직전 feature branch HEAD를 기록
+- runtime: 설치된 Claude Code와 Codex의 version을 raw result에 고정
+- network: 30개 case 모두 fixture-only로 먼저 실행
+- target example: 한국어 AI B2B SaaS founder·product lead
+- stop rule: hard-gate failure가 나오면 해당 runtime을 중단하고 원인을 수정
+
+model/version과 실행 비용·시간 상한은 사람이 승인한 뒤 시작한다. 승인 전에는
+case prompt와 capture harness만 검증한다.

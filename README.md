@@ -487,6 +487,8 @@ python3 /path/to/skill-creator/scripts/quick_validate.py \
 정식 runtime 재평가와 Claude Code·Codex 실제 호출 parity는 남아 있습니다.
 평가 범위와 원점수는 [Skill evaluation plan](docs/skill-evaluation-plan.md)과
 [Evaluation summary](eval/summary.md)에 기록합니다.
+현재 branch 상태, 재개 명령, 승인 필요 항목은
+[Continuation handoff](docs/HANDOFF.md)를 먼저 확인하세요.
 
 ## 경쟁 제품과 다른 점
 
