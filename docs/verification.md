@@ -47,16 +47,26 @@ Results:
 | PMF Radar import and hplan intake | implemented and locally covered by deterministic integration tests |
 | Hosted dependency parity | repository validator requires version and runtime dependency parity across `pyproject.toml`, Vercel-selected `uv.lock`, and fallback `requirements.txt` |
 
-Hosted verification target:
+Current Preview route verification:
 
 - environment: Vercel Preview only, not Production;
-- source commit: `903f571`;
+- runtime source commit: `149cf97`;
 - branch: `agent/korean-cs-connectors-v0-2`;
 - draft PR: `https://github.com/kimsanguine/signal-to-growth/pull/1`;
+- URL: `https://signal-to-growth-od3norjz8-sanguine-s-projects.vercel.app`;
+- root: HTTP 200 with safe service metadata and `external_write=false`;
+- health: HTTP 200 with `status=configured`;
+- error log query: no HTTP 500 runtime log after both requests;
+- remote CI: Python 3.11, Python 3.12, and Vercel checks passed.
+
+Prior synthetic Kakao-to-Supabase E2E evidence:
+
+- source commit: `903f571`;
 - URL: `https://signal-to-growth-kz41ouqdt-sanguine-s-projects.vercel.app`;
 - synthetic request ID: `request-github-preview-20260726-001`;
-- persisted result: one row after two authorized requests.
-- remote CI: Python 3.11, Python 3.12, and Vercel checks passed.
+- persisted result: one row after two authorized requests;
+- scope: this older E2E is not evidence that the latest commit repeated the
+  authorized write.
 
 The universal installer was exercised from the local checkout in an isolated
 temporary project and did not change user-level plugin state. Official Claude
