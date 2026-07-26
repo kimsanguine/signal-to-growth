@@ -199,7 +199,7 @@ signal-to-growth normalize-event \
 
 | 표면 | 현재 구현 | 아직 검증하지 않은 것 |
 |---|---|---|
-| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel WSGI endpoint, `version=2.0` 응답 | 배포된 endpoint→Supabase 왕복, 개발 채널 왕복, `X-Request-Id` 반복 발화 특성 |
+| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel Preview→Supabase 합성 E2E, live idempotency, `version=2.0` 응답 | Chatbot Admin Center 개발 채널 왕복, 실제 반복 발화에서 서로 다른 `X-Request-Id`가 생성되는지, Production |
 | Naver TalkTalk | public dummy event 정규화·마스킹·중복 제거 | 실제 test account webhook, backfill, 발송 |
 | Channel Talk | webhook 정규화와 injected read-only backfill·대사 | 실제 credential·HTTPS endpoint 왕복 |
 | Kakao 상담톡 via Channel Talk | product boundary와 계정 설정 절차 | 실제 채널 이관·상담 event |
@@ -225,7 +225,8 @@ skill request는 상담톡이나 native 1:1 상담 이력 API가 아닙니다.
 Kakao Developers API key는 사용하지 않습니다. Open Builder skill header와
 서버가 공유할 임의의 `x-api-key` 하나와 고객 식별자 HMAC용 별도 secret을
 생성합니다. 두 값과 Supabase secret key는 repository나 채팅에 입력하지
-않고 Vercel Environment Variables에만 저장합니다.
+않고 Vercel Environment Variables에 저장합니다. Kakao shared key의 복구
+사본만 운영자 password manager에 보관합니다.
 
 필수 환경 변수 이름은 [`.env.example`](.env.example)에 있습니다.
 
@@ -235,6 +236,14 @@ STG_CUSTOMER_HMAC_KEY
 STG_APPROVAL_REF
 SUPABASE_URL
 SUPABASE_SECRET_KEY
+```
+
+다음 두 값은 기본값이 있지만, 검증 환경에서는 의도를 고정하기 위해 함께
+등록했습니다.
+
+```text
+STG_PROCESSING_BASIS_REF
+SUPABASE_KAKAO_EVENTS_TABLE
 ```
 
 1. 별도의 Supabase test project에서 `supabase/migrations/`의 migration을
@@ -444,6 +453,9 @@ python3 /path/to/skill-creator/scripts/quick_validate.py \
 6. **Cross-runtime** — Claude Code와 Codex의 핵심 artifact 비교
 
 현재 release에서 자동화한 범위와 남은 runtime 검증은 [Verification](docs/verification.md)에 기록합니다.
+5개 독립 evaluator agent를 사용하는 정성·정량 평가는
+[Skill evaluation plan](docs/skill-evaluation-plan.md)에 정의했으며, 현재는
+계획만 작성했고 평가는 시작하지 않았습니다.
 
 ## 경쟁 제품과 다른 점
 
@@ -473,6 +485,7 @@ Signal to Growth가 집중하는 공백:
 - Naver TalkTalk event normalization
 - Channel Talk read-only adapter contract
 - Kakao Open Builder용 Vercel WSGI endpoint와 Supabase restricted sink
+- 격리된 Vercel Preview→Supabase 합성 E2E와 live idempotency 증거
 - synthetic event approval reference와 7일 deletion-eligibility marker
 - provider-neutral dedupe·redaction·delivery state projection
 
@@ -484,7 +497,7 @@ Signal to Growth가 집중하는 공백:
 - 익명 telemetry
 - 보편적인 SaaS benchmark
 
-한국형 CS connector의 설계 근거와 단계별 검증 계획은 [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 기록합니다. 현재 source와 credential 없는 P0 fixture는 구현됐지만, 실제 provider 계정 연결이나 운영 상태를 뜻하지 않습니다.
+한국형 CS connector의 설계 근거와 단계별 검증 계획은 [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 기록합니다. 현재 P0 source·fixture와 격리된 hosted synthetic E2E는 검증됐지만, Kakao Chatbot Admin Center 개발 채널 연결이나 Production 운영 상태를 뜻하지 않습니다.
 
 Channel Talk·Kakao 상담톡·Naver TalkTalk test account를 준비할 때는 [Provider setup checklist](docs/provider-setup-checklist.md)를 따르세요. API secret, 고객 원문, 전화번호는 repository나 AI 대화에 입력하지 마세요.
 

@@ -33,7 +33,7 @@ Results:
 | Isolated Supabase project | Pro organization project created in Seoul; all migrations applied |
 | Supabase role boundary | RLS enabled; browser grants revoked; explicit deny policy added |
 | Supabase Security Advisor | no findings after the deny-policy migration |
-| Supabase Performance Advisor | two expected INFO notices: unused expiry index on an empty table and default Auth connection allocation |
+| Supabase Performance Advisor | two expected INFO notices: unused expiry index on the new test table and default Auth connection allocation |
 | Vercel WSGI route discovery | passed locally with `vercel dev` |
 | Vercel preview build | passed with the Python 3.12 runtime |
 | Hosted root route | passed on preview; returns only safe service metadata |
@@ -47,9 +47,13 @@ Results:
 Hosted verification target:
 
 - environment: Vercel Preview only, not Production;
-- URL: `https://signal-to-growth-g5g0f6x1h-sanguine-s-projects.vercel.app`;
-- synthetic request ID: `request-mcp-e2e-20260726-001`;
+- source commit: `903f571`;
+- branch: `agent/korean-cs-connectors-v0-2`;
+- draft PR: `https://github.com/kimsanguine/signal-to-growth/pull/1`;
+- URL: `https://signal-to-growth-kz41ouqdt-sanguine-s-projects.vercel.app`;
+- synthetic request ID: `request-github-preview-20260726-001`;
 - persisted result: one row after two authorized requests.
+- remote CI: Python 3.11, Python 3.12, and Vercel checks passed.
 
 The universal installer was exercised from the local checkout in an isolated
 temporary project and did not change user-level plugin state. Official Claude
@@ -95,6 +99,8 @@ Confirmed locally:
 Confirmed on an isolated hosted test stack on 2026-07-26:
 
 - Vercel preview deployment reached `READY` with Python 3.12;
+- five required runtime values and two explicit-default values are encrypted
+  and scoped to the feature branch;
 - `GET /api/health` returned HTTP 200 and `status=configured`;
 - an incorrect synthetic `x-api-key` failed closed with HTTP 401;
 - two authorized sends of the public Kakao fixture returned HTTP 200 and
@@ -104,6 +110,10 @@ Confirmed on an isolated hosted test stack on 2026-07-26:
 - Supabase Security Advisor returned no findings;
 - Supabase Performance Advisor retained two INFO notices: the expiry index is
   unused on the new test table, and Auth uses an absolute connection allocation.
+- Supabase project, SQL, API logs, and advisors were checked through the
+  connected Supabase control surface;
+- the Vercel connector session required reauthentication, so authenticated
+  Vercel CLI was used for environment, deployment, and runtime-log verification.
 
 Not verified:
 
@@ -111,6 +121,7 @@ Not verified:
 - a Kakao Channel development-channel round trip;
 - Kakao ConsultTalk migration or live conversation ingestion;
 - provider credential health, callback behavior, scheduled cleanup, and production retention;
+- merge to the default branch, release tag, and Production promotion;
 - any external reply or send.
 
 ## Status vocabulary

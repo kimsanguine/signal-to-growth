@@ -12,6 +12,8 @@ versioning once a version is tagged.
   validation for Kakao Open Builder, Naver TalkTalk, and Channel Talk.
 - A fail-closed Kakao Open Builder test endpoint backed by a restricted Supabase
   event sink.
+- Hosted synthetic Kakao request → Vercel Preview → Supabase persistence →
+  `version=2.0` response evidence, including live idempotency.
 - Approval-reference persistence and a seven-day deletion-eligibility marker for
   synthetic Kakao test events.
 - GitHub issue and pull-request templates.
@@ -22,6 +24,10 @@ versioning once a version is tagged.
 - CI runs once for feature pull requests, runs pushes only on `main`, cancels
   superseded runs, and pins third-party actions to commit SHAs.
 - The hosted root route now returns safe service metadata instead of a 404.
+- Provider setup and verification documents now distinguish hosted synthetic
+  E2E from a Kakao development-channel connection and Production operation.
+- A five-agent skill evaluation plan defines target users, cases, scoring,
+  hard gates, and release decisions without starting the evaluation run.
 
 ### Security
 

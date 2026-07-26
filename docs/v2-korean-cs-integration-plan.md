@@ -1,12 +1,12 @@
 # Signal to Growth v2 — 한국형 CS 연동 고도화 계획
 
 - 작성일: 2026-07-26
-- 문서 상태: P0 구현 완료, P1 hosting·storage adapter 구현 및 실제 test account 검증 대기
+- 문서 상태: P0 구현과 hosted synthetic E2E 완료, P1 Kakao 개발 채널 검증 대기
 - 현재 제품: `v0.2.0` alpha source, 11개 skill
 - 목표 release: `v0.2.0` 공개 및 P1 read-only 왕복 검증
 - `v2`의 의미: 스킬 제품 고도화 계획 2차안. Semantic Versioning의 major `2.0.0`을 뜻하지 않음
 - 대상 runtime: Claude Code, OpenAI Codex
-- 외부 실행: 이 계획에서는 계정 연결·메시지 발송·template 변경을 하지 않음
+- 외부 실행: 격리된 Supabase·Vercel Preview 설정과 합성 E2E만 완료. Kakao 개발 채널 연결·메시지 발송·template 변경은 하지 않음
 
 ---
 
@@ -32,8 +32,8 @@ Open API key 발급에 유료 결제가 필요함을 확인했다. 이에 따라
 ```
 
 이 E2E는 `Kakao Channel chatbot`이다. 상담톡, 알림톡, native Channel
-1:1 상담 이력 API로 표현하지 않는다. 공개 HTTPS endpoint 배포와 실제
-개발 채널 연결은 별도 승인·계정 설정 게이트다.
+1:1 상담 이력 API로 표현하지 않는다. 공개 HTTPS endpoint와 Supabase
+합성 왕복은 검증했고, 실제 개발 채널 연결은 별도 승인·계정 설정 게이트다.
 
 ---
 
@@ -739,6 +739,13 @@ Track E·F를 병렬 진행한다.
 - fixed safe acknowledgement
 - canonical event persistence
 
+2026-07-26 진행 상태:
+
+- 인프라 sub-gate 완료: public Preview, test header 인증, fixed
+  `version=2.0` 응답, Supabase persistence, 동일 request ID idempotency
+- provider sub-gate 대기: Chatbot Admin Center bot, 개발 채널 연결,
+  실제 반복 발화에서 Kakao가 발급한 서로 다른 `X-Request-Id`
+
 **통과 조건:**
 
 - 개발 채널의 synthetic test message가 skill endpoint에 도착함
@@ -1012,6 +1019,7 @@ release에서 하지 않을 것:
 - Naver event-only normalization
 - Channel Talk read-only webhook+backfill
 - Kakao Open Builder skill-request normalization과 `version=2.0` response
+- Vercel Preview→Supabase hosted synthetic E2E와 live idempotency
 - provider-neutral dedupe·privacy·state projection
 - unapproved send 0
 - Claude Code·Codex same-artifact smoke
@@ -1039,7 +1047,7 @@ release에서 하지 않을 것:
 
 ## 16. 현재 검증 상태
 
-### P0 source와 fixture 확인 완료
+### P0 source·fixture·hosted synthetic E2E 확인 완료
 
 - 현재 저장소가 11개 skill과 공통 contract 구조를 사용함
 - `triage-customer-signals`의 provider-neutral 책임
@@ -1057,12 +1065,18 @@ release에서 하지 않을 것:
 - connector artifact validator와 credential 없는 public dummy vertical slice
 - Vercel WSGI entry point와 fail-closed configuration health endpoint
 - Supabase restricted test table migration과 idempotent REST sink
+- 격리된 Supabase Pro project의 RLS·browser-role deny·server-only grant
+- Vercel feature-branch Preview의 암호화 환경변수와 `READY` 배포
+- 잘못된 test header의 HTTP 401과 정상 합성 요청의 HTTP 200
+- 동일 request ID 2회 전송 후 Supabase 1행 저장
+- Supabase Security Advisor finding 0
+- remote commit `903f571`의 Python 3.11·3.12·Vercel check 통과
 
 ### P1 이후 확인할 것
 
 - 사용자의 실제 계약 provider
 - 실제 Kakao development channel 연결과 skill endpoint 왕복
-- 배포된 Vercel endpoint에서 Supabase test table insert
+- 실제 반복 발화에서 Kakao가 생성한 `X-Request-Id` 특성
 - Kakao 발송을 선택할 경우 template·sender 상태
 - provider credential·test tenant
 - live callback signature·IP·retry 동작
@@ -1072,7 +1086,14 @@ release에서 하지 않을 것:
 - hosted restricted inbox와 운영 webhook endpoint
 - 실제 외부 발송
 
-P0 구현 완료는 실제 계정 연결이나 운영 상태를 뜻하지 않는다. 위 미확인 항목을 확인하기 전에는 connector가 “연동됐다”거나 “운영된다”고 보고하지 않는다.
+P0와 hosted synthetic E2E 완료는 실제 Kakao provider 계정 연결이나
+Production 운영 상태를 뜻하지 않는다. 위 미확인 항목을 확인하기 전에는
+connector가 “Kakao 개발 채널에 연동됐다”거나 “운영된다”고 보고하지 않는다.
+
+전체 11개 skill의 사용자 task success, cross-runtime parity, evidence
+fidelity, safety를 확인하는 5-agent 평가는
+[skill evaluation plan](skill-evaluation-plan.md)에 분리했다. 현재는
+평가 설계만 완료했으며 evaluator 실행과 점수 산출은 시작하지 않았다.
 
 ---
 

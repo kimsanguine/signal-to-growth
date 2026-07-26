@@ -4,6 +4,22 @@
 - 목적: `Signal to Growth`의 계정 없는 P0 실습 이후, 승인된 test account로 P1 read-only 왕복을 검증한다.
 - 기본 경계: 이 문서는 계정과 채널을 준비하는 절차다. 메시지 자동 발송, 운영 채널 변경, 실제 고객 데이터 수집을 승인하지 않는다.
 
+## 0. 현재 준비 상태
+
+2026-07-26 기준 확인된 상태:
+
+- Kakao Business Channel 생성: 완료
+- 격리된 Supabase Pro test project와 migration: 완료
+- Vercel Preview의 필수 5개·명시적 기본값 2개 환경변수: 암호화·브랜치 범위로 등록
+- public fixture를 사용한 Preview→Supabase→`version=2.0` 왕복: 완료
+- 동일 `X-Request-Id` 2회 전송 후 Supabase 1행 저장: 완료
+- Kakao Chatbot Admin Center 가입·bot·개발 채널 연결: 미확인
+- Channel Talk paid Open API: 강의 실습에서 제외, 제품의 선택형 adapter로만 유지
+- Production 배포·실제 고객 대화·외부 발송: 미실행
+
+따라서 현재 상태는 `hosted synthetic E2E verified`다.
+`kakao chatbot test connected` 또는 `production-operational`은 아니다.
+
 ## 1. 권장 경로
 
 강의의 가장 짧은 실제 검증 경로는 다음과 같다.
@@ -77,6 +93,10 @@ Kakao Developers 앱이나 REST API key는 이 E2E에 필요하지 않다.
 사용자가 API 값을 대화로 전달하지 않고, Vercel과 Chatbot Admin Center에
 각각 같은 값을 직접 설정한다.
 
+현재 test secret은 Vercel의 브랜치 범위 secret store와 운영자 password
+manager에만 보관한다. Chatbot Admin Center를 설정할 때 값을 새로 발급받을
+필요는 없으며, 같은 값을 안전한 저장소에서 복사한다.
+
 server 준비 순서:
 
 1. 별도의 Supabase test project를 준비한다.
@@ -85,6 +105,11 @@ server 준비 순서:
 4. Vercel에 `.env.example`의 필수 변수 이름을 등록한다.
 5. `GET /api/health`에서 `status=configured`를 확인한다.
 6. 합성 payload를 두 번 보내 Supabase primary key가 중복 행을 막는지 확인한다.
+
+2026-07-26 기준 이 여섯 단계는 Kakao 관리자 화면이 아닌 합성 HTTP client로
+완료했다. 현재 검증 Preview와 request ID는
+[verification](verification.md)에 기록한다. 다음 단계는 동일한 endpoint를
+Chatbot Admin Center skill에 연결하는 것이다.
 
 Supabase secret key는 backend에서 RLS를 우회할 수 있으므로 브라우저,
 repository, Kakao header에 넣지 않는다. Kakao header에는 별도로 생성한
@@ -176,16 +201,21 @@ Bizppurio 실제 API를 선택하면 별도로 확인할 항목:
 
 [Bizppurio simulator](https://bizppurio.github.io/sandbox/)는 실제 메시지를 보내지 않으므로 강의용 상태 흐름 확인에 사용할 수 있다. simulator 화면의 예시 전화번호나 예시 token을 실제 credential로 취급하지 않는다.
 
-## 7. 사용자에게서 필요한 회신
+## 7. 현재 결정과 사용자에게 필요한 회신
 
-다음 정보만 회신한다. secret은 보내지 않는다.
+확인된 결정:
+
+- Kakao Business Channel은 생성했다.
+- Supabase test project 생성·migration·Preview E2E는 완료했다.
+- Channel Talk 유료 Open API는 이번 강의 실습에서 사용하지 않는다.
+
+다음 정보만 추가로 회신한다. secret은 보내지 않는다.
 
 ```text
 1. Kakao Business Channel의 비즈니스 인증 상태:
-2. 챗봇 관리자센터 가입과 bot 생성 여부:
-3. 개발 채널 생성·연결 가능 여부:
-4. 신규 Supabase test project 생성 승인:
-5. Channel Talk 유료 Open API 이용 여부:
+2. Chatbot Admin Center 로그인 완료 여부:
+3. test bot 생성 여부:
+4. 개발 채널 생성·연결 가능 여부:
 ```
 
 보내지 말아야 할 것:
