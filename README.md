@@ -198,7 +198,7 @@ signal-to-growth normalize-event \
 
 | 표면 | 현재 구현 | 아직 검증하지 않은 것 |
 |---|---|---|
-| Kakao Channel chatbot | Open Builder skill request 정규화·마스킹·중복 제거와 `version=2.0` 응답 생성 | 공개 HTTPS endpoint, 개발 채널 왕복, `X-Request-Id` 반복 발화 특성 |
+| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel WSGI endpoint, `version=2.0` 응답 | 배포된 endpoint→Supabase 왕복, 개발 채널 왕복, `X-Request-Id` 반복 발화 특성 |
 | Naver TalkTalk | public dummy event 정규화·마스킹·중복 제거 | 실제 test account webhook, backfill, 발송 |
 | Channel Talk | webhook 정규화와 injected read-only backfill·대사 | 실제 credential·HTTPS endpoint 왕복 |
 | Kakao 상담톡 via Channel Talk | product boundary와 계정 설정 절차 | 실제 채널 이관·상담 event |
@@ -212,11 +212,39 @@ Channel Talk는 Open API key 발급에 유료 plan이 필요한 선택형 connec
 유지하며, 강의 본편에서는 구조와 확장 경로만 소개합니다. Kakao chatbot
 skill request는 상담톡이나 native 1:1 상담 이력 API가 아닙니다.
 
-`KakaoSkillApplication`은 hosting layer가 주입한 durable event sink에
-정규화 event를 먼저 저장한 뒤 fixed `version=2.0` 응답을 반환하는
-deployment-neutral WSGI application입니다. 실제 public endpoint가 되려면
-선택한 hosting의 WSGI adapter, secret store, durable restricted sink가
-추가로 필요합니다.
+`KakaoSkillApplication`은 정규화 event를 먼저 저장한 뒤 fixed
+`version=2.0` 응답을 반환하는 deployment-neutral WSGI application입니다.
+`app.py`는 Vercel entry point, `SupabaseEventSink`는 server-only secret을
+사용하는 저장 adapter입니다. 저장 실패 시 성공 응답을 반환하지 않습니다.
+
+### Kakao test endpoint 배포
+
+Kakao Developers API key는 사용하지 않습니다. Open Builder skill header와
+서버가 공유할 임의의 `x-api-key` 하나와 고객 식별자 HMAC용 별도 secret을
+생성합니다. 두 값과 Supabase secret key는 repository나 채팅에 입력하지
+않고 Vercel Environment Variables에만 저장합니다.
+
+필수 환경 변수 이름은 [`.env.example`](.env.example)에 있습니다.
+
+```text
+KAKAO_SKILL_API_KEY
+STG_CUSTOMER_HMAC_KEY
+STG_APPROVAL_REF
+SUPABASE_URL
+SUPABASE_SECRET_KEY
+```
+
+1. 별도의 Supabase test project에서
+   [`20260726023000_create_kakao_cs_events_test.sql`](supabase/migrations/20260726023000_create_kakao_cs_events_test.sql)을 적용합니다.
+2. Vercel project에 필수 환경 변수를 server-side secret으로 등록합니다.
+3. preview를 배포하고 `GET /api/health`가 `status=configured`인지 확인합니다.
+4. 합성 Kakao payload를 `POST /api/kakao/skill`로 보내 `version=2.0`을 확인합니다.
+5. Supabase에서 같은 `event_id`가 한 행만 저장됐는지 확인합니다.
+6. Kakao Chatbot Admin Center의 skill URL과 test header를 등록한 뒤 개발 채널에서 왕복을 확인합니다.
+
+이 table은 RLS를 활성화하고 `anon`·`authenticated` 권한을 제거합니다.
+`sb_secret_...` key는 backend 전용이며 브라우저나 교안에 노출하지 않습니다.
+실제 고객 데이터가 아닌 합성 발화만 사용합니다.
 
 ### 개인정보 pattern 검사
 
@@ -360,6 +388,7 @@ signal-to-growth/
 ├── .agents/plugins/marketplace.json
 ├── .claude-plugin/
 ├── .codex-plugin/
+├── app.py
 ├── contracts/
 ├── docs/
 ├── fixtures/
@@ -368,6 +397,7 @@ signal-to-growth/
 ├── policies/
 ├── scripts/
 ├── skills/
+├── supabase/migrations/
 ├── src/signal_growth/
 └── tests/
 ```
@@ -426,14 +456,14 @@ Signal to Growth가 집중하는 공백:
 - unit·integration·negative tests
 - Naver TalkTalk event normalization
 - Channel Talk read-only adapter contract
+- Kakao Open Builder용 Vercel WSGI endpoint와 Supabase restricted sink
 - provider-neutral dedupe·redaction·delivery state projection
 
 아직 포함하지 않음:
 
-- 실제 provider 계정 연결과 운영 webhook endpoint
+- 실제 Kakao development channel과 배포 endpoint의 왕복 검증
 - Happytalk·카카오 공식 딜러의 live adapter
 - 자동 발송·게시
-- hosted service
 - 익명 telemetry
 - 보편적인 SaaS benchmark
 

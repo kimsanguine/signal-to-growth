@@ -60,9 +60,9 @@ Channel Talk adapter는 제품에 유지한다. 다만 실제 Open API key가 �
 챗봇 관리자센터의 bot에서 `스킬 → 생성`으로 이동해 다음을 설정한다.
 
 - 스킬명: `signal-to-growth-test`
-- URL 또는 Test URL: 승인된 public HTTPS endpoint
+- URL 또는 Test URL: `https://<vercel-preview-host>/api/kakao/skill`
 - 헤더: `x-api-key`
-- 테스트 헤더: 운영 값과 분리한 test secret
+- 테스트 헤더 값: Vercel의 `KAKAO_SKILL_API_KEY`와 같은 test secret
 
 카카오는 skill request를 `HTTP POST` JSON으로 보내며 local URL은 사용할
 수 없다. skill server는 5초 안에 `version=2.0` JSON 응답을 반환해야 한다.
@@ -71,6 +71,24 @@ Channel Talk adapter는 제품에 유지한다. 다만 실제 Open API key가 �
 secret 값은 password manager 또는 hosting secret store에 저장한다. repository,
 교안, 이슈, 채팅에는 값 대신 `secret://kakao-openbuilder/test/api-key` 같은
 reference만 남긴다.
+
+Kakao Developers 앱이나 REST API key는 이 E2E에 필요하지 않다.
+`x-api-key`는 Open Builder가 보내는 custom header용 임의의 공유 secret이다.
+사용자가 API 값을 대화로 전달하지 않고, Vercel과 Chatbot Admin Center에
+각각 같은 값을 직접 설정한다.
+
+server 준비 순서:
+
+1. 별도의 Supabase test project를 준비한다.
+2. `supabase/migrations/20260726023000_create_kakao_cs_events_test.sql`을 적용한다.
+3. Supabase `Settings → API Keys`에서 backend용 secret key를 확인한다.
+4. Vercel에 `.env.example`의 필수 변수 이름을 등록한다.
+5. `GET /api/health`에서 `status=configured`를 확인한다.
+6. 합성 payload를 두 번 보내 Supabase primary key가 중복 행을 막는지 확인한다.
+
+Supabase secret key는 backend에서 RLS를 우회할 수 있으므로 브라우저,
+repository, Kakao header에 넣지 않는다. Kakao header에는 별도로 생성한
+`KAKAO_SKILL_API_KEY`만 사용한다.
 
 공식 문서:
 
@@ -156,14 +174,11 @@ Bizppurio 실제 API를 선택하면 별도로 확인할 항목:
 다음 정보만 회신한다. secret은 보내지 않는다.
 
 ```text
-1. 기존 CS 도구:
-2. Kakao Business Channel의 비즈니스 인증 상태:
-3. 챗봇 관리자센터 가입과 bot 생성 여부:
-4. 개발 채널 생성·연결 가능 여부:
-5. public HTTPS endpoint 배포 승인 여부와 선호 hosting:
-6. Channel Talk 유료 Open API 이용 여부:
-7. Naver TalkTalk test account 생성 여부:
-8. 알림톡 상태 demo에 사용할 기존 공식 딜러:
+1. Kakao Business Channel의 비즈니스 인증 상태:
+2. 챗봇 관리자센터 가입과 bot 생성 여부:
+3. 개발 채널 생성·연결 가능 여부:
+4. 신규 Supabase test project 생성 승인:
+5. Channel Talk 유료 Open API 이용 여부:
 ```
 
 보내지 말아야 할 것:

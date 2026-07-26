@@ -1,7 +1,7 @@
 # Signal to Growth v2 — 한국형 CS 연동 고도화 계획
 
 - 작성일: 2026-07-26
-- 문서 상태: P0 구현 완료, P1 실제 test account 검증 대기
+- 문서 상태: P0 구현 완료, P1 hosting·storage adapter 구현 및 실제 test account 검증 대기
 - 현재 제품: `v0.2.0` alpha source, 11개 skill
 - 목표 release: `v0.2.0` 공개 및 P1 read-only 왕복 검증
 - `v2`의 의미: 스킬 제품 고도화 계획 2차안. Semantic Versioning의 major `2.0.0`을 뜻하지 않음
@@ -1055,11 +1055,14 @@ release에서 하지 않을 것:
 - Channel Talk webhook/backfill canonical identity 통합
 - PII redaction, credential-reference boundary, delivery state non-regression
 - connector artifact validator와 credential 없는 public dummy vertical slice
+- Vercel WSGI entry point와 fail-closed configuration health endpoint
+- Supabase restricted test table migration과 idempotent REST sink
 
 ### P1 이후 확인할 것
 
 - 사용자의 실제 계약 provider
 - 실제 Kakao development channel 연결과 skill endpoint 왕복
+- 배포된 Vercel endpoint에서 Supabase test table insert
 - Kakao 발송을 선택할 경우 template·sender 상태
 - provider credential·test tenant
 - live callback signature·IP·retry 동작
