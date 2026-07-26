@@ -1,0 +1,240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/delivery-event.schema.json",
+  "title": "Provider Delivery Event",
+  "description": "One observed status for one delivery attempt. accepted and delivered are distinct canonical states.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "delivery_event_id",
+    "attempt_id",
+    "provider",
+    "product",
+    "channel",
+    "occurred_at",
+    "received_at",
+    "status_observed_at",
+    "provider_message_ref",
+    "provider_status",
+    "canonical_status",
+    "attempt_kind",
+    "parent_attempt_ref",
+    "transport",
+    "fallback_applied",
+    "idempotency_key",
+    "raw_payload_ref",
+    "auth_verified",
+    "verification_assurance",
+    "source_evidence_ids"
+  ],
+  "properties": {
+    "delivery_event_id": {
+      "type": "string",
+      "pattern": "^DLE-[A-Z0-9][A-Z0-9._-]{7,127}$"
+    },
+    "attempt_id": {
+      "type": "string",
+      "pattern": "^ATT-[A-Z0-9][A-Z0-9._-]{7,127}$"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,63}$"
+    },
+    "product": {
+      "type": "string",
+      "enum": [
+        "alimtalk",
+        "consulttalk",
+        "brand_message",
+        "naver_talktalk",
+        "channel_talk",
+        "happytalk",
+        "sms",
+        "lms",
+        "other"
+      ]
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "kakao",
+        "naver_talktalk",
+        "channel_talk",
+        "happytalk",
+        "sms",
+        "lms",
+        "other"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status_observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "provider_message_ref": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^(ref|hmac):[A-Za-z0-9_-]{8,192}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "provider_status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    },
+    "canonical_status": {
+      "description": "accepted is acknowledgement of submission, not proof of delivery.",
+      "type": "string",
+      "enum": [
+        "draft",
+        "validated",
+        "approved",
+        "submitted",
+        "accepted",
+        "queued",
+        "sent",
+        "delivered",
+        "read",
+        "failed",
+        "cancelled",
+        "expired",
+        "unknown"
+      ]
+    },
+    "attempt_kind": {
+      "type": "string",
+      "enum": [
+        "primary",
+        "fallback"
+      ]
+    },
+    "parent_attempt_ref": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^ATT-[A-Z0-9][A-Z0-9._-]{7,127}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "transport": {
+      "type": "string",
+      "enum": [
+        "kakao",
+        "naver_talktalk",
+        "channel_talk",
+        "happytalk",
+        "sms",
+        "lms",
+        "other"
+      ]
+    },
+    "fallback_applied": {
+      "type": "boolean",
+      "default": false
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 256
+    },
+    "raw_payload_ref": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^restricted://[A-Za-z0-9][A-Za-z0-9/._-]{2,255}$"
+        },
+        {
+          "type": "string",
+          "pattern": "^fixture\\+sha256://[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "auth_verified": {
+      "type": "boolean"
+    },
+    "verification_assurance": {
+      "type": "string",
+      "enum": [
+        "none",
+        "weak",
+        "medium",
+        "strong"
+      ]
+    },
+    "source_evidence_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^EV-[A-Z0-9][A-Z0-9._-]{2,127}$"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "attempt_kind": {
+            "const": "primary"
+          }
+        },
+        "required": [
+          "attempt_kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "parent_attempt_ref": {
+            "type": "null"
+          },
+          "fallback_applied": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "attempt_kind": {
+            "const": "fallback"
+          }
+        },
+        "required": [
+          "attempt_kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "parent_attempt_ref": {
+            "type": "string",
+            "pattern": "^ATT-[A-Z0-9][A-Z0-9._-]{7,127}$"
+          },
+          "fallback_applied": {
+            "const": true
+          }
+        }
+      }
+    }
+  ]
+}

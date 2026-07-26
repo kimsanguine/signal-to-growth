@@ -1,0 +1,135 @@
+import copy
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from signal_growth.adapters import ChannelTalkAdapter, NaverTalkTalkAdapter  # noqa: E402
+from signal_growth.channel_contracts import (  # noqa: E402
+    EventVerificationError,
+    RequestContext,
+)
+from signal_growth.connector_validation import (  # noqa: E402
+    redact_mapping,
+    redact_text,
+    validate_connector_directory,
+)
+
+
+CHANNEL_FIXTURE = (
+    ROOT
+    / "fixtures"
+    / "public-dummy"
+    / "providers"
+    / "channel-talk"
+    / "message-event.json"
+)
+
+
+class ConnectorSecurityTests(unittest.TestCase):
+    def test_redaction_removes_supported_contact_and_credential_patterns(self):
+        email = "customer" + "@" + "example.invalid"
+        phone = "010" + "-1234-5678"
+        text = f"연락처 {email} / {phone}; Authorization: Bearer abcdefghijklmnop"
+
+        redacted = redact_text(text)
+
+        self.assertNotIn(email, redacted)
+        self.assertNotIn(phone, redacted)
+        self.assertNotIn("abcdefghijklmnop", redacted)
+        self.assertIn("[REDACTED_EMAIL]", redacted)
+        self.assertIn("[REDACTED_PHONE]", redacted)
+
+    def test_mapping_redaction_never_echoes_direct_identifier_or_secret(self):
+        value = {
+            "profile": {"email": "synthetic-at-example", "phone": "synthetic-phone"},
+            "authorization": "synthetic-credential",
+            "content": "safe content",
+        }
+
+        redacted = redact_mapping(value)
+
+        self.assertEqual("[REDACTED_IDENTIFIER]", redacted["profile"]["email"])
+        self.assertEqual("[REDACTED_IDENTIFIER]", redacted["profile"]["phone"])
+        self.assertEqual("[REDACTED_SECRET]", redacted["authorization"])
+        self.assertEqual("safe content", redacted["content"])
+
+    def test_channel_talk_rejects_wrong_legacy_webhook_token(self):
+        adapter = ChannelTalkAdapter(
+            b"public-dummy-hmac",
+            expected_webhook_token="expected-fixture-token",
+            allow_unverified_fixture=False,
+        )
+
+        with self.assertRaises(EventVerificationError):
+            adapter.ingest(
+                CHANNEL_FIXTURE.read_bytes(),
+                received_at="2026-07-26T03:00:00Z",
+                request_context=RequestContext(
+                    query={"token": "wrong-fixture-token"},
+                    environment="test",
+                ),
+            )
+
+    def test_naver_rejects_source_outside_documented_ranges(self):
+        adapter = NaverTalkTalkAdapter(
+            b"public-dummy-hmac",
+            allow_unverified_fixture=False,
+        )
+        raw = json.dumps(
+            {"event": "send", "user": "public-dummy-user"}
+        ).encode("utf-8")
+
+        with self.assertRaises(EventVerificationError):
+            adapter.ingest(
+                raw,
+                received_at="2026-07-26T03:00:00Z",
+                request_context=RequestContext(
+                    source_ip="192.0.2.1",
+                    environment="test",
+                ),
+            )
+
+    def test_connector_directory_rejects_raw_credential_fields(self):
+        source = json.loads(
+            (
+                ROOT
+                / "fixtures"
+                / "public-dummy"
+                / "connector-artifacts"
+                / "channel-connection.json"
+            ).read_text(encoding="utf-8")
+        )
+        unsafe = copy.deepcopy(source)
+        unsafe["api_key"] = "synthetic-credential-value"
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "channel-connection.json"
+            path.write_text(json.dumps(unsafe), encoding="utf-8")
+            issues = validate_connector_directory(Path(temporary))
+
+        self.assertTrue(
+            any("raw credential" in issue.message for issue in issues),
+            [issue.render() for issue in issues],
+        )
+
+    def test_public_negative_connector_fixtures_are_rejected(self):
+        negative_root = ROOT / "fixtures" / "negative" / "providers"
+
+        malformed = validate_connector_directory(negative_root / "malformed")
+        unsafe = validate_connector_directory(negative_root / "unsafe-connection")
+
+        self.assertTrue(malformed)
+        self.assertTrue(unsafe)
+        self.assertTrue(
+            any("external writes" in issue.message for issue in unsafe),
+            [issue.render() for issue in unsafe],
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

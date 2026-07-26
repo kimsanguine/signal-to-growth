@@ -1,0 +1,8 @@
+{
+  "fixture_notice": "Public dummy contract-mapping fixture; no adapter is enabled in v0.2.",
+  "product_surface": "embedded_webhook",
+  "event_type": "message",
+  "room_ref": "public-dummy-room-001",
+  "message_ref": "public-dummy-message-001",
+  "content": "상담 연결 상태를 확인하고 싶습니다."
+}

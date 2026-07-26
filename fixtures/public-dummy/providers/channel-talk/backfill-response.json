@@ -1,0 +1,15 @@
+{
+  "messages": [
+    {
+      "id": "msg_public_dummy_001",
+      "chatId": "chat_public_dummy_001",
+      "chatType": "userChat",
+      "createdAt": 1785027600000,
+      "personType": "user",
+      "plainText": "배송 상태를 확인하고 싶습니다.",
+      "version": 1,
+      "state": "created"
+    }
+  ],
+  "next": null
+}

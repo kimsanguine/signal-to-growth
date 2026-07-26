@@ -1,0 +1,18 @@
+{
+  "connection_id": "CONN-PUBLIC-DUMMY-001",
+  "provider": "naver_talktalk",
+  "mode": "read_only",
+  "external_write_enabled": false,
+  "cursor": null,
+  "last_webhook_at": "2026-07-26T03:00:00Z",
+  "last_backfill_at": null,
+  "last_reconciled_at": null,
+  "ingested_count": 1,
+  "duplicate_count": 1,
+  "dead_letter_count": 0,
+  "blocked_reasons": [
+    "conversation_backfill_unconfirmed"
+  ],
+  "health": "degraded",
+  "verification_level": "none"
+}

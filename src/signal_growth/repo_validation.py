@@ -13,6 +13,7 @@ EXPECTED_SKILLS = {
     "plan-customer-reach",
     "run-switch-interview",
     "synthesize-interviews",
+    "connect-customer-channels",
     "triage-customer-signals",
     "define-growth-metrics",
     "record-growth-decision",
@@ -20,6 +21,14 @@ EXPECTED_SKILLS = {
     "draft-evidence-content",
     "design-first-user-loop",
     "run-growth-loop",
+}
+
+EXPECTED_CONNECTOR_CONTRACTS = {
+    "channel-connection.schema.json",
+    "connector-state.schema.json",
+    "cs-event.schema.json",
+    "delivery-event.schema.json",
+    "reply-draft.schema.json",
 }
 
 
@@ -124,6 +133,25 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
             continue
         if relative.endswith("plugin.json") and payload.get("name") != "signal-to-growth":
             issues.append(ValidationIssue(relative, "plugin name must be signal-to-growth"))
+
+    contract_root = root / "contracts"
+    for filename in sorted(EXPECTED_CONNECTOR_CONTRACTS):
+        path = contract_root / filename
+        if not path.exists():
+            issues.append(ValidationIssue(str(path), "connector contract is missing"))
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            issues.append(ValidationIssue(str(path), f"invalid JSON: {exc.msg}"))
+            continue
+        if payload.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+            issues.append(
+                ValidationIssue(
+                    str(path),
+                    "connector contract must use JSON Schema draft 2020-12",
+                )
+            )
 
     for path in root.rglob("*.md"):
         text = path.read_text(encoding="utf-8")

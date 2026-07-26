@@ -5,7 +5,7 @@ description: "Route an evidence-to-growth workflow by validating artifacts, appr
 
 # Run Growth Loop
 
-Coordinate state and handoffs. Do not replace the specialist judgment contained in the other nine skills.
+Coordinate state and handoffs. Do not replace the specialist judgment contained in the other ten skills.
 
 ## Inputs
 
@@ -35,6 +35,7 @@ Require:
 plan-customer-reach
 → run-switch-interview
 → synthesize-interviews
+→ connect-customer-channels (only when a connector is configured)
 → triage-customer-signals
 → define-growth-metrics
 → record-growth-decision
@@ -43,7 +44,7 @@ plan-customer-reach
 → design-first-user-loop
 ```
 
-Skip a skill only when the run state records why its artifact is not applicable.
+Keep the manual signal path when no connector artifact exists. Route to `connect-customer-channels` when any connector artifact exists but the required connection, event, or state artifact is incomplete. Skip any other skill only when the run state records why its artifact is not applicable.
 
 ## Boundaries
 
@@ -51,6 +52,7 @@ Skip a skill only when the run state records why its artifact is not applicable.
 - Use deterministic checks for artifact existence, schema, references, state transitions, and approval.
 - Require a person to approve important decisions and every external write.
 - Do not recreate interview, metric, content, or channel analysis inside the router.
+- Do not call provider APIs directly or treat an unconfigured connector as a blocker for manual signal input.
 - Do not mark a run complete because files exist; required validation and approval must also pass.
 
 ## Outputs
@@ -74,6 +76,7 @@ Run:
 
 ```bash
 python3 scripts/stg.py validate-artifacts artifacts/
+python3 scripts/stg.py validate-connectors artifacts/
 python3 scripts/stg.py next-step artifacts/
 ```
 

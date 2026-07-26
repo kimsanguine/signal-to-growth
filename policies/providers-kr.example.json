@@ -1,0 +1,267 @@
+{
+  "policy_version": "0.2.0-example",
+  "region": "kr",
+  "defaults": {
+    "connection_mode": "read_only",
+    "reply_mode": "draft_only",
+    "external_write_enabled": false,
+    "fallback_enabled": false,
+    "marketing_enabled": false,
+    "unknown_capability": "unsupported",
+    "accepted_is_terminal": false
+  },
+  "capability_status_values": [
+    "supported",
+    "unsupported",
+    "unconfirmed",
+    "disabled_by_policy"
+  ],
+  "providers": [
+    {
+      "provider_id": "naver_talktalk",
+      "provider_family": "helpdesk",
+      "products": [
+        "naver_talktalk"
+      ],
+      "connection_mode": "read_only",
+      "capabilities": [
+        {
+          "name": "webhook_ingest",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "conversation_backfill",
+          "status": "unsupported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "reply_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        }
+      ],
+      "status_semantics": {
+        "request_acceptance": "accepted",
+        "terminal_success": "delivered",
+        "accepted_is_terminal": false
+      },
+      "source": {
+        "document_url": "https://github.com/navertalk/chatbot-api",
+        "checked_at": "2026-07-26",
+        "api_version": "unknown",
+        "contract_version": "v0.2-draft",
+        "known_drift": [],
+        "live_account_verified": false
+      }
+    },
+    {
+      "provider_id": "channel_talk",
+      "provider_family": "helpdesk",
+      "products": [
+        "channel_talk"
+      ],
+      "connection_mode": "read_only",
+      "capabilities": [
+        {
+          "name": "webhook_ingest",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "conversation_backfill",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "reply_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        }
+      ],
+      "status_semantics": {
+        "request_acceptance": "accepted",
+        "terminal_success": "delivered",
+        "accepted_is_terminal": false
+      },
+      "source": {
+        "document_url": "https://developers.channel.io/en/articles/What-is-Open-API-c8c76fba",
+        "checked_at": "2026-07-26",
+        "api_version": "unknown",
+        "contract_version": "v0.2-draft",
+        "known_drift": [
+          "final_delivery_semantics_require_live_fixture_verification"
+        ],
+        "live_account_verified": false
+      }
+    },
+    {
+      "provider_id": "happytalk",
+      "provider_family": "helpdesk",
+      "products": [
+        "happytalk"
+      ],
+      "connection_mode": "read_only",
+      "capabilities": [
+        {
+          "name": "webhook_ingest",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "conversation_backfill",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "reply_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        }
+      ],
+      "status_semantics": {
+        "request_acceptance": "accepted",
+        "terminal_success": "delivered",
+        "accepted_is_terminal": false
+      },
+      "source": {
+        "document_url": "https://developer-center.happytalk.io/open_api/embedded_happytalk/webhook/receive_data/",
+        "checked_at": "2026-07-26",
+        "api_version": "unknown",
+        "contract_version": "v0.2-draft",
+        "known_drift": [
+          "room_and_read_date_fields_require_credentialed_environment_verification"
+        ],
+        "live_account_verified": false
+      }
+    },
+    {
+      "provider_id": "nhn_cloud",
+      "provider_family": "kakao_dealer",
+      "products": [
+        "alimtalk"
+      ],
+      "connection_mode": "draft_only",
+      "capabilities": [
+        {
+          "name": "status_polling",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "delivery_callback",
+          "status": "unconfirmed",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "message_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        }
+      ],
+      "status_semantics": {
+        "request_acceptance": "accepted",
+        "terminal_success": "delivered",
+        "accepted_is_terminal": false
+      },
+      "source": {
+        "document_url": "https://docs.nhncloud.com/ko/Notification/KakaoTalk%20Bizmessage/ko/alimtalk-api-guide-v2.2/",
+        "checked_at": "2026-07-26",
+        "api_version": "v2.2",
+        "contract_version": "v0.2-draft",
+        "known_drift": [],
+        "live_account_verified": false
+      }
+    },
+    {
+      "provider_id": "solapi",
+      "provider_family": "kakao_dealer",
+      "products": [
+        "alimtalk",
+        "sms",
+        "lms"
+      ],
+      "connection_mode": "draft_only",
+      "capabilities": [
+        {
+          "name": "webhook_ingest",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "status_polling",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "message_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        },
+        {
+          "name": "fallback_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        }
+      ],
+      "status_semantics": {
+        "request_acceptance": "accepted",
+        "terminal_success": "delivered",
+        "accepted_is_terminal": false
+      },
+      "source": {
+        "document_url": "https://solapi.com/developers/api/webhook",
+        "checked_at": "2026-07-26",
+        "api_version": "unknown",
+        "contract_version": "v0.2-draft",
+        "known_drift": [],
+        "live_account_verified": false
+      }
+    },
+    {
+      "provider_id": "bizppurio",
+      "provider_family": "kakao_dealer",
+      "products": [
+        "alimtalk",
+        "sms",
+        "lms"
+      ],
+      "connection_mode": "draft_only",
+      "capabilities": [
+        {
+          "name": "delivery_callback",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "report_recovery",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "message_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        },
+        {
+          "name": "sandbox_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        }
+      ],
+      "status_semantics": {
+        "request_acceptance": "accepted",
+        "terminal_success": "delivered",
+        "accepted_is_terminal": false
+      },
+      "source": {
+        "document_url": "https://bizppurio.github.io/bizapi/",
+        "checked_at": "2026-07-26",
+        "api_version": "unknown",
+        "contract_version": "v0.2-draft",
+        "known_drift": [],
+        "live_account_verified": false
+      }
+    }
+  ]
+}

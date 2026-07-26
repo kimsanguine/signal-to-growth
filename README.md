@@ -28,6 +28,7 @@ Signal to Growth는 이 연결을 하나의 artifact lineage로 관리합니다.
 ```text
 quote
   → evidence
+  → channel event (when a connector is configured)
   → signal / theme
   → decision
   → action
@@ -48,22 +49,23 @@ quote
 6. **Artifacts connect skills** — 대화 기억보다 JSON·JSONL·Markdown 산출물로 다음 단계를 연결합니다.
 7. **Fail loud** — 근거·동의·schema·승인이 부족하면 이유를 남기고 멈춥니다.
 
-## 10개 스킬
+## 11개 스킬
 
 | 순서 | 스킬 | 하는 일 | 핵심 산출물 |
 |---:|---|---|---|
 | 1 | `plan-customer-reach` | 조사 대상·채널·동의·draft-only 접촉 계획 | `reach-plan.json` |
 | 2 | `run-switch-interview` | 실제 과거 행동 중심 Switch Interview 설계 | `interview-guide.md` |
 | 3 | `synthesize-interviews` | quote·theme·반증을 evidence ID로 연결 | `evidence.jsonl` |
-| 4 | `triage-customer-signals` | CS·review·survey 신호 정규화와 위험 분기 | `signals.jsonl` |
-| 5 | `define-growth-metrics` | 분모·cohort·value event가 있는 지표 계약 | `metrics.jsonl` |
-| 6 | `record-growth-decision` | 근거·대안·중단 조건·결과의 append-only 기록 | `decisions.jsonl` |
-| 7 | `audit-answer-visibility` | SEO·GEO·AEO 표면의 날짜가 있는 관찰 감사 | `visibility-observations.jsonl` |
-| 8 | `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
-| 9 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
-| 10 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
+| 4 | `connect-customer-channels` | 한국형 CS event 검증·정규화·중복 제거·상태 대사 | `cs-events.jsonl` |
+| 5 | `triage-customer-signals` | CS·review·survey 신호 정규화와 위험 분기 | `signals.jsonl` |
+| 6 | `define-growth-metrics` | 분모·cohort·value event가 있는 지표 계약 | `metrics.jsonl` |
+| 7 | `record-growth-decision` | 근거·대안·중단 조건·결과의 append-only 기록 | `decisions.jsonl` |
+| 8 | `audit-answer-visibility` | SEO·GEO·AEO 표면의 날짜가 있는 관찰 감사 | `visibility-observations.jsonl` |
+| 9 | `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
+| 10 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
+| 11 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
 
-각 스킬은 독립적으로 사용할 수 있습니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
+각 스킬은 독립적으로 사용할 수 있습니다. connector를 설정하지 않으면 기존 manual signal flow를 그대로 사용합니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
 
 ## 설치
 
@@ -148,7 +150,7 @@ signal-to-growth validate-repo .
 
 검사 범위:
 
-- 10개 스킬 존재 여부
+- 11개 스킬 존재 여부
 - portable frontmatter
 - skill 이름과 폴더 일치
 - `agents/openai.yaml`
@@ -173,6 +175,35 @@ signal-to-growth validate-artifacts artifacts/
 - `run-state.json`
 
 validator는 ID 형식, 필수 필드, 승인 상태, 외부 실행 승인, evidence→decision→action→metric→outcome 참조를 확인합니다.
+
+Connector를 사용하는 run은 5개 추가 contract를 사용합니다.
+
+- `channel-connection.json`
+- `cs-events.jsonl`
+- `reply-drafts.jsonl`
+- `delivery-events.jsonl`
+- `connector-state.json`
+
+```bash
+signal-to-growth validate-connectors artifacts/
+signal-to-growth normalize-event \
+  --provider naver-talktalk \
+  --input fixtures/public-dummy/providers/naver-talktalk/send-event.json
+```
+
+`normalize-event`는 로컬 payload만 처리하며 provider network에 연결하거나 답변을 발송하지 않습니다.
+
+### 한국형 CS 지원 수준
+
+| 표면 | 현재 구현 | 아직 검증하지 않은 것 |
+|---|---|---|
+| Naver TalkTalk | public dummy event 정규화·마스킹·중복 제거 | 실제 test account webhook, backfill, 발송 |
+| Channel Talk | webhook 정규화와 injected read-only backfill·대사 | 실제 credential·HTTPS endpoint 왕복 |
+| Kakao 상담톡 via Channel Talk | product boundary와 계정 설정 절차 | 실제 채널 이관·상담 event |
+| Happytalk | 공식 규격 reference와 public dummy fixture | credential 기반 adapter |
+| Kakao 공식 딜러 | accepted/delivered 상태 fixture와 state projection | 선택된 딜러의 simulator·callback·polling |
+
+`fixture-validated`, `test-account verified`, `production-operational`을 서로 다른 상태로 기록합니다.
 
 ### 개인정보 pattern 검사
 
@@ -276,6 +307,16 @@ Core JSON Schema:
 | Outcome | [`outcome.schema.json`](contracts/outcome.schema.json) | `OUT-YYYYMMDD-NNN` |
 | Run state | [`run-state.schema.json`](contracts/run-state.schema.json) | `RUN-YYYYMMDD-NNN` |
 
+Connector JSON Schema:
+
+| 객체 | Schema |
+|---|---|
+| Channel connection | [`channel-connection.schema.json`](contracts/channel-connection.schema.json) |
+| Canonical CS event | [`cs-event.schema.json`](contracts/cs-event.schema.json) |
+| Reply draft | [`reply-draft.schema.json`](contracts/reply-draft.schema.json) |
+| Delivery event | [`delivery-event.schema.json`](contracts/delivery-event.schema.json) |
+| Connector state | [`connector-state.schema.json`](contracts/connector-state.schema.json) |
+
 상세 연결 규칙은 [Artifact contracts](docs/artifact-contracts.md)를 확인하세요.
 
 ## Claude Code와 Codex를 함께 지원하는 방식
@@ -360,24 +401,32 @@ Signal to Growth가 집중하는 공백:
 
 ## 프로젝트 상태
 
-`v0.1.0`은 public alpha입니다.
+`v0.2.0`은 한국형 CS connector foundation을 추가한 alpha입니다.
 
 포함:
 
-- 10개 portable skill
+- 11개 portable skill
 - Claude Code·Codex plugin manifest
-- 7개 core artifact schema
+- 7개 core artifact schema와 5개 connector schema
 - 표준 라이브러리만 사용하는 validator CLI
 - 합성 한국어 fixture
 - unit·integration·negative tests
+- Naver TalkTalk event normalization
+- Channel Talk read-only adapter contract
+- provider-neutral dedupe·redaction·delivery state projection
 
 아직 포함하지 않음:
 
-- CRM·helpdesk·analytics connector
+- 실제 provider 계정 연결과 운영 webhook endpoint
+- Happytalk·카카오 공식 딜러의 live adapter
 - 자동 발송·게시
 - hosted service
 - 익명 telemetry
 - 보편적인 SaaS benchmark
+
+한국형 CS connector의 설계 근거와 단계별 검증 계획은 [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 기록합니다. 현재 source와 credential 없는 P0 fixture는 구현됐지만, 실제 provider 계정 연결이나 운영 상태를 뜻하지 않습니다.
+
+Channel Talk·Kakao 상담톡·Naver TalkTalk test account를 준비할 때는 [Provider setup checklist](docs/provider-setup-checklist.md)를 따르세요. API secret, 고객 원문, 전화번호는 repository나 AI 대화에 입력하지 마세요.
 
 ## 기여
 

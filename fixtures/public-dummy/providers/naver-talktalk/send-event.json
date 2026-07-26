@@ -1,0 +1,10 @@
+{
+  "event": "send",
+  "user": "public-dummy-user-001",
+  "textContent": {
+    "text": "결제 내역이 두 번 표시되어 확인을 요청합니다."
+  },
+  "options": {
+    "origin": "public-dummy"
+  }
+}

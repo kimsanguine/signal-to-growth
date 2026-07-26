@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/channel-connection.schema.json",
+  "title": "Korean CS Channel Connection",
+  "description": "A connector registration that defaults to read-only and stores only a credential reference.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "connection_id",
+    "provider",
+    "region",
+    "environment",
+    "mode",
+    "credential_ref",
+    "capabilities",
+    "retention_policy_ref",
+    "approved_by",
+    "verified_at",
+    "external_write_enabled"
+  ],
+  "properties": {
+    "connection_id": {
+      "type": "string",
+      "pattern": "^CONN-[A-Z0-9][A-Z0-9._-]{7,127}$"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,63}$"
+    },
+    "region": {
+      "const": "kr"
+    },
+    "environment": {
+      "type": "string",
+      "enum": [
+        "test",
+        "staging",
+        "production"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "read_only",
+        "draft_only",
+        "approved_write"
+      ],
+      "default": "read_only"
+    },
+    "credential_ref": {
+      "description": "An indirection only; never embed credential material.",
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^secret://[a-z0-9][a-z0-9/_-]{2,255}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/capability"
+      }
+    },
+    "retention_policy_ref": {
+      "type": "string",
+      "pattern": "^POL-[A-Z0-9][A-Z0-9._-]{2,127}$"
+    },
+    "approved_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "verified_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "external_write_enabled": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "read_only",
+              "draft_only"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "external_write_enabled": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "approved_write"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approved_by": {
+            "type": "string",
+            "minLength": 1
+          },
+          "external_write_enabled": {
+            "const": true
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "support",
+        "access_mode",
+        "source_ref"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,63}$"
+        },
+        "support": {
+          "type": "string",
+          "enum": [
+            "supported",
+            "unsupported",
+          "unconfirmed",
+            "disabled_by_policy"
+          ]
+        },
+        "access_mode": {
+          "type": "string",
+          "enum": [
+            "read_only",
+            "draft_only",
+            "approved_write"
+          ]
+        },
+        "source_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    }
+  }
+}
