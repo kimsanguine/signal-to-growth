@@ -3,7 +3,7 @@
 - Updated: 2026-07-26
 - Branch: `agent/korean-cs-connectors-v0-2`
 - Last implementation commit: `149cf97`
-- Last probed Preview commit: `7f009a9`
+- Last probed Preview commit: `e28c563`
 - Pull request: [Draft PR #1](https://github.com/kimsanguine/signal-to-growth/pull/1)
 - Release gate: **HOLD / NO-GO**
 
@@ -37,7 +37,7 @@ connector, integration contract, or deployment.
 
 The latest probed Preview is:
 
-`https://signal-to-growth-n975oibyx-sanguine-s-projects.vercel.app`
+`https://signal-to-growth-dj50y96e2-sanguine-s-projects.vercel.app`
 
 The latest commit did not repeat an authorized Kakao write. The existing
 Kakao-to-Supabase idempotency evidence belongs to commit `903f571`.

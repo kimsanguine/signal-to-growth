@@ -50,10 +50,10 @@ Results:
 Current Preview route verification:
 
 - environment: Vercel Preview only, not Production;
-- runtime source commit: `7f009a9`;
+- runtime source commit: `e28c563`;
 - branch: `agent/korean-cs-connectors-v0-2`;
 - draft PR: `https://github.com/kimsanguine/signal-to-growth/pull/1`;
-- URL: `https://signal-to-growth-n975oibyx-sanguine-s-projects.vercel.app`;
+- URL: `https://signal-to-growth-dj50y96e2-sanguine-s-projects.vercel.app`;
 - root: HTTP 200 with safe service metadata and `external_write=false`;
 - health: HTTP 200 with `status=configured`;
 - error log query: no HTTP 500 runtime log after both requests;
