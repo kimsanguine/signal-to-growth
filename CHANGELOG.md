@@ -28,6 +28,8 @@ versioning once a version is tagged.
 - Kakao test requests require a separate shared key and redact customer
   identifiers before persistence.
 - Supabase browser roles have no access to the test event table.
+- An explicit deny policy protects the test event table from browser roles even
+  if table grants drift later.
 - Approval references must be non-secret identifiers beginning with `APR-`.
 
 ## 0.1.0

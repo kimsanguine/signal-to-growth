@@ -38,6 +38,19 @@ class SupabaseMigrationTests(unittest.TestCase):
         self.assertIn("kakao_cs_events_test_expires_at_idx", migration)
         self.assertNotIn("cron.schedule", migration)
 
+    def test_client_roles_have_an_explicit_deny_policy(self) -> None:
+        migration = (
+            MIGRATIONS / "20260726024618_deny_client_kakao_event_access.sql"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn(
+            'create policy "deny client access to synthetic kakao events"',
+            migration,
+        )
+        self.assertIn("to anon, authenticated", migration)
+        self.assertIn("using (false)", migration)
+        self.assertIn("with check (false)", migration)
+
 
 if __name__ == "__main__":
     unittest.main()

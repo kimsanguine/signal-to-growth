@@ -245,7 +245,8 @@ SUPABASE_SECRET_KEY
 5. Supabase에서 같은 `event_id`가 한 행만 저장됐는지 확인합니다.
 6. Kakao Chatbot Admin Center의 skill URL과 test header를 등록한 뒤 개발 채널에서 왕복을 확인합니다.
 
-이 table은 RLS를 활성화하고 `anon`·`authenticated` 권한을 제거합니다.
+이 table은 RLS를 활성화하고 `anon`·`authenticated` 권한을 제거하며,
+두 browser role에 명시적인 deny policy도 적용합니다.
 `sb_secret_...` key는 backend 전용이며 브라우저나 교안에 노출하지 않습니다.
 실제 고객 데이터가 아닌 합성 발화만 사용합니다.
 `STG_APPROVAL_REF`에는 secret이나 자유 서술 대신 `APR-KAKAO-TEST-001` 같은
