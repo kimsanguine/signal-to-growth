@@ -159,6 +159,48 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
             )
         )
 
+    try:
+        lock_payload = tomllib.loads(
+            (root / "uv.lock").read_text(encoding="utf-8")
+        )
+        locked_projects = [
+            package
+            for package in lock_payload.get("package", [])
+            if package.get("name") == "signal-to-growth"
+        ]
+        locked_project = locked_projects[0]
+        lock_version = locked_project["version"]
+        lock_dependency_names = {
+            dependency.get("name", "").casefold()
+            for dependency in locked_project.get("dependencies", [])
+            if isinstance(dependency, dict)
+        }
+    except (OSError, KeyError, IndexError, tomllib.TOMLDecodeError):
+        lock_version = None
+        lock_dependency_names = set()
+        issues.append(
+            ValidationIssue(
+                "uv.lock",
+                "hosted lockfile is missing or invalid",
+            )
+        )
+    if project_version is not None and lock_version != project_version:
+        issues.append(
+            ValidationIssue(
+                "uv.lock",
+                f"project version must match pyproject.toml ({project_version})",
+            )
+        )
+    missing_lock_dependencies = dependency_names - lock_dependency_names
+    if missing_lock_dependencies:
+        issues.append(
+            ValidationIssue(
+                "uv.lock",
+                "hosted runtime is missing project dependencies: "
+                + ", ".join(sorted(missing_lock_dependencies)),
+            )
+        )
+
     manifest_versions: list[tuple[str, object]] = []
     for relative in (
         ".claude-plugin/plugin.json",

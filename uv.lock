@@ -177,16 +177,14 @@ wheels = [
 
 [[package]]
 name = "signal-to-growth"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
-
-[package.optional-dependencies]
-dev = [
+dependencies = [
     { name = "jsonschema" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "jsonschema", marker = "extra == 'dev'", specifier = ">=4.23,<5" }]
+requires-dist = [{ name = "jsonschema", specifier = ">=4.23,<5" }]
 provides-extras = ["dev"]
 
 [[package]]
