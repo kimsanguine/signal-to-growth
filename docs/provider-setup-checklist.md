@@ -6,25 +6,31 @@
 
 ## 1. 권장 경로
 
-가장 짧은 실제 검증 경로는 다음과 같다.
+강의의 가장 짧은 실제 검증 경로는 다음과 같다.
 
 ```text
 Kakao Business Channel
-  → Channel Talk의 Kakao 앱에서 상담톡 연결
-  → Channel Talk UserChat
-  → Channel Talk Open API와 webhook을 read-only로 수집
+  → Kakao Chatbot Admin Center bot
+  → Kakao i Open Builder skill request
+  → public HTTPS skill server
+  → verify → normalize → redact → dedupe
+  → fixed safe skill response
   → Signal to Growth canonical event
 ```
 
-이 경로에서는 Channel Talk가 카카오 상담톡 연동 파트너 역할을 한다. 카카오 상담 원문을 가져오기 위해 별도의 NHN Cloud·SOLAPI·Bizppurio 발송 API를 동시에 계약할 필요가 없다.
+이 경로는 `Kakao Channel chatbot E2E`다. 상담톡, 알림톡, native
+Channel 1:1 상담 이력 API가 아니다. 공개 문서로 요청·응답 계약을 확인할
+수 있고 별도 Channel Talk Open API key 없이 시험할 수 있어 강의 본편에
+적합하다.
 
-이미 Happytalk 등 다른 상담톡 파트너를 사용 중이면 강의 때문에 이동하지 않는다. 기존 파트너를 유지하고 해당 provider adapter를 다음 구현 대상으로 선택한다.
+Channel Talk adapter는 제품에 유지한다. 다만 실제 Open API key가 필요한
+실습은 유료 plan 전제이므로 강의에서는 확장 구조만 소개한다.
 
 ## 2. 지금 계정 없이 할 수 있는 것
 
 다음은 사용자가 준비할 항목이 없다.
 
-- Naver TalkTalk·Channel Talk·Kakao 상태 public dummy fixture 실행
+- Kakao Open Builder·Naver TalkTalk·Channel Talk·Kakao 상태 public dummy fixture 실행
 - event 인증 수준 표시
 - canonical event 정규화
 - PII redaction
@@ -35,119 +41,77 @@ Kakao Business Channel
 
 실제 credential을 만들기 전에 이 단계가 모두 통과해야 한다.
 
-## 3. Channel Talk read-only 준비
+## 3. Kakao Channel chatbot E2E 준비
 
-### 3.1 계정과 권한
+### 3.1 계정과 bot
 
-1. 기존 Channel Talk 채널을 사용하거나 test용 채널을 만든다.
-2. 설정을 변경할 계정에 채널 관리자 권한이 있는지 확인한다.
-3. 실제 고객 상담이 있는 운영 채널보다 별도 test 채널을 우선한다.
+1. [카카오톡 채널 관리자센터](https://center-pf.kakao.com/)에서 만든 채널의 마스터 권한을 확인한다.
+2. [챗봇 관리자센터 준비 가이드](https://kakaobusiness.gitbook.io/main/tool/chatbot/start/prepare)에 따라 회원 가입한다.
+3. 카카오톡 채널 챗봇 bot을 하나 만든다.
+4. 실제 운영 고객과 분리할 수 있으면 개발 채널을 준비한다.
+5. `설정 → 챗봇 관리`에서 개발 채널을 연결한다. 운영 채널은 bot을 한 번 이상 배포해야 연결할 수 있다.
 
-### 3.2 Open API credential
+비즈니스 채널 인증과 개발 채널 생성 가능 여부는 현재 계정 화면에서
+확인한다. 채널을 만들었다는 사실만으로 bot 연결과 E2E가 완료된 것은
+아니다.
 
-Channel Talk 관리자에서 다음 메뉴를 연다.
+### 3.2 Skill server
 
-```text
-채널 설정
-→ 보안·개발
-→ API 관리
-→ 새 인증 키 만들기
-```
+챗봇 관리자센터의 bot에서 `스킬 → 생성`으로 이동해 다음을 설정한다.
 
-생성 후 다음 두 값을 비밀 저장소에 보관한다.
+- 스킬명: `signal-to-growth-test`
+- URL 또는 Test URL: 승인된 public HTTPS endpoint
+- 헤더: `x-api-key`
+- 테스트 헤더: 운영 값과 분리한 test secret
 
-- Access Key
-- Access Secret
+카카오는 skill request를 `HTTP POST` JSON으로 보내며 local URL은 사용할
+수 없다. skill server는 5초 안에 `version=2.0` JSON 응답을 반환해야 한다.
+`X-Request-Id`는 canonical event identity에 사용한다.
 
-Access Secret은 생성 완료 후 다시 확인할 수 없을 수 있으므로 즉시 승인된 password manager나 secret manager에 저장한다.
+secret 값은 password manager 또는 hosting secret store에 저장한다. repository,
+교안, 이슈, 채팅에는 값 대신 `secret://kakao-openbuilder/test/api-key` 같은
+reference만 남긴다.
 
-금지:
+공식 문서:
 
-- Git repository, issue, 메신저, 강의 화면에 값 복사
-- `.env.example`에 실제 값 저장
-- 운영 credential을 수강생에게 배포
+- [봇 설정과 개발 채널](https://kakaobusiness.gitbook.io/main/tool/chatbot/main_notions/bot_setting)
+- [스킬 만들기](https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/make_skill)
+- [SkillPayload와 응답 JSON](https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/answer_json_format)
+- [Request payload와 X-Request-Id](https://kakaobusiness.gitbook.io/main/tool/chatbot/main_notions/setting_parameter)
 
-Signal to Growth artifact에는 실제 값 대신 다음과 같은 reference만 기록한다.
+### 3.3 Block과 E2E
 
-```text
-secret://channel-talk/test/access-key
-secret://channel-talk/test/access-secret
-```
+1. 문의를 받을 시나리오와 block을 만든다.
+2. block의 동작에 `signal-to-growth-test` skill을 연결한다.
+3. skill 테스트에서 synthetic 발화를 보내 요청과 응답 미리보기를 확인한다.
+4. 개발 채널에서 같은 발화를 두 번 보내 각 요청의 `X-Request-Id`가 다른지 확인한다.
+5. endpoint에서 정규화된 두 event와 fixed acknowledgement를 확인한다.
+6. 고객 identifier·발화 원문·secret이 일반 log에 남지 않았는지 확인한다.
+
+이 단계의 응답은 고정된 test acknowledgement만 허용한다. LLM 생성 답변,
+환불·가격·계정 약속, 외부 API 발송은 포함하지 않는다.
+
+## 4. Channel Talk 선택형 준비
+
+Channel Talk adapter와 다음 capability는 제품에 유지한다.
+
+- message webhook 정규화
+- UserChat/message read-only backfill
+- webhook/backfill dedupe
+- reply, assignment, tag mutation 차단
+
+다만 2026-07-26 실제 관리자 화면에서 Open API key 발급에 유료 결제가
+필요한 것으로 확인됐다. 따라서:
+
+- 강의 본편 실습과 수강생 준비물에서 제외한다.
+- architecture와 paid connector 확장 사례로만 소개한다.
+- 이미 유료 plan과 test 채널이 있는 팀만 선택형 검증을 진행한다.
+- 가격과 entitlement는 변경될 수 있으므로 실제 적용 시 다시 확인한다.
 
 공식 문서:
 
 - [Channel Talk Open API](https://developers.channel.io/en/categories/Open-API-060776bd)
 - [Webhook setup](https://developers.channel.io/en/articles/Getting-started-f2a30b58)
-
-### 3.3 Webhook
-
-```text
-채널 설정
-→ 보안·개발
-→ Webhook 관리
-→ Webhook 만들기
-```
-
-초기 설정:
-
-- 이름: `signal-to-growth-test`
-- URL: 별도로 준비한 HTTPS test endpoint
-- User chat·event notification: ON
-- Group chat notification: OFF
-- 연락처 변경 notification: OFF
-
-legacy webhook은 URL query의 token을 사용한다. App Function의 `X-Signature` HMAC과 같은 인증 방식으로 간주하지 않는다. token도 secret manager에 저장하고 repository에는 secret reference만 둔다.
-
-## 4. Kakao 상담톡을 Channel Talk에 연결
-
-### 4.1 Kakao Business Channel
-
-1. [카카오톡 채널 관리자센터](https://center-pf.kakao.com/)에서 채널을 만들거나 기존 채널을 선택한다.
-2. `관리 → 비즈니스 채널 신청`에서 비즈니스 인증을 신청한다.
-3. 사업자등록증과 업종별 필수 서류를 준비한다.
-4. 신청자는 채널 마스터여야 하며, 제출 서류와 관리자 정보가 일치해야 한다.
-5. 채널 정보에 고객센터 연락처를 입력한다.
-6. `프로필 → 프로필 설정 → 공개 설정`에서 채널 공개를 켠다.
-7. 연동 전 카카오톡 채널 관리자센터의 진행 중인 1:1 상담을 마무리한다.
-
-Channel Talk의 현재 안내는 비즈니스 인증 심사에 영업일 기준 3~5일이 걸릴 수 있다고 설명한다.
-
-공식 가이드:
-
-- [Channel Talk의 Kakao 비즈니스 인증 안내](https://docs.channel.io/help/ko/articles/%EB%B9%84%EC%A6%88%EB%8B%88%EC%8A%A4-%EC%9D%B8%EC%A6%9D-1b9e3eb9)
-- [Kakao Channel 공식 안내](https://business.kakao.com/info/kakaotalkchannel/)
-
-### 4.2 Channel Talk에서 상담톡 선택
-
-Channel Talk에서 다음을 진행한다.
-
-```text
-채널 설정
-→ 앱스토어
-→ 카카오
-→ 연동
-```
-
-입력·확인 항목:
-
-- 카카오톡 채널 검색용 ID
-- 사업자 category
-- 사용할 기능: `상담톡`만 우선 ON
-- 카카오 채널 관리자 휴대폰 번호
-- 관리자 카카오톡으로 받은 인증번호
-
-P1 read-only 검증에서는 알림톡과 브랜드 메시지 발송을 활성화하지 않는다.
-
-주의:
-
-- 상담톡은 동시에 여러 상담 파트너에 연결할 수 없다.
-- Happytalk 등 다른 파트너에 이미 연결돼 있으면 해지·이관 전에 운영 영향과 진행 중 상담을 확인한다.
-- 연결 후 새 카카오 상담은 카카오 채널 관리자센터가 아니라 Channel Talk에서 관리한다.
-- Channel Talk 안내상 상담톡 연결 자체와 별개로, 상담원이 실제 답변하면 사용량 비용이 발생할 수 있다.
-
-공식 가이드:
-
-- [Channel Talk Kakao 연동](https://docs.channel.io/help/ko/articles/%EC%B9%B4%EC%B9%B4%EC%98%A4%ED%86%A1-%EC%97%B0%EB%8F%99%ED%95%98%EA%B8%B0-04f5721d)
 
 ## 5. Naver TalkTalk 선택형 test account
 
@@ -193,17 +157,19 @@ Bizppurio 실제 API를 선택하면 별도로 확인할 항목:
 
 ```text
 1. 기존 CS 도구:
-2. Channel Talk test 채널 사용 가능 여부:
-3. Kakao Business Channel 보유 여부와 인증 상태:
-4. Kakao 상담톡이 현재 연결된 파트너:
-5. Naver TalkTalk test account 생성 여부:
-6. 알림톡 상태 demo에 사용할 기존 공식 딜러:
-7. 외부 HTTPS test endpoint 준비 가능 여부:
+2. Kakao Business Channel의 비즈니스 인증 상태:
+3. 챗봇 관리자센터 가입과 bot 생성 여부:
+4. 개발 채널 생성·연결 가능 여부:
+5. public HTTPS endpoint 배포 승인 여부와 선호 hosting:
+6. Channel Talk 유료 Open API 이용 여부:
+7. Naver TalkTalk test account 생성 여부:
+8. 알림톡 상태 demo에 사용할 기존 공식 딜러:
 ```
 
 보내지 말아야 할 것:
 
 - Access Key와 Access Secret
+- Kakao skill `x-api-key`
 - webhook token·private callback URL
 - Kakao 관리자 전화번호와 인증번호
 - 사업자등록증
@@ -214,12 +180,14 @@ Bizppurio 실제 API를 선택하면 별도로 확인할 항목:
 
 계정 생성만으로 연동 완료라고 판단하지 않는다.
 
-1. approved test connection의 healthcheck
-2. test 고객 문의 1건
-3. provider webhook의 수신 시각
-4. 같은 conversation의 read-only API 조회
-5. webhook과 backfill이 하나의 canonical event로 합쳐짐
-6. 일반 log에 고객 원문·전화번호·secret이 없음
-7. reply/send 호출 0건
+1. 승인된 Kakao development channel과 bot 연결
+2. Chatbot Admin Center의 skill test 성공
+3. 개발 채널에서 synthetic 문의 1건
+4. `X-Request-Id`를 가진 request 수신
+5. canonical event 정규화와 fixed `version=2.0` 응답
+6. 같은 발화 2회가 서로 다른 request identity로 기록됨
+7. 일반 log에 사용자 identifier·발화 원문·secret이 없음
+8. ConsultTalk·AlimTalk·외부 Send API 호출 0건
 
-이 일곱 항목이 확인돼야 `provider test connected`와 `inbound verified` 상태를 기록한다.
+이 여덟 항목이 확인돼야 `kakao chatbot test connected`와 `inbound verified`
+상태를 기록한다. Channel Talk는 별도의 선택형 검증 상태로 관리한다.

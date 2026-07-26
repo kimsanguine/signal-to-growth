@@ -10,6 +10,33 @@
 
 ---
 
+## 0. 2026-07-26 실행 경로 변경
+
+사용자가 Kakao Business Channel을 만들었고, Channel Talk 관리자 화면에서
+Open API key 발급에 유료 결제가 필요함을 확인했다. 이에 따라 P1 순서를
+다음과 같이 변경한다.
+
+```text
+핵심 E2E
+  Kakao Business Channel
+    → Kakao Chatbot Admin Center
+    → Open Builder skill request
+    → public HTTPS skill server
+    → normalize → redact → dedupe
+    → fixed version=2.0 response
+
+선택형
+  Channel Talk adapter 유지
+    → 유료 Open API 사용 조직용
+    → 강의에서는 architecture와 확장 방법만 소개
+```
+
+이 E2E는 `Kakao Channel chatbot`이다. 상담톡, 알림톡, native Channel
+1:1 상담 이력 API로 표현하지 않는다. 공개 HTTPS endpoint 배포와 실제
+개발 채널 연결은 별도 승인·계정 설정 게이트다.
+
+---
+
 ## 1. 결론
 
 한국형 CS 연동은 `triage-customer-signals` 안에 공급사 API를 모두 넣지 않는다.
@@ -25,9 +52,10 @@
 | 다음 skill | `triage-customer-signals` |
 | 기본 mode | `dry-run`, `read-only`, `draft-only` |
 | region profile | `kr` |
-| 첫 강의 fixture | Naver TalkTalk inbound event + Kakao provider status |
-| 첫 실연동 후보 | Channel Talk read-only |
-| Kakao 실연동 | 계약한 공식 딜러가 확인된 뒤 1곳만 선택 |
+| 첫 강의 fixture | Kakao Open Builder skill request + Naver TalkTalk inbound event |
+| 첫 실연동 후보 | Kakao Channel chatbot development channel |
+| Channel Talk | 유료 Open API 사용 조직용 선택형 adapter, 교안은 소개만 |
+| Kakao 발송 실연동 | 알림톡이 필요할 때 계약한 공식 딜러 1곳만 선택 |
 
 `connect-korean-cs`는 직관적이지만 장기적으로 tool·국가를 skill 이름에 고정한다. `connect-customer-channels`를 공개 slug로 쓰고, 설명과 `references/providers-kr.md`에서 한국형 CS를 명확히 드러내는 편이 trigger와 확장성을 함께 확보한다.
 
@@ -130,8 +158,9 @@ plan-customer-reach
 
 | 도구·상품 | Inbound | Read/backfill | Reply/send | 상태 | 공개 규격 | 권고 |
 |---|:---:|:---:|:---:|---|---|---|
+| Kakao Channel chatbot / Open Builder | O, synchronous skill request | X | skill response O | 5초 응답, delivery/read 없음 | Kakao 공식 가이드 | 핵심 P1 E2E |
 | Naver TalkTalk Chat Bot API | O | event 이후 자체 저장, 공개 backfill 미확인 | O | API 처리 성공, delivery/read 미확인 | 공식 GitHub | P0 강의 fixture, P1 event-only |
-| Channel Talk | O | UserChat·message read 가능 | O | chat state, 최종 delivery semantics 일부 미확인 | 높음 | 첫 read-only connector |
+| Channel Talk | O | UserChat·message read 가능 | O | chat state, 최종 delivery semantics 일부 미확인 | 높음, Open API key는 유료 plan 전제 | 선택형 read-only connector, 강의 소개 |
 | Happytalk | O | 상담방·message·상태 조회 가능 | O | room·read date, delivery 일부 미확인 | 높음, credential 협의형 | P1 조건부 |
 | Kakao 상담톡 | O | 딜러·상담 시스템별 | session 내 O | 딜러별 | 제품 가이드 공개 | Kakao inbound P1, 계약 필요 |
 | Kakao 알림톡 | X | 결과 조회 | O | 접수와 최종 결과 분리 | 제품 가이드 + 딜러 API | outbound P1 |
@@ -144,6 +173,8 @@ plan-customer-reach
 
 확인한 사실:
 
+- Kakao Chatbot Admin Center는 Kakao Channel에 bot을 연결하고 public skill server와 `HTTP POST` JSON으로 통신한다.
+- skill server는 5초 안에 `version=2.0` JSON을 반환해야 하며 요청에는 `X-Request-Id`가 전달된다.
 - Kakao Developers 메시지 API는 같은 서비스 사용자 간 상호작용용이다.
 - 주문·결제·배송과 같은 정보성 안내는 알림톡 상품을 선택한다.
 - 알림톡과 브랜드 메시지는 공식 딜러를 통해 제공된다.
@@ -154,6 +185,7 @@ plan-customer-reach
 설계 영향:
 
 - `kakao_user_message`와 `kakao_bizmessage`를 다른 provider family로 둔다.
+- `kakao_openbuilder`와 `kakao_channel_chatbot`을 ConsultTalk와 분리한다.
 - `product=alimtalk|consulttalk|brand_message`를 명시한다.
 - `provider`는 계약한 딜러 ID다.
 - `sender_profile`, `template`, `message_purpose`, `recipient_basis`를 발송 전 검사한다.
@@ -193,7 +225,8 @@ plan-customer-reach
 
 - legacy webhook과 App Function은 인증 방식이 다르다.
 - “Channel Talk webhook은 HMAC”이라고 일반화하지 않는다.
-- 첫 real connector는 webhook ingest와 REST backfill만 구현한다.
+- 유료 Open API가 이미 있는 조직만 webhook ingest와 REST backfill을 검증한다.
+- 강의 본편에서는 architecture와 capability 차이만 소개한다.
 - reply/send·assignee·tag mutation은 사람 승인 기반 P2다.
 
 ### 4.4 Happytalk
@@ -330,7 +363,10 @@ signal-to-growth/
     └── test_connector_workflow.py
 ```
 
-초기 release에 모든 adapter 파일을 만들지 않는다. 실제 P0 구현은 base, Naver event fixture, Channel Talk read-only까지다. Kakao 공급사 adapter는 선택된 하나만 구현하고 나머지는 capability reference와 fixture로 남긴다.
+초기 release에 모든 adapter 파일을 만들지 않는다. 실제 P0 구현은 base,
+Naver event fixture, Channel Talk read-only, Kakao Open Builder skill request
+adapter까지다. Kakao 발송 공급사 adapter는 선택된 하나만 구현하고 나머지는
+capability reference와 fixture로 남긴다.
 
 ### 5.2 progressive disclosure
 
@@ -626,9 +662,10 @@ webhook과 polling을 경쟁 구현으로 보지 않는다. callback 누락·차
 - 공개 slug `connect-customer-channels`
 - 11개 skill 체계
 - default read-only·draft-only
-- 강의 P0는 Naver event fixture
-- 첫 real connector는 Channel Talk read-only
-- Kakao real adapter는 계약 공급사 1개만
+- 강의 P0는 Kakao Open Builder와 Naver event fixture
+- 첫 real connector는 Kakao Channel chatbot development channel
+- Channel Talk는 유료 Open API 사용자용 선택형
+- Kakao 발송 adapter는 계약 공급사 1개만
 
 **통과 조건:** README·plan·manifest 변경 범위가 한 표에 합의된다.
 
@@ -678,6 +715,7 @@ Track C·D를 병렬 진행한다.
 Track E·F를 병렬 진행한다.
 
 - Naver `send` event
+- Kakao Open Builder skill request와 `version=2.0` response
 - duplicate event
 - high-risk billing event
 - Channel Talk message event
@@ -691,12 +729,29 @@ Track E·F를 병렬 진행한다.
 - 두 runtime이 같은 core artifact를 생성
 - provider field 차이를 없애지 않고 canonical field로 설명
 
-### Gate 4. Channel Talk read-only
+### Gate 4. Kakao Channel chatbot E2E
 
-- test channel
+- Chatbot Admin Center bot
+- Kakao development channel
+- public HTTPS skill endpoint
+- `x-api-key` test header
+- `X-Request-Id` identity
+- fixed safe acknowledgement
+- canonical event persistence
+
+**통과 조건:**
+
+- 개발 채널의 synthetic test message가 skill endpoint에 도착함
+- 5초 안에 `version=2.0` 응답이 돌아옴
+- 동일 발화 2회가 서로 다른 provider request identity로 기록됨
+- user identifier·발화 원문·secret이 일반 log에 없음
+- ConsultTalk·AlimTalk·외부 Send API 호출 없음
+
+### Gate 5. Channel Talk 선택형 read-only
+
+- 이미 유료 Open API plan이 있는 test channel
 - webhook ingest
 - UserChat/message backfill
-- cursor
 - duplicate reconciliation
 - connection health
 
@@ -704,10 +759,11 @@ Track E·F를 병렬 진행한다.
 
 - 실제 test message 1건이 webhook과 backfill에서 하나의 canonical event로 합쳐짐
 - customer content가 일반 log에 없음
-- webhook을 끊은 뒤 backfill로 누락 복구
 - reply/send API 호출 없음
 
-### Gate 5. Kakao provider 1곳
+강의 본편 완료 조건에는 포함하지 않는다.
+
+### Gate 6. Kakao 발송 provider 1곳과 기타 operational expansion
 
 선택 조건:
 
@@ -735,8 +791,6 @@ Track E·F를 병렬 진행한다.
 - accepted와 terminal status 대사
 - duplicate timeout 재발송 없음
 - fallback 기본 OFF
-
-### Gate 6. Happytalk·Naver operational expansion
 
 - Happytalk credential·patch environment가 확보되면 read-only 구현
 - Naver event-only 실제 test account 왕복
@@ -843,7 +897,12 @@ signal-to-growth normalize-event \
 signal-to-growth validate-artifacts artifacts/
 ```
 
-delivery state projection과 webhook/backfill dedupe는 Python core와 test에서 검증한다. 실제 provider를 호출하는 `reconcile` CLI는 credential·durable inbox·approved test endpoint가 없는 P0에서는 노출하지 않는다. P1에서 Channel Talk test connection과 restricted inbox가 준비된 뒤 read-only command로 추가한다.
+delivery state projection과 webhook/backfill dedupe는 Python core와 test에서
+검증한다. Kakao Open Builder fixture는 `normalize-event --provider
+kakao-openbuilder --request-id ...`로 실행한다. 실제 provider를 호출하는
+`reconcile` CLI는 credential·durable inbox·approved test endpoint가 없는
+P0에서는 노출하지 않는다. Channel Talk network command는 유료 Open API
+test connection이 있는 경우에만 선택형으로 추가한다.
 
 validator가 검사하는 것:
 
@@ -899,18 +958,20 @@ skills/connect-customer-channels/agents/openai.yaml
 |---|---|
 | C01-02 | quote locator와 evidence contract |
 | C02-01 | manual signal taxonomy와 high-risk |
-| C02-02 | Naver event fixture, Kakao provider status, connector state |
+| C02-02 | Kakao Open Builder request fixture, safe response, connector state |
 | C03-01 | connector coverage·false negative·counter-metric |
 | C03-02 | provider 선택 decision과 outcome backfill |
 | C05-02 | connector가 있어도 human-approved growth action만 실행 |
 
-강의 본편은 repository의 synthetic fixture를 사용한다.
+강의 본편 실습은 repository의 synthetic Kakao Open Builder fixture를
+사용한다. 강사 화면에서는 승인된 개발 채널 E2E를 짧게 시연한다.
 
-선택형 강사 demo:
+강의 구성:
 
-1. Naver TalkTalk local webhook event
-2. Channel Talk read-only test channel
-3. Kakao provider simulator 또는 status poll
+1. 본편 실습: Kakao request fixture → normalize → redact → dedupe → fixed response
+2. 강사 E2E: Kakao development channel → public skill endpoint → KakaoTalk response
+3. 소개만: Channel Talk paid Open API, webhook/backfill architecture
+4. 선택형 부록: Naver TalkTalk event, Kakao dealer status simulator
 
 수강생 필수 실습에는 account·business registration·template approval·API key가 없어야 한다.
 
@@ -950,6 +1011,7 @@ release에서 하지 않을 것:
 - Naver·Channel Talk·Happytalk·Kakao provider public dummy fixture
 - Naver event-only normalization
 - Channel Talk read-only webhook+backfill
+- Kakao Open Builder skill-request normalization과 `version=2.0` response
 - provider-neutral dedupe·privacy·state projection
 - unapproved send 0
 - Claude Code·Codex same-artifact smoke
@@ -958,6 +1020,7 @@ release에서 하지 않을 것:
 
 ### 조건부
 
+- Kakao Channel development-channel live E2E
 - Kakao provider 1곳의 simulator/test connection
 - Happytalk patch environment
 - Naver actual test account event
@@ -969,7 +1032,7 @@ release에서 하지 않을 것:
 - 모든 딜러 동시 지원
 - customer assignment·tag mutation
 - refund·delete·account action
-- hosted webhook service
+- production hosted webhook service
 - anonymous telemetry
 
 ---
@@ -981,6 +1044,7 @@ release에서 하지 않을 것:
 - 현재 저장소가 11개 skill과 공통 contract 구조를 사용함
 - `triage-customer-signals`의 provider-neutral 책임
 - Kakao Developers와 Kakao business product의 차이
+- Kakao Open Builder chatbot과 ConsultTalk·native 1:1 chat의 차이
 - 알림톡·상담톡·브랜드 메시지의 공식 dealer 구조
 - Naver TalkTalk 공식 Chat Bot API의 webhook·Send·handover 문서
 - Channel Talk Open API·webhook·backfill 관련 문서
@@ -995,7 +1059,8 @@ release에서 하지 않을 것:
 ### P1 이후 확인할 것
 
 - 사용자의 실제 계약 provider
-- 실제 Kakao 비즈니스 채널·template·sender 상태
+- 실제 Kakao development channel 연결과 skill endpoint 왕복
+- Kakao 발송을 선택할 경우 template·sender 상태
 - provider credential·test tenant
 - live callback signature·IP·retry 동작
 - production retention·위수탁 계약
@@ -1012,6 +1077,11 @@ P0 구현 완료는 실제 계정 연결이나 운영 상태를 뜻하지 않는
 
 ### Kakao
 
+- [챗봇 관리자센터 개요](https://kakaobusiness.gitbook.io/main/tool/chatbot/start/overview)
+- [봇 설정과 개발 채널](https://kakaobusiness.gitbook.io/main/tool/chatbot/main_notions/bot_setting)
+- [Open Builder 스킬 만들기](https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/make_skill)
+- [SkillPayload와 응답 JSON](https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/answer_json_format)
+- [Request payload와 X-Request-Id](https://kakaobusiness.gitbook.io/main/tool/chatbot/main_notions/setting_parameter)
 - [Kakao Developers 메시지 API](https://developers.kakao.com/docs/ko/kakaotalk-message/common)
 - [Kakao Developers 제품 선택 FAQ](https://developers.kakao.com/docs/ko/kakaotalk-message/faq)
 - [카카오 알림톡](https://business.kakao.com/info/infotalk/)

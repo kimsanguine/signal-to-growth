@@ -8,7 +8,11 @@ from jsonschema import Draft202012Validator, FormatChecker
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from signal_growth.adapters import ChannelTalkAdapter, NaverTalkTalkAdapter  # noqa: E402
+from signal_growth.adapters import (  # noqa: E402
+    ChannelTalkAdapter,
+    KakaoOpenBuilderAdapter,
+    NaverTalkTalkAdapter,
+)
 from signal_growth.channel_contracts import (  # noqa: E402
     Capability,
     HttpResponse,
@@ -102,9 +106,55 @@ class ConnectorWorkflowTests(unittest.TestCase):
         self.assertNotIn("Authorization", page.request.headers)
         self.assert_schema_valid(page.events[0])
 
+    def test_kakao_skill_request_normalizes_and_dedupes_by_request_id(self):
+        adapter = KakaoOpenBuilderAdapter(b"public-dummy-hmac")
+        raw = (
+            PROVIDERS / "kakao-openbuilder" / "skill-request.json"
+        ).read_bytes()
+        headers = {"X-Request-Id": "request-public-dummy-001"}
+
+        first = adapter.ingest(
+            raw,
+            headers=headers,
+            received_at="2026-07-26T03:00:00Z",
+            request_context=RequestContext(environment="fixture"),
+        )
+        replay = adapter.ingest(
+            raw,
+            headers=headers,
+            received_at="2026-07-26T03:05:00Z",
+            request_context=RequestContext(environment="fixture"),
+        )
+        second_request = adapter.ingest(
+            raw,
+            headers={"X-Request-Id": "request-public-dummy-002"},
+            received_at="2026-07-26T03:06:00Z",
+            request_context=RequestContext(environment="fixture"),
+        )
+
+        self.assertEqual(first.event_id, replay.event_id)
+        self.assertNotEqual(first.event_id, second_request.event_id)
+        self.assertEqual("kakao_channel_chatbot", first.channel)
+        self.assertEqual("message_received", first.event_type)
+        self.assertFalse(first.auth_verified)
+        self.assertEqual(1, len(dedupe_events([first, replay])))
+        self.assert_schema_valid(first)
+
+    def test_kakao_skill_response_uses_official_simple_text_contract(self):
+        response = KakaoOpenBuilderAdapter.build_skill_response(
+            "문의가 접수되었습니다."
+        )
+
+        self.assertEqual("2.0", response["version"])
+        self.assertEqual(
+            "문의가 접수되었습니다.",
+            response["template"]["outputs"][0]["simpleText"]["text"],
+        )
+
     def test_unsupported_capabilities_fail_loudly(self):
         naver = NaverTalkTalkAdapter(b"public-dummy-hmac")
         channel = ChannelTalkAdapter(b"public-dummy-hmac")
+        kakao = KakaoOpenBuilderAdapter(b"public-dummy-hmac")
 
         with self.assertRaises(UnsupportedCapability):
             naver.build_backfill_request("public-dummy-chat")
@@ -112,8 +162,13 @@ class ConnectorWorkflowTests(unittest.TestCase):
             naver.send_approved({})
         with self.assertRaises(UnsupportedCapability):
             channel.send_approved({})
+        with self.assertRaises(UnsupportedCapability):
+            kakao.build_backfill_request("public-dummy-chat")
         self.assertFalse(naver.capabilities().supports(Capability.REPLY_SEND))
         self.assertFalse(channel.capabilities().supports(Capability.REPLY_SEND))
+        self.assertTrue(
+            kakao.capabilities().supports(Capability.SKILL_REQUEST_INGEST)
+        )
         naver_capabilities = {
             item["name"]: item
             for item in naver.capabilities().to_dict()["capabilities"]

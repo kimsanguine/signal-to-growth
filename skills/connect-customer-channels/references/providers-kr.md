@@ -19,6 +19,24 @@ Use `supported`, `unsupported`, or `unconfirmed`. Mark every missing public cont
 
 ## Kakao product selection
 
+### Kakao Channel chatbot through Kakao i Open Builder
+
+- Treat an Open Builder skill as synchronous `HTTP POST` JSON from the bot system to a public skill server.
+- Use it for a Kakao Channel chatbot request → normalize → fixed safe response E2E.
+- Require `X-Request-Id` for event identity and a configured `x-api-key` header for the test endpoint.
+- Record the shared static header as weak assurance because it is not a payload-bound signature.
+- Return the official `version=2.0` skill response within five seconds.
+- Do not call this ConsultTalk, native Channel 1:1 counselor chat, or an outbound Send API.
+- Mark history backfill, counselor assignment, delivery receipt, and read receipt unsupported for this adapter.
+
+Official sources checked on 2026-07-26:
+
+- Chatbot Admin Center overview: https://kakaobusiness.gitbook.io/main/tool/chatbot/start/overview
+- Bot channel settings: https://kakaobusiness.gitbook.io/main/tool/chatbot/main_notions/bot_setting
+- Skill server registration: https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/make_skill
+- Skill payload and response: https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/answer_json_format
+- Request parameter and `X-Request-Id`: https://kakaobusiness.gitbook.io/main/tool/chatbot/main_notions/setting_parameter
+
 ### Kakao Channel 1:1 chat
 
 - Treat the Channel manager web or app chat as a native operator surface.
@@ -96,7 +114,8 @@ Official sources checked on 2026-07-26:
 
 ## Channel Talk
 
-Use Channel Talk as the first read-only real-connector candidate.
+Keep Channel Talk as an optional read-only connector for teams that already
+have paid Open API access. Do not make it a required course exercise.
 
 Confirmed:
 
@@ -115,6 +134,9 @@ Authentication boundary:
 
 Hold:
 
+- Treat paid-plan Open API access as an account-level prerequisite. A live
+  account check on 2026-07-26 showed that issuing the required API key required
+  a paid plan; recheck pricing and entitlements before setup.
 - Mark isolated Open API sandbox availability `unconfirmed`.
 - Mark final end-user delivery and read-receipt semantics `unconfirmed` unless a checked contract and test evidence establish them.
 - Treat webhook event types other than the clearly documented new-message path as contract-version dependent.

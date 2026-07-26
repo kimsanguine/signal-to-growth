@@ -187,8 +187,9 @@ Connector를 사용하는 run은 5개 추가 contract를 사용합니다.
 ```bash
 signal-to-growth validate-connectors artifacts/
 signal-to-growth normalize-event \
-  --provider naver-talktalk \
-  --input fixtures/public-dummy/providers/naver-talktalk/send-event.json
+  --provider kakao-openbuilder \
+  --request-id request-public-dummy-001 \
+  --input fixtures/public-dummy/providers/kakao-openbuilder/skill-request.json
 ```
 
 `normalize-event`는 로컬 payload만 처리하며 provider network에 연결하거나 답변을 발송하지 않습니다.
@@ -197,6 +198,7 @@ signal-to-growth normalize-event \
 
 | 표면 | 현재 구현 | 아직 검증하지 않은 것 |
 |---|---|---|
+| Kakao Channel chatbot | Open Builder skill request 정규화·마스킹·중복 제거와 `version=2.0` 응답 생성 | 공개 HTTPS endpoint, 개발 채널 왕복, `X-Request-Id` 반복 발화 특성 |
 | Naver TalkTalk | public dummy event 정규화·마스킹·중복 제거 | 실제 test account webhook, backfill, 발송 |
 | Channel Talk | webhook 정규화와 injected read-only backfill·대사 | 실제 credential·HTTPS endpoint 왕복 |
 | Kakao 상담톡 via Channel Talk | product boundary와 계정 설정 절차 | 실제 채널 이관·상담 event |
@@ -204,6 +206,17 @@ signal-to-growth normalize-event \
 | Kakao 공식 딜러 | accepted/delivered 상태 fixture와 state projection | 선택된 딜러의 simulator·callback·polling |
 
 `fixture-validated`, `test-account verified`, `production-operational`을 서로 다른 상태로 기록합니다.
+
+강의 핵심 E2E는 `Kakao Channel chatbot through Kakao i Open Builder`입니다.
+Channel Talk는 Open API key 발급에 유료 plan이 필요한 선택형 connector로
+유지하며, 강의 본편에서는 구조와 확장 경로만 소개합니다. Kakao chatbot
+skill request는 상담톡이나 native 1:1 상담 이력 API가 아닙니다.
+
+`KakaoSkillApplication`은 hosting layer가 주입한 durable event sink에
+정규화 event를 먼저 저장한 뒤 fixed `version=2.0` 응답을 반환하는
+deployment-neutral WSGI application입니다. 실제 public endpoint가 되려면
+선택한 hosting의 WSGI adapter, secret store, durable restricted sink가
+추가로 필요합니다.
 
 ### 개인정보 pattern 검사
 

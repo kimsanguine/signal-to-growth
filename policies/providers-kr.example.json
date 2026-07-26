@@ -18,6 +18,46 @@
   ],
   "providers": [
     {
+      "provider_id": "kakao_openbuilder",
+      "provider_family": "chatbot_platform",
+      "products": [
+        "kakao_channel_chatbot"
+      ],
+      "connection_mode": "read_only",
+      "capabilities": [
+        {
+          "name": "skill_request_ingest",
+          "status": "supported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "conversation_backfill",
+          "status": "unsupported",
+          "access_mode": "read_only"
+        },
+        {
+          "name": "reply_send",
+          "status": "disabled_by_policy",
+          "access_mode": "draft_only"
+        }
+      ],
+      "status_semantics": {
+        "request_acceptance": "accepted",
+        "terminal_success": "delivered",
+        "accepted_is_terminal": false
+      },
+      "source": {
+        "document_url": "https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/make_skill",
+        "checked_at": "2026-07-26",
+        "api_version": "2.0",
+        "contract_version": "v0.2-draft",
+        "known_drift": [
+          "x_request_id_uniqueness_requires_live_repeat-message_verification"
+        ],
+        "live_account_verified": false
+      }
+    },
+    {
       "provider_id": "naver_talktalk",
       "provider_family": "helpdesk",
       "products": [

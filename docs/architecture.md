@@ -64,7 +64,12 @@ raw provider event
   → signal triage
 ```
 
-Provider and product remain separate fields. For example, `channel_talk` can be the helpdesk provider while `kakao_consulttalk` is the customer-facing product. Kakao Developers user messaging is not treated as a customer-service connector.
+Provider and product remain separate fields. For example, `kakao_openbuilder`
+is the chatbot platform while `kakao_channel_chatbot` is the channel surface;
+`channel_talk` can be the helpdesk provider while `kakao_consulttalk` is the
+customer-facing product. Kakao Developers user messaging is not treated as a
+customer-service connector. Open Builder chatbot requests are not relabeled as
+ConsultTalk or native Channel 1:1 counselor chat.
 
 Read-only adapters may build and validate backfill requests, but actual network access requires an approved test connection. Reply, send, assignment, template mutation, and fallback stay disabled without explicit human approval.
 

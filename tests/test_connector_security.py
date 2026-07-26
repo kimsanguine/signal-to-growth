@@ -8,8 +8,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from signal_growth.adapters import ChannelTalkAdapter, NaverTalkTalkAdapter  # noqa: E402
+from signal_growth.adapters import (  # noqa: E402
+    ChannelTalkAdapter,
+    KakaoOpenBuilderAdapter,
+    NaverTalkTalkAdapter,
+)
 from signal_growth.channel_contracts import (  # noqa: E402
+    EventIdentityError,
     EventVerificationError,
     RequestContext,
 )
@@ -27,6 +32,14 @@ CHANNEL_FIXTURE = (
     / "providers"
     / "channel-talk"
     / "message-event.json"
+)
+KAKAO_FIXTURE = (
+    ROOT
+    / "fixtures"
+    / "public-dummy"
+    / "providers"
+    / "kakao-openbuilder"
+    / "skill-request.json"
 )
 
 
@@ -93,6 +106,52 @@ class ConnectorSecurityTests(unittest.TestCase):
                     environment="test",
                 ),
             )
+
+    def test_kakao_rejects_wrong_api_key_and_missing_request_id(self):
+        adapter = KakaoOpenBuilderAdapter(
+            b"public-dummy-hmac",
+            expected_api_key="expected-fixture-key",
+            allow_unverified_fixture=False,
+        )
+
+        with self.assertRaises(EventVerificationError):
+            adapter.ingest(
+                KAKAO_FIXTURE.read_bytes(),
+                headers={
+                    "X-Api-Key": "wrong-fixture-key",
+                    "X-Request-Id": "request-public-dummy-001",
+                },
+                received_at="2026-07-26T03:00:00Z",
+                request_context=RequestContext(environment="test"),
+            )
+
+        with self.assertRaises(EventIdentityError):
+            adapter.ingest(
+                KAKAO_FIXTURE.read_bytes(),
+                headers={"X-Api-Key": "expected-fixture-key"},
+                received_at="2026-07-26T03:00:00Z",
+                request_context=RequestContext(environment="test"),
+            )
+
+    def test_kakao_marks_static_header_auth_as_weak_assurance(self):
+        adapter = KakaoOpenBuilderAdapter(
+            b"public-dummy-hmac",
+            expected_api_key="expected-fixture-key",
+            allow_unverified_fixture=False,
+        )
+
+        event = adapter.ingest(
+            KAKAO_FIXTURE.read_bytes(),
+            headers={
+                "x-api-key": "expected-fixture-key",
+                "x-request-id": "request-public-dummy-001",
+            },
+            received_at="2026-07-26T03:00:00Z",
+            request_context=RequestContext(environment="test"),
+        )
+
+        self.assertTrue(event.auth_verified)
+        self.assertEqual("weak", event.verification_assurance.value)
 
     def test_connector_directory_rejects_raw_credential_fields(self):
         source = json.loads(

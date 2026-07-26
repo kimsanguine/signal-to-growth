@@ -16,7 +16,7 @@ Results:
 |---|---|
 | Repository validator | passed |
 | Public dummy end-to-end validation | passed |
-| Unit, schema, negative, integration, and documentation tests | 34 passed |
+| Unit, schema, negative, integration, and documentation tests | 41 passed |
 | Eleven `SKILL.md` files with `quick_validate.py` | 11 passed |
 | Codex plugin with `validate_plugin.py` | passed |
 | Claude marketplace with `claude plugin validate .` | passed |
@@ -24,6 +24,8 @@ Results:
 | Connector artifact validation | passed with public dummy fixtures |
 | Naver event normalization | passed offline with deterministic replay ID |
 | Channel Talk webhook/backfill dedupe | passed with injected offline transport |
+| Kakao Open Builder request normalization | passed with public dummy fixture and `X-Request-Id` |
+| Kakao Open Builder `version=2.0` response | passed as a deterministic local contract |
 
 Runtime marketplace installation was not performed during local implementation because it changes user-level plugin state. Static plugin validation and clean package execution are confirmed; installation from the published GitHub source is a separate verification state.
 
@@ -52,6 +54,7 @@ Confirmed locally:
 - credential-free public dummy fixtures;
 - Naver event-only normalization, redaction, stable identity, and dedupe;
 - Channel Talk read-only webhook/backfill identity reconciliation;
+- Kakao Open Builder skill-request normalization and simple-text response construction;
 - `accepted != delivered`, non-regressing state, and separate fallback attempts;
 - reply/send capabilities disabled by policy.
 
@@ -59,6 +62,8 @@ Not verified:
 
 - a real Channel Talk or Naver test account;
 - a public HTTPS webhook endpoint and durable restricted inbox;
+- a Kakao Channel development-channel round trip;
+- repeated identical Kakao utterances to confirm live `X-Request-Id` identity behavior;
 - Kakao ConsultTalk migration or live conversation ingestion;
 - provider credential health, callback behavior, and production retention;
 - any external reply or send.

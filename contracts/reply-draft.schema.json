@@ -52,6 +52,7 @@
         "naver_talktalk",
         "channel_talk",
         "happytalk",
+        "kakao_channel_chatbot",
         "web_chat",
         "other"
       ]

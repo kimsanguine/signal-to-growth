@@ -2,6 +2,7 @@
 
 from .base import BaseChannelAdapter, ChannelAdapter, InjectedTransport
 from .channel_talk import ChannelTalkAdapter
+from .kakao_openbuilder import KakaoOpenBuilderAdapter
 from .naver_talktalk import NaverTalkTalkAdapter
 
 __all__ = [
@@ -9,5 +10,6 @@ __all__ = [
     "ChannelAdapter",
     "ChannelTalkAdapter",
     "InjectedTransport",
+    "KakaoOpenBuilderAdapter",
     "NaverTalkTalkAdapter",
 ]

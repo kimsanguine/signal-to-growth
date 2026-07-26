@@ -8,7 +8,11 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .adapters import ChannelTalkAdapter, NaverTalkTalkAdapter
+from .adapters import (
+    ChannelTalkAdapter,
+    KakaoOpenBuilderAdapter,
+    NaverTalkTalkAdapter,
+)
 from .channel_contracts import RequestContext
 from .connector_validation import validate_connector_directory
 from .contracts import render_issues, validate_artifact_directory
@@ -61,13 +65,18 @@ def command_validate_connectors(args: argparse.Namespace) -> int:
 def command_normalize_event(args: argparse.Namespace) -> int:
     raw_body = args.input.resolve().read_bytes()
     received_at = args.received_at or datetime.now(UTC).isoformat()
-    adapter = (
-        NaverTalkTalkAdapter(_PUBLIC_DUMMY_HMAC_KEY)
-        if args.provider == "naver-talktalk"
-        else ChannelTalkAdapter(_PUBLIC_DUMMY_HMAC_KEY)
-    )
+    adapters = {
+        "naver-talktalk": NaverTalkTalkAdapter(_PUBLIC_DUMMY_HMAC_KEY),
+        "channel-talk": ChannelTalkAdapter(_PUBLIC_DUMMY_HMAC_KEY),
+        "kakao-openbuilder": KakaoOpenBuilderAdapter(_PUBLIC_DUMMY_HMAC_KEY),
+    }
+    adapter = adapters[args.provider]
+    headers = {}
+    if args.request_id is not None:
+        headers["X-Request-Id"] = args.request_id
     event = adapter.ingest(
         raw_body,
+        headers=headers,
         received_at=received_at,
         request_context=RequestContext(environment="fixture"),
     )
@@ -154,10 +163,14 @@ def build_parser() -> argparse.ArgumentParser:
     normalize_event.add_argument(
         "--provider",
         required=True,
-        choices=("naver-talktalk", "channel-talk"),
+        choices=("naver-talktalk", "channel-talk", "kakao-openbuilder"),
     )
     normalize_event.add_argument("--input", required=True, type=Path)
     normalize_event.add_argument("--received-at")
+    normalize_event.add_argument(
+        "--request-id",
+        help="Required X-Request-Id value for kakao-openbuilder fixtures.",
+    )
     normalize_event.add_argument("--output", type=Path)
     normalize_event.set_defaults(func=command_normalize_event)
 

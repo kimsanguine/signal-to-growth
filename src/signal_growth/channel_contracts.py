@@ -20,6 +20,7 @@ class ConnectorMode(str, Enum):
 
 class Capability(str, Enum):
     WEBHOOK_INGEST = "webhook_ingest"
+    SKILL_REQUEST_INGEST = "skill_request_ingest"
     CONVERSATION_BACKFILL = "conversation_backfill"
     DELIVERY_STATUS = "delivery_status"
     RECONCILIATION = "reconciliation"
@@ -183,6 +184,7 @@ class VerifiedEvent:
     received_at: str
     auth_verified: bool
     verification_assurance: VerificationAssurance
+    request_id: str | None = None
 
 
 @dataclass(frozen=True)

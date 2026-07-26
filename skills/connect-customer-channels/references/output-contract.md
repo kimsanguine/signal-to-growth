@@ -38,6 +38,14 @@ Require:
 
 Set delivery semantics to `unknown` when the official contract does not define them. Keep inbound message events, outbound attempts, and delivery results distinct.
 
+For Kakao i Open Builder skill requests:
+
+- use the HTTP `X-Request-Id` as the provider request identity;
+- keep `channel=kakao_channel_chatbot`;
+- use the server receipt time when the payload has no provider event timestamp;
+- record static `x-api-key` verification as weak assurance, not a payload signature;
+- never relabel the event as ConsultTalk or native Channel 1:1 counselor chat.
+
 ## `reply-drafts.jsonl`
 
 Follow `contracts/reply-draft.schema.json`.

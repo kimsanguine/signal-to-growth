@@ -1,6 +1,6 @@
 ---
 name: connect-customer-channels
-description: "Diagnose, verify, normalize, reconcile, and prepare draft-only replies for customer-channel integrations, especially Korean CS channels. Use when working with Naver TalkTalk, Channel Talk, Happytalk, Kakao Channel 1:1 chat, Kakao ConsultTalk or AlimTalk through an approved provider; validating webhooks, backfills, delivery states, or connector health; creating channel connection, CS event, delivery, reply-draft, or connector-state artifacts; or handing normalized events to triage-customer-signals. Default to dry-run, read-only, and draft-only."
+description: "Diagnose, verify, normalize, reconcile, and prepare draft-only replies for customer-channel integrations, especially Korean CS channels. Use when working with a Kakao Channel chatbot through Kakao i Open Builder, Naver TalkTalk, Channel Talk, Happytalk, Kakao Channel 1:1 chat, Kakao ConsultTalk or AlimTalk through an approved provider; validating skill requests, webhooks, backfills, delivery states, or connector health; creating channel connection, CS event, delivery, reply-draft, or connector-state artifacts; or handing normalized events to triage-customer-signals. Default to dry-run, read-only, and draft-only."
 ---
 
 # Connect Customer Channels
@@ -55,6 +55,7 @@ Read:
 
 Keep these surfaces separate:
 
+- Treat **Kakao Channel chatbot through Kakao i Open Builder** as a synchronous skill-request and skill-response surface. It can connect a bot to a Kakao Channel, but it is not ConsultTalk and does not expose native 1:1 counselor history.
 - Treat **Kakao Channel 1:1 chat** as the native channel-management chat surface. Do not assume it exposes the same external API contract as a dealer-operated business-messaging product.
 - Treat **Kakao ConsultTalk (상담톡)** as a customer-initiated, session-bound consultation product delivered through an official dealer and a separate counselor/helpdesk system. Require an active session before even proposing a reply for approval.
 - Treat **Kakao AlimTalk (알림톡)** as outbound informational messaging through an official dealer using an approved sender profile and template. Do not model it as an inbound conversation or ConsultTalk reply.
@@ -104,6 +105,7 @@ Stop and create a partial artifact when:
 - the official authentication or webhook verification contract is unconfirmed;
 - the source, checked date, API version, or contract version is missing;
 - a production event cannot be authenticated or assigned stable identity;
+- a Kakao Open Builder request lacks `X-Request-Id`, or the configured test header does not match;
 - raw-payload retention, processing basis, or redaction policy is undefined;
 - masking fails or restricted content would enter a general log;
 - a capability is unconfirmed and the next step would depend on it;
