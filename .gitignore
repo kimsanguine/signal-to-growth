@@ -12,5 +12,6 @@ dist/
 !.env.example
 artifacts/private/
 artifacts/runs/
+eval/runs/**/*.stderr.txt
 .vercel
 supabase/.temp/

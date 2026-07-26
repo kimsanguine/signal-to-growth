@@ -17,8 +17,10 @@
 
 ## Pending release gates
 
-1. Run all 30 canonical cases with raw output capture.
-2. Repeat the five nondeterministic anchor cases three times per runtime.
+1. Complete Claude's 30 canonical cases after the monthly spend limit is lifted;
+   Codex capture is complete but does not establish parity.
+2. Repeat the five nondeterministic anchors three times in Claude after that
+   runtime becomes available; Codex repetition is complete.
 3. Verify real installation, discovery, and explicit invocation in both Claude
    Code and Codex.
 4. Re-score with five fresh evaluator contexts after deterministic tests pass.

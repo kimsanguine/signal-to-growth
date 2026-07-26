@@ -77,7 +77,7 @@ Confirm the checked-out SHA before comparing evaluation results:
 git rev-parse HEAD
 ```
 
-### 2. Run the formal cross-runtime evaluation
+### 2. Resume the formal cross-runtime evaluation
 
 Use `eval/cases.jsonl` and `eval/expected-behaviors.md`.
 
@@ -89,8 +89,11 @@ Required capture per case:
 - external tool calls and write boundary;
 - evaluator score and hard-gate result.
 
-Run fixture-only first. Do not use real customer data, credentials, provider
-accounts, or external writes.
+Codex fixture-only capture is complete at `eval/runs/2026-07-26-8aef638/`.
+Claude Code was blocked by the account monthly spend limit (HTTP 429), so the
+cross-runtime release gate remains `HOLD`. When that limit is lifted, run the
+same canonical and repeated-anchor commands through `scripts/run_runtime_eval.py`.
+Do not use real customer data, credentials, provider accounts, or external writes.
 
 ### 3. Re-score with five fresh evaluator contexts
 

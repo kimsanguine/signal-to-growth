@@ -36,3 +36,20 @@ the same repository snapshot from five specialist perspectives and supplied
 reproducible hardening targets. The 30-case runtime suite in `cases.jsonl`,
 including repeated nondeterministic anchors and real runtime invocation evidence,
 remains pending. Post-remediation scores must not be inferred from this baseline.
+
+## Post-hardening runtime attempt — 2026-07-26
+
+- Snapshot: `8aef638` (the deterministic hardening implementation is `89eea7e`).
+- Codex CLI `0.145.0`: all 30 fixture-only semantic cases returned `pass` with
+  `external_write=false`; five anchor cases repeated three times had identical
+  selected skill, verdict, and hard-gate result.
+- Claude Code `2.1.220`: no usable result. The Sonnet batch was blocked by the
+  account monthly spend limit (HTTP 429), which is an environment blocker.
+- Five fresh Codex evaluator contexts scored the available evidence 62, 35, 81,
+  38, and 30 (mean 49.2). Their shared conclusion is `HOLD/NO-GO`: generated
+  artifact E2E, real plugin installation, provider operation, and Claude/Codex
+  parity are still unverified.
+
+Structured capture is under `runs/2026-07-26-8aef638/`. Raw model outputs are
+tracked; verbose local tool traces are intentionally ignored. This result does
+not supersede the release gate.
