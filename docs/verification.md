@@ -45,6 +45,7 @@ Results:
 | Vercel runtime log | preview recorded health HTTP 200 and two Kakao skill HTTP 200 requests without payload or secret output |
 | Five-agent baseline evaluation | static/adversarial review completed; mean 67/100, release `NO-GO` |
 | PMF Radar import and hplan intake | implemented and locally covered by deterministic integration tests |
+| Hosted dependency parity | repository validator requires `pyproject.toml` runtime dependencies in Vercel `requirements.txt` |
 
 Hosted verification target:
 

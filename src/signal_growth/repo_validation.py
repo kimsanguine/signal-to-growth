@@ -118,13 +118,45 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
                 )
 
     try:
-        project_version = tomllib.loads(
+        project_metadata = tomllib.loads(
             (root / "pyproject.toml").read_text(encoding="utf-8")
-        )["project"]["version"]
+        )["project"]
+        project_version = project_metadata["version"]
+        project_dependencies = project_metadata.get("dependencies", [])
     except (OSError, KeyError, tomllib.TOMLDecodeError):
         project_version = None
+        project_dependencies = []
         issues.append(
             ValidationIssue("pyproject.toml", "project.version is missing or invalid")
+        )
+
+    dependency_names = {
+        re.split(r"[\s<>=!~;\[]", str(dependency), maxsplit=1)[0].casefold()
+        for dependency in project_dependencies
+    }
+    requirements_path = root / "requirements.txt"
+    try:
+        requirement_names = {
+            re.split(r"[\s<>=!~;\[]", line.strip(), maxsplit=1)[0].casefold()
+            for line in requirements_path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        }
+    except (OSError, UnicodeError):
+        requirement_names = set()
+        issues.append(
+            ValidationIssue(
+                "requirements.txt",
+                "hosted runtime dependency file is missing or unreadable",
+            )
+        )
+    missing_hosted_dependencies = dependency_names - requirement_names
+    if missing_hosted_dependencies:
+        issues.append(
+            ValidationIssue(
+                "requirements.txt",
+                "hosted runtime is missing project dependencies: "
+                + ", ".join(sorted(missing_hosted_dependencies)),
+            )
         )
 
     manifest_versions: list[tuple[str, object]] = []

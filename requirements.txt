@@ -1,1 +1,2 @@
-# The hosted test endpoint uses only the Python standard library and this source tree.
+# Vercel Python Functions install this file independently of pyproject.toml.
+jsonschema>=4.23,<5
