@@ -13,3 +13,4 @@ dist/
 artifacts/private/
 artifacts/runs/
 .vercel
+supabase/.temp/

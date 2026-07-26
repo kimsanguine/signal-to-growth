@@ -80,7 +80,7 @@ Kakao Developers 앱이나 REST API key는 이 E2E에 필요하지 않다.
 server 준비 순서:
 
 1. 별도의 Supabase test project를 준비한다.
-2. `supabase/migrations/20260726023000_create_kakao_cs_events_test.sql`을 적용한다.
+2. `supabase/migrations/`의 migration을 파일명 순서대로 적용한다.
 3. Supabase `Settings → API Keys`에서 backend용 secret key를 확인한다.
 4. Vercel에 `.env.example`의 필수 변수 이름을 등록한다.
 5. `GET /api/health`에서 `status=configured`를 확인한다.
@@ -90,12 +90,19 @@ Supabase secret key는 backend에서 RLS를 우회할 수 있으므로 브라우
 repository, Kakao header에 넣지 않는다. Kakao header에는 별도로 생성한
 `KAKAO_SKILL_API_KEY`만 사용한다.
 
+`STG_APPROVAL_REF`에는 `APR-KAKAO-TEST-001`처럼 승인 기록을 가리키는
+비민감 ID를 입력한다. 원문 승인 메모나 이름을 넣지 않는다. 저장된 행은
+7일 뒤 삭제 가능 상태가 되지만 자동 삭제되지는 않는다. 실제 삭제 전에는
+[retention runbook](operations/kakao-test-retention.md)의 조회·승인 절차를
+따른다.
+
 공식 문서:
 
 - [봇 설정과 개발 채널](https://kakaobusiness.gitbook.io/main/tool/chatbot/main_notions/bot_setting)
 - [스킬 만들기](https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/make_skill)
 - [SkillPayload와 응답 JSON](https://kakaobusiness.gitbook.io/main/tool/chatbot/skill_guide/answer_json_format)
 - [Request payload와 X-Request-Id](https://kakaobusiness.gitbook.io/main/tool/chatbot/main_notions/setting_parameter)
+- [Supabase Data API explicit grants change](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically)
 
 ### 3.3 Block과 E2E
 

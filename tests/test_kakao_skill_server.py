@@ -25,6 +25,10 @@ FIXTURE = (
 class KakaoSkillServerTests(unittest.TestCase):
     def setUp(self):
         self.events = []
+
+        def event_sink(event, approval_ref):
+            self.events.append((event, approval_ref))
+
         adapter = KakaoOpenBuilderAdapter(
             b"public-dummy-hmac",
             expected_api_key="expected-fixture-key",
@@ -32,7 +36,7 @@ class KakaoSkillServerTests(unittest.TestCase):
         )
         self.app = KakaoSkillApplication(
             adapter,
-            self.events.append,
+            event_sink,
             approval_ref="APR-KAKAO-TEST-001",
         )
 
@@ -62,8 +66,10 @@ class KakaoSkillServerTests(unittest.TestCase):
         self.assertEqual("200 OK", captured["status"])
         self.assertEqual("2.0", response["version"])
         self.assertEqual(1, len(self.events))
-        self.assertEqual("kakao_openbuilder", self.events[0]["provider"])
-        self.assertNotIn("bot-user-public-dummy-001", json.dumps(self.events[0]))
+        event, approval_ref = self.events[0]
+        self.assertEqual("kakao_openbuilder", event["provider"])
+        self.assertEqual("APR-KAKAO-TEST-001", approval_ref)
+        self.assertNotIn("bot-user-public-dummy-001", json.dumps(event))
 
     def test_rejects_wrong_api_key_without_persisting(self):
         captured, response = self.request(api_key="wrong-fixture-key")
@@ -73,7 +79,8 @@ class KakaoSkillServerTests(unittest.TestCase):
         self.assertEqual([], self.events)
 
     def test_persistence_failure_prevents_acknowledgement(self):
-        def failing_sink(event):
+        def failing_sink(event, approval_ref):
+            del event, approval_ref
             raise RuntimeError("synthetic persistence failure")
 
         adapter = KakaoOpenBuilderAdapter(
@@ -91,6 +98,20 @@ class KakaoSkillServerTests(unittest.TestCase):
 
         self.assertEqual("503 Service Unavailable", captured["status"])
         self.assertEqual({"error": "event_persistence_failed"}, response)
+
+    def test_rejects_invalid_approval_reference(self):
+        adapter = KakaoOpenBuilderAdapter(
+            b"public-dummy-hmac",
+            expected_api_key="expected-fixture-key",
+            allow_unverified_fixture=False,
+        )
+
+        with self.assertRaisesRegex(ValueError, "beginning with APR-"):
+            KakaoSkillApplication(
+                adapter,
+                lambda event, approval_ref: None,
+                approval_ref="raw approval note",
+            )
 
 
 if __name__ == "__main__":

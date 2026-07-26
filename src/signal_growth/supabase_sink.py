@@ -13,6 +13,7 @@ from .channel_contracts import TransportError
 
 
 _TABLE_NAME = re.compile(r"^[a-z][a-z0-9_]{0,62}$")
+_APPROVAL_REF = re.compile(r"^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$")
 UrlOpener = Callable[..., Any]
 
 
@@ -48,7 +49,7 @@ class SupabaseEventSink:
         self._timeout_seconds = timeout_seconds
         self._opener = opener
 
-    def __call__(self, event: Mapping[str, Any]) -> None:
+    def __call__(self, event: Mapping[str, Any], approval_ref: str) -> None:
         event_id = event.get("event_id")
         provider = event.get("provider")
         provider_event_id = event.get("provider_event_id")
@@ -60,6 +61,13 @@ class SupabaseEventSink:
             raise ValueError(
                 "event_id, provider, provider_event_id, and received_at are required"
             )
+        if (
+            not isinstance(approval_ref, str)
+            or not _APPROVAL_REF.fullmatch(approval_ref.strip())
+        ):
+            raise ValueError(
+                "approval_ref must be a non-secret reference beginning with APR-"
+            )
 
         body = json.dumps(
             {
@@ -67,6 +75,7 @@ class SupabaseEventSink:
                 "provider": provider,
                 "provider_event_id": provider_event_id,
                 "received_at": received_at,
+                "approval_ref": approval_ref.strip(),
                 "canonical_event": dict(event),
             },
             ensure_ascii=False,

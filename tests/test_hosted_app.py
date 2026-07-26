@@ -43,8 +43,17 @@ class HostedKakaoApplicationTests(unittest.TestCase):
         self.assertEqual("configuration_required", response["status"])
         self.assertFalse(response["external_write"])
 
-    def test_unknown_route_is_not_exposed(self):
+    def test_root_exposes_safe_service_metadata(self):
         captured, response = self.request("GET", "/")
+
+        self.assertEqual("200 OK", captured["status"])
+        self.assertEqual("Signal to Growth", response["name"])
+        self.assertEqual("/api/health", response["health"])
+        self.assertFalse(response["external_write"])
+        self.assertNotIn("configuration", response)
+
+    def test_unknown_route_is_not_exposed(self):
+        captured, response = self.request("GET", "/unknown")
 
         self.assertEqual("404 Not Found", captured["status"])
         self.assertEqual({"error": "not_found"}, response)

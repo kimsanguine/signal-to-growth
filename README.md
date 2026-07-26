@@ -12,6 +12,7 @@
 Signal to Growth는 고객 인터뷰·CS·행동 지표에서 얻은 신호를 출처와 함께 정리하고, 사람이 성장 판단을 승인한 뒤, 콘텐츠·첫 사용자 루프·측정으로 연결하는 Agent Skills 제품입니다.
 
 하나의 `skills/` 소스를 Claude Code와 OpenAI Codex에서 함께 사용합니다.
+[변경 이력](CHANGELOG.md)에서 release 단위의 차이를 확인할 수 있습니다.
 
 ## 왜 만들었나
 
@@ -216,6 +217,8 @@ skill request는 상담톡이나 native 1:1 상담 이력 API가 아닙니다.
 `version=2.0` 응답을 반환하는 deployment-neutral WSGI application입니다.
 `app.py`는 Vercel entry point, `SupabaseEventSink`는 server-only secret을
 사용하는 저장 adapter입니다. 저장 실패 시 성공 응답을 반환하지 않습니다.
+승인 참조는 canonical 고객 event와 분리된 `approval_ref` 열에 저장합니다.
+공개 root route는 secret이나 설정 상태 대신 문서·health route만 반환합니다.
 
 ### Kakao test endpoint 배포
 
@@ -234,8 +237,8 @@ SUPABASE_URL
 SUPABASE_SECRET_KEY
 ```
 
-1. 별도의 Supabase test project에서
-   [`20260726023000_create_kakao_cs_events_test.sql`](supabase/migrations/20260726023000_create_kakao_cs_events_test.sql)을 적용합니다.
+1. 별도의 Supabase test project에서 `supabase/migrations/`의 migration을
+   순서대로 적용합니다.
 2. Vercel project에 필수 환경 변수를 server-side secret으로 등록합니다.
 3. preview를 배포하고 `GET /api/health`가 `status=configured`인지 확인합니다.
 4. 합성 Kakao payload를 `POST /api/kakao/skill`로 보내 `version=2.0`을 확인합니다.
@@ -245,6 +248,11 @@ SUPABASE_SECRET_KEY
 이 table은 RLS를 활성화하고 `anon`·`authenticated` 권한을 제거합니다.
 `sb_secret_...` key는 backend 전용이며 브라우저나 교안에 노출하지 않습니다.
 실제 고객 데이터가 아닌 합성 발화만 사용합니다.
+`STG_APPROVAL_REF`에는 secret이나 자유 서술 대신 `APR-KAKAO-TEST-001` 같은
+비민감 승인 record ID를 사용합니다. 각 행의 `expires_at`은 7일 뒤를
+가리키지만 자동 삭제 작업은 아닙니다. 삭제 절차와 승인 경계는
+[Kakao test retention runbook](docs/operations/kakao-test-retention.md)을
+따릅니다.
 
 ### 개인정보 pattern 검사
 
@@ -457,6 +465,7 @@ Signal to Growth가 집중하는 공백:
 - Naver TalkTalk event normalization
 - Channel Talk read-only adapter contract
 - Kakao Open Builder용 Vercel WSGI endpoint와 Supabase restricted sink
+- synthetic event approval reference와 7일 deletion-eligibility marker
 - provider-neutral dedupe·redaction·delivery state projection
 
 아직 포함하지 않음:

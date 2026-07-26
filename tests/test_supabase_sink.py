@@ -48,11 +48,12 @@ class SupabaseEventSinkTests(unittest.TestCase):
         }
 
     def test_posts_normalized_event_with_server_only_key(self):
-        self.sink(self.event)
+        self.sink(self.event, "APR-KAKAO-TEST-001")
 
         request, timeout = self.requests[0]
         payload = json.loads(request.data)
         self.assertEqual("CSE-public-dummy-001", payload["event_id"])
+        self.assertEqual("APR-KAKAO-TEST-001", payload["approval_ref"])
         self.assertEqual(self.event, payload["canonical_event"])
         self.assertEqual("sb_secret_public_dummy", request.get_header("Apikey"))
         self.assertIsNone(request.get_header("Authorization"))
@@ -88,8 +89,13 @@ class SupabaseEventSinkTests(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(TransportError, "HTTP 403") as caught:
-            sink(self.event)
+            sink(self.event, "APR-KAKAO-TEST-001")
         self.assertNotIn("forbidden-private-detail", str(caught.exception))
+
+    def test_rejects_invalid_approval_reference_before_transport(self):
+        with self.assertRaisesRegex(ValueError, "beginning with APR-"):
+            self.sink(self.event, "private free-form approval note")
+        self.assertEqual([], self.requests)
 
 
 if __name__ == "__main__":

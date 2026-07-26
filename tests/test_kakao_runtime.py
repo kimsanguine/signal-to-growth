@@ -53,6 +53,12 @@ class KakaoRuntimeTests(unittest.TestCase):
         with self.assertRaises(RuntimeConfigurationError):
             build_kakao_skill_application(self.getenv)
 
+    def test_invalid_approval_reference_fails_as_configuration_error(self):
+        self.values["STG_APPROVAL_REF"] = "approval-without-prefix"
+
+        with self.assertRaises(RuntimeConfigurationError):
+            build_kakao_skill_application(self.getenv)
+
 
 if __name__ == "__main__":
     unittest.main()

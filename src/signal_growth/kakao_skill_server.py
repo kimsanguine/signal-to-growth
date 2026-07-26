@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from typing import Any, Callable, Iterable, Mapping
 
@@ -14,8 +15,9 @@ from .channel_contracts import (
 )
 
 
-EventSink = Callable[[Mapping[str, Any]], None]
+EventSink = Callable[[Mapping[str, Any], str], None]
 StartResponse = Callable[[str, list[tuple[str, str]]], Any]
+_APPROVAL_REF = re.compile(r"^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$")
 
 
 class KakaoSkillApplication:
@@ -33,8 +35,13 @@ class KakaoSkillApplication:
     ) -> None:
         if not callable(event_sink):
             raise TypeError("event_sink must be callable")
-        if not isinstance(approval_ref, str) or not approval_ref.strip():
-            raise ValueError("approval_ref is required for the test response")
+        if (
+            not isinstance(approval_ref, str)
+            or not _APPROVAL_REF.fullmatch(approval_ref.strip())
+        ):
+            raise ValueError(
+                "approval_ref must be a non-secret reference beginning with APR-"
+            )
         if not isinstance(max_body_bytes, int) or max_body_bytes < 1:
             raise ValueError("max_body_bytes must be a positive integer")
         self._adapter = adapter
@@ -83,7 +90,7 @@ class KakaoSkillApplication:
             )
 
         try:
-            self._event_sink(event.to_dict())
+            self._event_sink(event.to_dict(), self._approval_ref)
         except Exception:
             return self._json_response(
                 start_response,

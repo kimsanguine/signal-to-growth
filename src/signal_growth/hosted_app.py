@@ -24,6 +24,28 @@ class HostedKakaoApplication:
         method = environ.get("REQUEST_METHOD")
         path = environ.get("PATH_INFO")
 
+        if path == "/":
+            if method != "GET":
+                return self._json_response(
+                    start_response,
+                    "405 Method Not Allowed",
+                    {"error": "method_not_allowed"},
+                )
+            return self._json_response(
+                start_response,
+                "200 OK",
+                {
+                    "name": "Signal to Growth",
+                    "status": "alpha",
+                    "documentation": (
+                        "https://github.com/kimsanguine/signal-to-growth"
+                    ),
+                    "health": "/api/health",
+                    "kakao_skill": "/api/kakao/skill",
+                    "external_write": False,
+                },
+            )
+
         if path == "/api/health":
             if method != "GET":
                 return self._json_response(
