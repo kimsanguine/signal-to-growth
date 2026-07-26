@@ -109,7 +109,9 @@ change is a restricted projection contract, not a Production database write.
 
 ### 5. Submit to hplan
 
-Generate a `ready_for_gate_review` intake, then run hplan's own human Build Gate.
+The public dummy intake is `fixtures/public-dummy/hplan-intake.json`. It is
+`ready_for_gate_review` only for a fixture decision, then run hplan's own human
+Build Gate with real reviewed evidence.
 Keep `hplan_gate_decision=null` until that review occurs.
 
 ### 6. Perform provider E2E
