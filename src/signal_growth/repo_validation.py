@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 from pathlib import Path
 
 from .contracts import ValidationIssue
@@ -116,6 +117,17 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
                     )
                 )
 
+    try:
+        project_version = tomllib.loads(
+            (root / "pyproject.toml").read_text(encoding="utf-8")
+        )["project"]["version"]
+    except (OSError, KeyError, tomllib.TOMLDecodeError):
+        project_version = None
+        issues.append(
+            ValidationIssue("pyproject.toml", "project.version is missing or invalid")
+        )
+
+    manifest_versions: list[tuple[str, object]] = []
     for relative in (
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
@@ -133,6 +145,38 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
             continue
         if relative.endswith("plugin.json") and payload.get("name") != "signal-to-growth":
             issues.append(ValidationIssue(relative, "plugin name must be signal-to-growth"))
+        if relative in {
+            ".claude-plugin/plugin.json",
+            ".codex-plugin/plugin.json",
+        }:
+            manifest_versions.append((relative, payload.get("version")))
+        elif relative == ".claude-plugin/marketplace.json":
+            manifest_versions.append(
+                (f"{relative}:metadata", payload.get("metadata", {}).get("version"))
+            )
+            plugins = payload.get("plugins", [])
+            manifest_versions.extend(
+                (f"{relative}:plugins[{index}]", plugin.get("version"))
+                for index, plugin in enumerate(plugins)
+                if isinstance(plugin, dict)
+            )
+        elif relative == ".agents/plugins/marketplace.json":
+            plugins = payload.get("plugins", [])
+            manifest_versions.extend(
+                (f"{relative}:plugins[{index}]", plugin.get("version"))
+                for index, plugin in enumerate(plugins)
+                if isinstance(plugin, dict)
+            )
+
+    if project_version is not None:
+        for location, version in manifest_versions:
+            if version != project_version:
+                issues.append(
+                    ValidationIssue(
+                        location,
+                        f"version must match pyproject.toml ({project_version})",
+                    )
+                )
 
     contract_root = root / "contracts"
     for filename in sorted(EXPECTED_CONNECTOR_CONTRACTS):

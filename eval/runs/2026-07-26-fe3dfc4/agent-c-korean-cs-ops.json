@@ -1,0 +1,17 @@
+{
+  "evaluator": "Korean CS Ops",
+  "snapshot": "fe3dfc4",
+  "mode": "static_adversarial_review",
+  "score": 72,
+  "decision": "NO-GO",
+  "strengths": [
+    "The repository separates Kakao chatbot, Channel Talk, and Naver TalkTalk surfaces.",
+    "Read-only defaults and fixture-first examples are visible."
+  ],
+  "failures": [
+    "Provider and channel mismatches were not rejected deterministically.",
+    "REQUEST_ACCEPTED could be represented as delivered.",
+    "Unauthenticated Channel Talk production input and high-risk Korean identifiers were not sufficiently gated.",
+    "Conflicting replays could be silently deduplicated."
+  ]
+}

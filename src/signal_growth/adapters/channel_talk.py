@@ -118,7 +118,7 @@ class ChannelTalkAdapter(BaseChannelAdapter):
                 raise EventVerificationError("Channel Talk webhook token mismatch")
             auth_verified = True
             assurance = VerificationAssurance.WEAK
-        elif self._allow_unverified_fixture:
+        elif context.environment == "fixture" and self._allow_unverified_fixture:
             auth_verified = False
             assurance = VerificationAssurance.NONE
         else:

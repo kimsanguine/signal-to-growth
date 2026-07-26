@@ -1,0 +1,16 @@
+{
+  "evaluator": "Product Rigor",
+  "snapshot": "fe3dfc4",
+  "mode": "static_adversarial_review",
+  "score": 67,
+  "decision": "NO-GO",
+  "strengths": [
+    "The quote-to-outcome chain is a useful product operating model.",
+    "Counterevidence and decision logging are present in the conceptual model."
+  ],
+  "failures": [
+    "Metric contracts did not require maturity, exclusions, or a sourced target.",
+    "Decision records did not require a decision question, selected option, or not-build boundary.",
+    "Outcomes could imply confidence without sample and maturity semantics."
+  ]
+}

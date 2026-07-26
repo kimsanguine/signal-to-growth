@@ -15,6 +15,7 @@ from .channel_contracts import (
     EventIdentityError,
     PayloadValidationError,
 )
+from .schema_validation import validate_schema_record
 
 
 _EMAIL = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
@@ -23,6 +24,18 @@ _KOREAN_MOBILE = re.compile(
 )
 _INTERNATIONAL_PHONE = re.compile(
     r"(?<!\d)\+\d{1,3}[-\s]?\d{2,4}[-\s]?\d{3,4}[-\s]?\d{4}(?!\d)"
+)
+_RESIDENT_ID = re.compile(r"(?<!\d)\d{6}[-\s]?[1-8]\d{6}(?!\d)")
+_BUSINESS_ID = re.compile(r"(?<!\d)\d{3}[-\s]?\d{2}[-\s]?\d{5}(?!\d)")
+_PAYMENT_CARD = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
+_BANK_ACCOUNT = re.compile(
+    r"(?:계좌(?:번호)?|account)\s*[:=]?\s*(?:\d[-\s]?){8,20}",
+    re.I,
+)
+_LABELED_NAME = re.compile(r"(?:이름|성명)\s*[:=]?\s*[가-힣]{2,4}")
+_LABELED_ADDRESS = re.compile(
+    r"(?:주소|address)\s*[:=]?\s*[^\n,;]{6,120}",
+    re.I,
 )
 _JWT = re.compile(
     r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b"
@@ -44,12 +57,17 @@ _DIRECT_IDENTIFIER_KEYS = {
     "username",
 }
 _PROHIBITED_ARTIFACT_IDENTIFIER_KEYS = {
+    "accountnumber",
+    "address",
+    "cardnumber",
     "email",
     "emailaddress",
     "mobile",
     "mobilenumber",
     "phone",
     "phonenumber",
+    "recipientno",
+    "residentid",
     "username",
 }
 _CREDENTIAL_KEYS = {
@@ -90,6 +108,24 @@ _DELIVERY_STATUSES = {
     "cancelled",
     "expired",
     "unknown",
+}
+_CONNECTOR_SCHEMA_FILES = {
+    "channel-connection.json": "channel-connection.schema.json",
+    "cs-events.jsonl": "cs-event.schema.json",
+    "reply-drafts.jsonl": "reply-draft.schema.json",
+    "delivery-events.jsonl": "delivery-event.schema.json",
+    "connector-state.json": "connector-state.schema.json",
+}
+_PROVIDER_CHANNELS = {
+    "kakao_openbuilder": {"kakao_channel_chatbot"},
+    "channel_talk": {"channel_talk"},
+    "naver_talktalk": {"naver_talktalk"},
+}
+_PROVIDER_STATUS_CANONICAL = {
+    "REQUEST_ACCEPTED": "accepted",
+    "ACCEPTED": "accepted",
+    "DELIVERED": "delivered",
+    "READ": "read",
 }
 
 
@@ -176,6 +212,12 @@ def redact_text(text: str | None) -> str | None:
     redacted = _EMAIL.sub("[REDACTED_EMAIL]", text)
     redacted = _KOREAN_MOBILE.sub("[REDACTED_PHONE]", redacted)
     redacted = _INTERNATIONAL_PHONE.sub("[REDACTED_PHONE]", redacted)
+    redacted = _RESIDENT_ID.sub("[REDACTED_RESIDENT_ID]", redacted)
+    redacted = _BUSINESS_ID.sub("[REDACTED_BUSINESS_ID]", redacted)
+    redacted = _PAYMENT_CARD.sub("[REDACTED_PAYMENT_CARD]", redacted)
+    redacted = _BANK_ACCOUNT.sub("[REDACTED_ACCOUNT]", redacted)
+    redacted = _LABELED_NAME.sub("이름: [REDACTED_NAME]", redacted)
+    redacted = _LABELED_ADDRESS.sub("주소: [REDACTED_ADDRESS]", redacted)
     redacted = _JWT.sub("[REDACTED_SECRET]", redacted)
     redacted = _API_KEY.sub("[REDACTED_SECRET]", redacted)
     redacted = _BEARER.sub("[REDACTED_SECRET]", redacted)
@@ -189,6 +231,14 @@ def redact_text_with_metadata(text: str | None) -> tuple[str, dict[str, Any]]:
         pii_types.append("email")
     if _KOREAN_MOBILE.search(original) or _INTERNATIONAL_PHONE.search(original):
         pii_types.append("phone")
+    if _LABELED_NAME.search(original):
+        pii_types.append("name")
+    if _LABELED_ADDRESS.search(original):
+        pii_types.append("address")
+    if _PAYMENT_CARD.search(original) or _BANK_ACCOUNT.search(original):
+        pii_types.append("account_identifier")
+    if _RESIDENT_ID.search(original) or _BUSINESS_ID.search(original):
+        pii_types.append("other")
     if _JWT.search(original) or _API_KEY.search(original) or _BEARER.search(original):
         pii_types.append("other")
     redacted = redact_text(original) or ""
@@ -258,19 +308,49 @@ def epoch_millis_to_iso(value: Any) -> str:
 
 
 def dedupe_events(events: Iterable[Any]) -> list[Any]:
-    """Keep first occurrence order while deduplicating by ``event_id``."""
-    seen: set[str] = set()
+    """Deduplicate exact retries and reject conflicting event identities."""
+    seen: dict[str, bytes] = {}
     output: list[Any] = []
     for event in events:
         if isinstance(event, Mapping):
             event_id = event.get("event_id")
+            comparable = dict(event)
         else:
             event_id = getattr(event, "event_id", None)
+            to_dict = getattr(event, "to_dict", None)
+            comparable = to_dict() if callable(to_dict) else vars(event)
         if not isinstance(event_id, str) or not event_id:
             raise EventIdentityError("every event must expose a non-empty event_id")
+        stable_fields = {
+            key: comparable[key]
+            for key in (
+                "provider",
+                "provider_event_id",
+                "channel",
+                "direction",
+                "event_type",
+                "conversation_ref",
+                "message_ref",
+                "customer_ref_hmac",
+                "content_redacted",
+                "attachment_metadata",
+            )
+            if key in comparable
+        }
+        if not stable_fields:
+            stable_fields = {
+                key: value
+                for key, value in comparable.items()
+                if key not in {"event_id", "idempotency_key", "received_at"}
+            }
+        fingerprint = hashlib.sha256(canonical_json(stable_fields)).digest()
         if event_id in seen:
+            if seen[event_id] != fingerprint:
+                raise EventIdentityError(
+                    "the same event_id was observed with conflicting content"
+                )
             continue
-        seen.add(event_id)
+        seen[event_id] = fingerprint
         output.append(event)
     return output
 
@@ -381,11 +461,12 @@ def validate_connection(connection: Mapping[str, Any]) -> list[ConnectorValidati
                     "approved_write connections must enable external writes",
                 )
             )
-        if not connection.get("approved_by"):
+        approved_by = connection.get("approved_by")
+        if not isinstance(approved_by, str) or not approved_by.startswith("APR-"):
             issues.append(
                 ConnectorValidationIssue(
                     "connection.approved_by",
-                    "approved_write connections require approved_by",
+                    "approved_write connections require an APR- approval reference",
                 )
             )
 
@@ -493,6 +574,15 @@ def _validate_cs_event(
                 "auth_verified cannot be true when verification assurance is none",
             )
         )
+    provider = record.get("provider")
+    expected_channels = _PROVIDER_CHANNELS.get(provider)
+    if expected_channels is not None and record.get("channel") not in expected_channels:
+        issues.append(
+            ConnectorValidationIssue(
+                location,
+                f"{provider} cannot produce channel={record.get('channel')}",
+            )
+        )
     content = record.get("content_redacted")
     if not isinstance(content, str) or redact_text(content) != content:
         issues.append(
@@ -501,6 +591,27 @@ def _validate_cs_event(
                 "content_redacted still contains a supported private-data pattern",
             )
         )
+    return issues
+
+
+def validate_cs_event_record(
+    record: Mapping[str, Any],
+    location: str = "cs-event",
+) -> list[ConnectorValidationIssue]:
+    """Validate one canonical event with schema, privacy, and product invariants."""
+    issues = [
+        ConnectorValidationIssue(location, message)
+        for message in validate_schema_record("cs-event.schema.json", record)
+    ]
+    prohibited = _prohibited_paths(record)
+    if prohibited:
+        issues.append(
+            ConnectorValidationIssue(
+                location,
+                f"raw credential or identifier fields are forbidden: {', '.join(prohibited)}",
+            )
+        )
+    issues.extend(_validate_cs_event(record, location))
     return issues
 
 
@@ -585,6 +696,19 @@ def _validate_delivery_event(
     issues: list[ConnectorValidationIssue] = []
     if record.get("canonical_status") not in _DELIVERY_STATUSES:
         issues.append(ConnectorValidationIssue(location, "invalid delivery status"))
+    provider_status = record.get("provider_status")
+    expected_status = (
+        _PROVIDER_STATUS_CANONICAL.get(provider_status.upper())
+        if isinstance(provider_status, str)
+        else None
+    )
+    if expected_status is not None and record.get("canonical_status") != expected_status:
+        issues.append(
+            ConnectorValidationIssue(
+                location,
+                f"provider_status={provider_status} requires canonical_status={expected_status}",
+            )
+        )
     if record.get("attempt_kind") == "fallback":
         if not record.get("parent_attempt_ref") or record.get("fallback_applied") is not True:
             issues.append(
@@ -663,6 +787,7 @@ def validate_connector_directory(
         "delivery-events.jsonl": _validate_delivery_event,
         "connector-state.json": _validate_connector_state,
     }
+    loaded_records: dict[str, list[dict[str, Any]]] = {}
     for filename in sorted(_CONNECTOR_FILES):
         path = directory / filename
         if not path.exists():
@@ -672,8 +797,16 @@ def validate_connector_directory(
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             issues.append(ConnectorValidationIssue(filename, str(exc)))
             continue
+        loaded_records[filename] = records
         for index, record in enumerate(records, 1):
             location = f"{filename}[{index}]"
+            issues.extend(
+                ConnectorValidationIssue(location, message)
+                for message in validate_schema_record(
+                    _CONNECTOR_SCHEMA_FILES[filename],
+                    record,
+                )
+            )
             prohibited = _prohibited_paths(record)
             if prohibited:
                 issues.append(
@@ -692,4 +825,35 @@ def validate_connector_directory(
                 )
             else:
                 issues.extend(validators[filename](record, location))
+
+    connections = loaded_records.get("channel-connection.json", [])
+    states = loaded_records.get("connector-state.json", [])
+    events = loaded_records.get("cs-events.jsonl", [])
+    if connections:
+        connection = connections[0]
+        connection_id = connection.get("connection_id")
+        provider = connection.get("provider")
+        for index, state in enumerate(states, 1):
+            if state.get("connection_id") != connection_id:
+                issues.append(
+                    ConnectorValidationIssue(
+                        f"connector-state.json[{index}]",
+                        "connection_id does not match channel-connection.json",
+                    )
+                )
+            if state.get("provider") != provider:
+                issues.append(
+                    ConnectorValidationIssue(
+                        f"connector-state.json[{index}]",
+                        "provider does not match channel-connection.json",
+                    )
+                )
+        for index, event in enumerate(events, 1):
+            if event.get("provider") != provider:
+                issues.append(
+                    ConnectorValidationIssue(
+                        f"cs-events.jsonl[{index}]",
+                        "provider does not match channel-connection.json",
+                    )
+                )
     return issues

@@ -1,0 +1,16 @@
+{
+  "evaluator": "Cross-runtime",
+  "snapshot": "fe3dfc4",
+  "mode": "static_adversarial_review",
+  "score": 79,
+  "decision": "HOLD",
+  "strengths": [
+    "One canonical skills directory is shared by thin Claude and Codex plugin manifests.",
+    "Repository and skill validators provide a deterministic static baseline."
+  ],
+  "failures": [
+    "Manifest version parity was not enforced.",
+    "Actual install, discovery, and explicit invocation were not demonstrated in both runtimes.",
+    "Static parity was stronger than runtime task evidence."
+  ]
+}

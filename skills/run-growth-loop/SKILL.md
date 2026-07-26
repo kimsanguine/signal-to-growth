@@ -29,22 +29,31 @@ Require:
 8. Update `run-state.json` as a new auditable state.
 9. Create a handoff that distinguishes completed, locally validated, externally executed, and outcome-recorded work.
 
-## Routing order
+## Routing graph
 
 ```text
-plan-customer-reach
-→ run-switch-interview
-→ synthesize-interviews
-→ connect-customer-channels (only when a connector is configured)
-→ triage-customer-signals
-→ define-growth-metrics
-→ record-growth-decision
-→ audit-answer-visibility
-→ draft-evidence-content
-→ design-first-user-loop
+research objective
+  → plan-customer-reach → run-switch-interview → synthesize-interviews
+
+configured CS source
+  → connect-customer-channels → triage-customer-signals
+
+validated evidence or signal
+  → define-growth-metrics → record-growth-decision → design-first-user-loop
+
+approved decision needing build review
+  → export-hplan → hplan gates
+
+optional content branch
+  → audit-answer-visibility → draft-evidence-content
 ```
 
-Keep the manual signal path when no connector artifact exists. Route to `connect-customer-channels` when any connector artifact exists but the required connection, event, or state artifact is incomplete. Skip any other skill only when the run state records why its artifact is not applicable.
+Route from the stated objective and valid available artifacts, not from a
+mandatory universal sequence. Keep the manual signal path when no connector
+artifact exists. Route to `connect-customer-channels` when any connector
+artifact exists but the required connection, event, or state artifact is
+incomplete. Keep visibility and content work optional unless the objective asks
+for them.
 
 ## Boundaries
 
@@ -77,7 +86,7 @@ Run:
 ```bash
 python3 scripts/stg.py validate-artifacts artifacts/
 python3 scripts/stg.py validate-connectors artifacts/
-python3 scripts/stg.py next-step artifacts/
+python3 scripts/stg.py next-step artifacts/ --objective "현재 사용자 목표"
 ```
 
 Treat the CLI result as routing evidence. The user still owns prioritization and approval.

@@ -128,7 +128,7 @@
         "properties": {
           "approved_by": {
             "type": "string",
-            "minLength": 1
+            "pattern": "^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
           },
           "external_write_enabled": {
             "const": true

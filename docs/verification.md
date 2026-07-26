@@ -16,7 +16,7 @@ Results:
 |---|---|
 | Repository validator | passed |
 | Public dummy end-to-end validation | passed |
-| Unit, schema, negative, integration, and documentation tests | 58 passed |
+| Unit, schema, negative, integration, and documentation tests | 70 passed |
 | Eleven `SKILL.md` files with `quick_validate.py` | 11 passed |
 | Codex plugin with `validate_plugin.py` | passed |
 | Claude marketplace with `claude plugin validate .` | passed |
@@ -43,6 +43,8 @@ Results:
 | Kakao-to-Supabase preview E2E | two identical authorized synthetic requests returned HTTP 200 and Kakao `version=2.0` |
 | Live idempotency | the repeated `X-Request-Id` produced exactly one Supabase test row |
 | Vercel runtime log | preview recorded health HTTP 200 and two Kakao skill HTTP 200 requests without payload or secret output |
+| Five-agent baseline evaluation | static/adversarial review completed; mean 67/100, release `NO-GO` |
+| PMF Radar import and hplan intake | implemented and locally covered by deterministic integration tests |
 
 Hosted verification target:
 
@@ -123,6 +125,8 @@ Not verified:
 - provider credential health, callback behavior, scheduled cleanup, and production retention;
 - merge to the default branch, release tag, and Production promotion;
 - any external reply or send.
+- the formal 30-case Claude Code and Codex runtime evaluation;
+- production wiring of the PMF Radar export or an hplan Build Gate decision.
 
 ## Status vocabulary
 

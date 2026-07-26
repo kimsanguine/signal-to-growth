@@ -235,6 +235,47 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "provider_status": {
+            "enum": [
+              "REQUEST_ACCEPTED",
+              "ACCEPTED"
+            ]
+          }
+        },
+        "required": [
+          "provider_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "canonical_status": {
+            "const": "accepted"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "provider_status": {
+            "const": "DELIVERED"
+          }
+        },
+        "required": [
+          "provider_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "canonical_status": {
+            "const": "delivered"
+          }
+        }
+      }
     }
   ]
 }

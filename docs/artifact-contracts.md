@@ -60,12 +60,22 @@ draft
 - An approved evidence strength names a human reviewer.
 - An approved decision names a human reviewer.
 - An executed external action names a human reviewer.
+- An approved or executed external action references a scoped `APR-` approval artifact.
 - A connector stores secret references, never credential values.
 - A normalized event records provider identity, verification assurance, and an idempotency key.
 - A reply remains `external_write=false` until a separate approval artifact authorizes the exact target and content.
 - `accepted` and `submitted` do not imply `delivered`.
 - A fallback transport is a separate attempt and does not overwrite the original result.
 - Updates append events or use `supersedes`; they do not rewrite history.
+
+## Cross-repository bridges
+
+- `pmf-radar.stg.v1` wraps one redacted canonical CS event with product scope
+  and a restricted PMF Radar source reference.
+- `integration-references.jsonl` preserves external IDs without copying raw
+  provider data.
+- `hplan-intake.json` is a draft input to hplan gates. It never represents a
+  passed Build Gate.
 
 ## Versioning
 

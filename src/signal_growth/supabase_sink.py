@@ -90,7 +90,7 @@ class SupabaseEventSink:
                 "apikey": self._secret_key,
                 "Content-Type": "application/json",
                 "Prefer": "resolution=ignore-duplicates,return=minimal",
-                "User-Agent": "signal-to-growth/0.2",
+                "User-Agent": "signal-to-growth/0.3",
             },
         )
 

@@ -75,6 +75,16 @@ Read-only adapters may build and validate backfill requests, but actual network 
 
 Webhook and polling are recovery pairs. A provider acceptance response never proves delivery, and fallback transport is recorded as a separate attempt.
 
+PMF Radar may operate the long-running inbox, retry, raw-retention, and operator
+queue. In that deployment, it exports `pmf-radar.stg.v1`; Signal to Growth
+validates and imports only the redacted canonical event and bridge metadata.
+See [PMF Radar and hplan integration](integrations/pmf-radar-hplan.md).
+
 ## Orchestrator boundary
 
-`run-growth-loop` reads state and routes the next specialist. It uses the manual signal path when no connector is configured and routes partial connector state back to `connect-customer-channels`. It must not call provider APIs or reproduce interview synthesis, metric design, content audit, or channel strategy. This reduces rule drift and makes specialist skills independently testable.
+`run-growth-loop` reads the objective, validates available artifacts, and routes
+the next specialist through a dependency graph. It does not require research
+recruiting when a valid CS or analytics artifact already exists. It uses the
+manual signal path when no connector is configured and routes partial connector
+state back to `connect-customer-channels`. It must not call provider APIs or
+reproduce specialist judgment.

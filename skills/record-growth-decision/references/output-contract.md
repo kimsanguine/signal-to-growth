@@ -4,7 +4,15 @@
 
 Follow `contracts/decision.schema.json`. Append one immutable event per decision or later change.
 
-Require evidence IDs, counterevidence, alternatives, owner, review date, success condition, stop condition, causal confidence, approval, and optional supersedes link.
+Require the decision question, selected option, evidence IDs, counterevidence,
+alternatives, `not_build`, reversibility, owner, review date, success condition,
+stop condition, causal confidence, approval, and optional supersedes link.
+
+## `hplan-intake.json`
+
+Follow `contracts/hplan-intake-brief.schema.json`. It is an intake to hplan
+gates, not an approved implementation handoff. Keep missing values in
+`unknown_fields` and `hplan_gate_decision=null`.
 
 ## `decision-summary.md`
 

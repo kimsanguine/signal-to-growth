@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/hplan-intake-brief.schema.json",
+  "title": "Signal to Growth to hplan Gate Intake",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "brief_version",
+    "generated_at",
+    "status",
+    "source_decision_id",
+    "product_name",
+    "problem",
+    "icp",
+    "jtbd",
+    "functional_requirements",
+    "acceptance_criteria",
+    "cogs_ceiling",
+    "latency_budget",
+    "counter_position",
+    "not_build",
+    "mvp_slice",
+    "stg_decision_status",
+    "hplan_gate_decision",
+    "strong_signals_list",
+    "source_refs",
+    "unknown_fields"
+  ],
+  "properties": {
+    "brief_version": {"const": "stg.hplan-intake.v1"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "status": {
+      "enum": ["draft_for_gate", "ready_for_gate_review"]
+    },
+    "source_decision_id": {
+      "type": "string",
+      "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
+    },
+    "product_name": {"type": ["string", "null"], "minLength": 1},
+    "problem": {"type": ["string", "null"], "minLength": 1},
+    "icp": {"type": ["string", "null"], "minLength": 1},
+    "jtbd": {"type": ["string", "null"], "minLength": 1},
+    "functional_requirements": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1
+    },
+    "cogs_ceiling": {"type": ["string", "null"], "minLength": 1},
+    "latency_budget": {"type": ["string", "null"], "minLength": 1},
+    "counter_position": {"type": ["string", "null"], "minLength": 1},
+    "not_build": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "mvp_slice": {"type": ["string", "null"], "minLength": 1},
+    "stg_decision_status": {
+      "enum": ["draft", "awaiting_human_review", "approved", "rejected", "superseded"]
+    },
+    "hplan_gate_decision": {
+      "type": "null"
+    },
+    "strong_signals_list": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "source_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_ids", "metric_ids", "action_ids"],
+      "properties": {
+        "evidence_ids": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "metric_ids": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "action_ids": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "unknown_fields": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    }
+  }
+}

@@ -15,6 +15,7 @@ from signal_growth.adapters import (  # noqa: E402
 )
 from signal_growth.channel_contracts import (  # noqa: E402
     Capability,
+    EventIdentityError,
     HttpResponse,
     RequestContext,
     UnsupportedCapability,
@@ -78,6 +79,19 @@ class ConnectorWorkflowTests(unittest.TestCase):
         self.assertEqual(1, len(dedupe_events([first, replay])))
         self.assertFalse(first.auth_verified)
         self.assert_schema_valid(first)
+
+    def test_conflicting_replay_is_not_silently_deduplicated(self):
+        first = {
+            "event_id": "CSE-conflict-public-dummy",
+            "content_redacted": "첫 번째 내용",
+        }
+        conflicting = {
+            "event_id": "CSE-conflict-public-dummy",
+            "content_redacted": "다른 내용",
+        }
+
+        with self.assertRaises(EventIdentityError):
+            dedupe_events([first, conflicting])
 
     def test_channel_webhook_and_backfill_share_canonical_identity(self):
         adapter = ChannelTalkAdapter(

@@ -165,6 +165,17 @@ Preserve:
 
 Let the triage skill create signal, risk-queue, and theme artifacts.
 
+## PMF Radar bridge
+
+Accept only `pmf-radar.stg.v1` records following
+`contracts/pmf-radar-export.schema.json`. Validate the nested event against the
+canonical CS event contract.
+
+Create `integration-references.jsonl` following
+`contracts/integration-reference.schema.json`. Preserve `product_scope` and
+segment in bridge context. Do not copy a PMF Radar raw payload or infer evidence
+and signal records during deterministic import.
+
 ## Completion gate
 
 Complete the connector operation only when:

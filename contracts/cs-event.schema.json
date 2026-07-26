@@ -179,6 +179,65 @@
       }
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "provider": {
+            "const": "kakao_openbuilder"
+          }
+        },
+        "required": [
+          "provider"
+        ]
+      },
+      "then": {
+        "properties": {
+          "channel": {
+            "const": "kakao_channel_chatbot"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "provider": {
+            "const": "channel_talk"
+          }
+        },
+        "required": [
+          "provider"
+        ]
+      },
+      "then": {
+        "properties": {
+          "channel": {
+            "const": "channel_talk"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "provider": {
+            "const": "naver_talktalk"
+          }
+        },
+        "required": [
+          "provider"
+        ]
+      },
+      "then": {
+        "properties": {
+          "channel": {
+            "const": "naver_talktalk"
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "opaqueRef": {
       "type": "string",

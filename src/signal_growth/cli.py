@@ -16,6 +16,12 @@ from .adapters import (
 from .channel_contracts import RequestContext
 from .connector_validation import validate_connector_directory
 from .contracts import render_issues, validate_artifact_directory
+from .integrations import (
+    IntegrationContractError,
+    build_hplan_intake,
+    import_pmf_radar,
+    write_json,
+)
 from .privacy import scan_path
 from .questions import lint_questions
 from .repo_validation import validate_repository
@@ -108,9 +114,58 @@ def command_next_step(args: argparse.Namespace) -> int:
     directory = args.directory.resolve()
     payload = {
         "completed_skills": completed_skills(directory),
-        "next_skill": next_skill(directory),
+        "next_skill": next_skill(directory, objective=args.objective),
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+def command_import_pmf_radar(args: argparse.Namespace) -> int:
+    try:
+        report = import_pmf_radar(
+            args.input.resolve(),
+            output_directory=(
+                args.output_directory.resolve()
+                if args.output_directory is not None
+                else None
+            ),
+            write=args.write,
+            force=args.force,
+        )
+    except (OSError, IntegrationContractError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
+def command_export_hplan(args: argparse.Namespace) -> int:
+    try:
+        brief = build_hplan_intake(
+            args.artifacts.resolve(),
+            decision_id=args.decision_id,
+            product_name=args.product_name,
+            jtbd=args.jtbd,
+            functional_requirements=args.functional_requirement or (),
+            cogs_ceiling=args.cogs_ceiling,
+            latency_budget=args.latency_budget,
+            counter_position=args.counter_position,
+            mvp_slice=args.mvp_slice,
+        )
+        if args.require_ready and brief["status"] != "ready_for_gate_review":
+            print(
+                "hplan intake is not ready; unknown fields: "
+                + ", ".join(brief["unknown_fields"]),
+                file=sys.stderr,
+            )
+            return 1
+        if args.output is not None:
+            write_json(brief, args.output.resolve(), force=args.force)
+        else:
+            print(json.dumps(brief, ensure_ascii=False, indent=2))
+    except (OSError, ValueError, IntegrationContractError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
     return 0
 
 
@@ -184,7 +239,37 @@ def build_parser() -> argparse.ArgumentParser:
 
     next_step = subparsers.add_parser("next-step")
     next_step.add_argument("directory", type=Path)
+    next_step.add_argument("--objective")
     next_step.set_defaults(func=command_next_step)
+
+    import_pmf = subparsers.add_parser("import-pmf-radar")
+    import_pmf.add_argument("--input", required=True, type=Path)
+    import_pmf.add_argument("--output-directory", type=Path)
+    import_pmf.add_argument(
+        "--write",
+        action="store_true",
+        help="Materialize validated artifacts. The default is a dry run.",
+    )
+    import_pmf.add_argument("--force", action="store_true")
+    import_pmf.set_defaults(func=command_import_pmf_radar)
+
+    export_hplan = subparsers.add_parser("export-hplan")
+    export_hplan.add_argument("--artifacts", required=True, type=Path)
+    export_hplan.add_argument("--decision-id")
+    export_hplan.add_argument("--product-name")
+    export_hplan.add_argument("--jtbd")
+    export_hplan.add_argument(
+        "--functional-requirement",
+        action="append",
+    )
+    export_hplan.add_argument("--cogs-ceiling")
+    export_hplan.add_argument("--latency-budget")
+    export_hplan.add_argument("--counter-position")
+    export_hplan.add_argument("--mvp-slice")
+    export_hplan.add_argument("--output", type=Path)
+    export_hplan.add_argument("--require-ready", action="store_true")
+    export_hplan.add_argument("--force", action="store_true")
+    export_hplan.set_defaults(func=command_export_hplan)
 
     demo = subparsers.add_parser("demo")
     demo.add_argument("root", type=Path, nargs="?", default=Path.cwd())

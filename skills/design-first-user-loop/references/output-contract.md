@@ -2,11 +2,15 @@
 
 ## `first-user-loop.json`
 
-Require segment, evidence IDs, decision ID, channel, offer, value moment, capacity, budget, metric IDs, batch size, review date, stop condition, and `external_write=false` until an approved action is prepared.
+Follow `contracts/first-user-loop.schema.json`. Require segment, evidence IDs,
+decision ID, channel, offer, value moment, capacity, budget, metric IDs, batch
+size, review date, stop condition, and `external_write=false`.
 
 ## `actions.jsonl`
 
-Follow `contracts/action.schema.json`. Link one decision and at least one metric. An external action must not use `executed` status without `approved_by`.
+Follow `contracts/action.schema.json`. Link one decision and at least one
+metric. An approved or executed external action requires a scoped `APR-`
+approval reference.
 
 ## `experiment-cards.md`
 

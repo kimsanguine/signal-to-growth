@@ -11,6 +11,26 @@ PATTERNS = {
     "email": re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I),
     "korean-mobile": re.compile(r"(?<!\d)01[016789][-\s]?\d{3,4}[-\s]?\d{4}(?!\d)"),
     "international-phone": re.compile(r"(?<!\d)\+\d{1,3}[-\s]?\d{2,4}[-\s]?\d{3,4}[-\s]?\d{4}(?!\d)"),
+    "resident-registration-number": re.compile(
+        r"(?<!\d)\d{6}[-\s]?[1-8]\d{6}(?!\d)"
+    ),
+    "business-registration-number": re.compile(
+        r"(?<!\d)\d{3}[-\s]?\d{2}[-\s]?\d{5}(?!\d)"
+    ),
+    "payment-card-number": re.compile(
+        r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)"
+    ),
+    "bank-account-number": re.compile(
+        r"(?:계좌(?:번호)?|account)\s*[:=]?\s*(?:\d[-\s]?){8,20}",
+        re.I,
+    ),
+    "labeled-korean-name": re.compile(
+        r"(?:이름|성명)\s*[:=]?\s*[가-힣]{2,4}"
+    ),
+    "labeled-address": re.compile(
+        r"(?:주소|address)\s*[:=]?\s*[^\n,;]{6,120}",
+        re.I,
+    ),
     "api-key": re.compile(r"\b(?:sk-[A-Za-z0-9_-]{16,}|gh[opusr]_[A-Za-z0-9]{16,})\b"),
     "jwt": re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b"),
 }

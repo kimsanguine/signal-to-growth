@@ -57,6 +57,19 @@ class ConnectorSecurityTests(unittest.TestCase):
         self.assertIn("[REDACTED_EMAIL]", redacted)
         self.assertIn("[REDACTED_PHONE]", redacted)
 
+    def test_redaction_removes_high_risk_korean_identifiers(self):
+        resident_id = "900101" + "-1234567"
+        card = "4111" + "-1111-1111-1111"
+        account = "계좌번호: " + "123-456-789012"
+        text = f"성명: 홍길동, {resident_id}, {card}, {account}"
+
+        redacted = redact_text(text)
+
+        self.assertNotIn("홍길동", redacted)
+        self.assertNotIn(resident_id, redacted)
+        self.assertNotIn(card, redacted)
+        self.assertNotIn("123-456-789012", redacted)
+
     def test_mapping_redaction_never_echoes_direct_identifier_or_secret(self):
         value = {
             "profile": {"email": "synthetic-at-example", "phone": "synthetic-phone"},
@@ -86,6 +99,19 @@ class ConnectorSecurityTests(unittest.TestCase):
                     query={"token": "wrong-fixture-token"},
                     environment="test",
                 ),
+            )
+
+    def test_channel_talk_rejects_unverified_production_ingress(self):
+        adapter = ChannelTalkAdapter(
+            b"public-dummy-hmac",
+            allow_unverified_fixture=True,
+        )
+
+        with self.assertRaises(EventVerificationError):
+            adapter.ingest(
+                CHANNEL_FIXTURE.read_bytes(),
+                received_at="2026-07-26T03:00:00Z",
+                request_context=RequestContext(environment="production"),
             )
 
     def test_naver_rejects_source_outside_documented_ranges(self):

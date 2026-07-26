@@ -167,6 +167,11 @@ class ChannelContractTests(unittest.TestCase):
                 unsafe[raw_field] = value
                 assert_invalid(self, schema, unsafe)
 
+        wrong_kakao_product = copy.deepcopy(event)
+        wrong_kakao_product["provider"] = "kakao_openbuilder"
+        wrong_kakao_product["channel"] = "kakao_consulttalk"
+        assert_invalid(self, schema, wrong_kakao_product)
+
     def test_connections_default_safe_and_enforce_write_boundary(self):
         schema = self.schemas["channel-connection.schema.json"]
         self.assertEqual("read_only", schema["properties"]["mode"]["default"])
@@ -203,7 +208,7 @@ class ChannelContractTests(unittest.TestCase):
 
         approved = copy.deepcopy(connection)
         approved["mode"] = "approved_write"
-        approved["approved_by"] = "approval-owner-ref"
+        approved["approved_by"] = "APR-CONNECTION-001"
         approved["external_write_enabled"] = True
         assert_valid(self, schema, approved)
 
@@ -281,6 +286,10 @@ class ChannelContractTests(unittest.TestCase):
         assert_valid(self, schema, accepted)
         self.assertEqual("accepted", accepted["canonical_status"])
         self.assertNotEqual("delivered", accepted["canonical_status"])
+
+        false_delivery = copy.deepcopy(accepted)
+        false_delivery["canonical_status"] = "delivered"
+        assert_invalid(self, schema, false_delivery)
 
         delivered = copy.deepcopy(accepted)
         delivered["delivery_event_id"] = "DLE-20260726-002"

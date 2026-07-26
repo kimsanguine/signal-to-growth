@@ -114,7 +114,8 @@ npx skills add kimsanguine/signal-to-growth -a claude-code -a codex
 
 ## 5분 로컬 체험
 
-Python 3.11 이상만 필요합니다. 런타임 외부 dependency는 없습니다.
+Python 3.11 이상이 필요합니다. 설치 시 Draft 2020-12 계약 검증을 위한
+`jsonschema` runtime dependency가 함께 설치됩니다.
 
 ```bash
 git clone https://github.com/kimsanguine/signal-to-growth.git
@@ -194,6 +195,34 @@ signal-to-growth normalize-event \
 ```
 
 `normalize-event`는 로컬 payload만 처리하며 provider network에 연결하거나 답변을 발송하지 않습니다.
+
+### PMF Radar import와 hplan intake
+
+PMF Radar의 normalized export는 기본적으로 dry-run 검증만 합니다.
+
+```bash
+signal-to-growth import-pmf-radar \
+  --input fixtures/public-dummy/integrations/pmf-radar/stg-export.jsonl
+```
+
+검증된 이벤트를 artifact directory에 쓰려면 `--write`를 명시합니다.
+이 단계는 `cs-events.jsonl`과 source reference만 만들며 interview evidence나
+customer signal을 자동 추론하지 않습니다.
+
+승인된 growth decision은 hplan의 Build Gate 입력 초안으로 변환할 수 있습니다.
+
+```bash
+signal-to-growth export-hplan \
+  --artifacts fixtures/public-dummy/artifacts \
+  --product-name "Signal to Growth demo" \
+  --jtbd "고객 근거를 다음 성장 결정으로 연결한다" \
+  --functional-requirement "source-linked decision intake 생성"
+```
+
+출력의 `hplan_gate_decision`은 항상 `null`입니다. Signal to Growth는 hplan의
+gate 통과나 구현 가능성을 대신 판정하지 않습니다. 계약과 상태 전이는
+[PMF Radar and hplan integration](docs/integrations/pmf-radar-hplan.md)에
+정리했습니다.
 
 ### 한국형 CS 지원 수준
 
@@ -453,9 +482,11 @@ python3 /path/to/skill-creator/scripts/quick_validate.py \
 6. **Cross-runtime** — Claude Code와 Codex의 핵심 artifact 비교
 
 현재 release에서 자동화한 범위와 남은 runtime 검증은 [Verification](docs/verification.md)에 기록합니다.
-5개 독립 evaluator agent를 사용하는 정성·정량 평가는
-[Skill evaluation plan](docs/skill-evaluation-plan.md)에 정의했으며, 현재는
-계획만 작성했고 평가는 시작하지 않았습니다.
+5개 독립 evaluator agent의 정적·적대적 기준선은 평균 67점,
+`NO-GO`였습니다. 확인된 취약점은 이번 버전에서 보강했지만, 30개 case의
+정식 runtime 재평가와 Claude Code·Codex 실제 호출 parity는 남아 있습니다.
+평가 범위와 원점수는 [Skill evaluation plan](docs/skill-evaluation-plan.md)과
+[Evaluation summary](eval/summary.md)에 기록합니다.
 
 ## 경쟁 제품과 다른 점
 
@@ -472,16 +503,20 @@ Signal to Growth가 집중하는 공백:
 
 ## 프로젝트 상태
 
-`v0.2.0`은 한국형 CS connector foundation을 추가한 alpha입니다.
+`v0.3.0`은 PMF Radar→Signal to Growth→hplan handoff와 계약·보안
+hardening을 추가한 release candidate입니다.
 
 포함:
 
 - 11개 portable skill
 - Claude Code·Codex plugin manifest
-- 7개 core artifact schema와 5개 connector schema
-- 표준 라이브러리만 사용하는 validator CLI
+- 7개 core artifact schema, first-user-loop schema, 5개 connector schema
+- 전체 Draft 2020-12 schema와 exact evidence locator를 검증하는 CLI
 - 합성 한국어 fixture
 - unit·integration·negative tests
+- objective와 유효 artifact 상태를 사용하는 deterministic router
+- PMF Radar normalized event dry-run import
+- hplan Build Gate 이전 intake export
 - Naver TalkTalk event normalization
 - Channel Talk read-only adapter contract
 - Kakao Open Builder용 Vercel WSGI endpoint와 Supabase restricted sink
@@ -496,6 +531,7 @@ Signal to Growth가 집중하는 공백:
 - 자동 발송·게시
 - 익명 telemetry
 - 보편적인 SaaS benchmark
+- 30-case Claude Code·Codex runtime 재평가와 실제 invocation parity
 
 한국형 CS connector의 설계 근거와 단계별 검증 계획은 [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 기록합니다. 현재 P0 source·fixture와 격리된 hosted synthetic E2E는 검증됐지만, Kakao Chatbot Admin Center 개발 채널 연결이나 Production 운영 상태를 뜻하지 않습니다.
 

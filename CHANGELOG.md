@@ -16,18 +16,29 @@ versioning once a version is tagged.
   `version=2.0` response evidence, including live idempotency.
 - Approval-reference persistence and a seven-day deletion-eligibility marker for
   synthetic Kakao test events.
+- PMF Radar normalized-event import and source-reference contracts.
+- A pre-gate hplan intake export that preserves unknowns and never claims a
+  Build Gate decision.
+- A versioned 30-case evaluation dataset and five-agent static baseline report.
 - GitHub issue and pull-request templates.
 
 ### Changed
 
-- The skill suite now contains 11 skills and reports version `0.2.0`.
+- The skill suite now contains 11 skills and reports version `0.3.0`.
+- Core artifacts now use complete Draft 2020-12 runtime validation, exact
+  evidence-locator checks, and stronger metric, decision, outcome, and
+  first-user-loop contracts.
+- Workflow routing now uses objective and schema-valid dependency state instead
+  of filename existence.
+- Connector validation now enforces provider/channel and
+  provider-status/canonical-status consistency.
 - CI runs once for feature pull requests, runs pushes only on `main`, cancels
   superseded runs, and pins third-party actions to commit SHAs.
 - The hosted root route now returns safe service metadata instead of a 404.
 - Provider setup and verification documents now distinguish hosted synthetic
   E2E from a Kakao development-channel connection and Production operation.
-- A five-agent skill evaluation plan defines target users, cases, scoring,
-  hard gates, and release decisions without starting the evaluation run.
+- A five-agent static and adversarial baseline recorded a 67/100 mean and a
+  `NO-GO`; formal 30-case runtime evaluation remains pending.
 
 ### Security
 
@@ -37,6 +48,9 @@ versioning once a version is tagged.
 - An explicit deny policy protects the test event table from browser roles even
   if table grants drift later.
 - Approval references must be non-secret identifiers beginning with `APR-`.
+- Conflicting same-ID events now fail instead of being silently deduplicated.
+- High-risk Korean identifiers and unauthenticated Channel Talk production
+  ingress fail the portable connector gate.
 
 ## 0.1.0
 

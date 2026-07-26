@@ -2,9 +2,11 @@
 
 - 작성일: 2026-07-26
 - 평가 대상: 10개 specialist skill과 `run-growth-loop` orchestrator
-- 평가 상태: **PLANNED — 평가 실행 전**
-- 실행 금지선: 이 문서는 평가 설계만 정의한다. evaluator agent 호출,
-  점수 산출, 결과 파일 생성, skill 수정은 별도 승인 전 시작하지 않는다.
+- 평가 상태: **BASELINE STATIC AUDIT COMPLETE — 30-case runtime 평가 전**
+- 기준선 결과: 5개 독립 관점 평균 67점, `NO-GO`
+- 결과 위치: [`../eval/summary.md`](../eval/summary.md)
+- 범위 주의: 기준선은 정적·적대적 검토다. 30개 case의 실제 runtime 출력,
+  반복 실행, Claude Code·Codex 설치·호출 증거는 아직 만들지 않았다.
 
 ## 1. 평가 질문
 
@@ -67,8 +69,9 @@ Stress-test user는 별도 시장으로 간주하지 않는다. Primary target�
 
 ## 3. 독립 evaluator agent 5개
 
-각 evaluator는 fresh context와 격리된 workspace를 사용한다. 다른
-evaluator의 점수나 코멘트를 보기 전에 독립 평가를 완료한다.
+정식 runtime 평가에서는 각 evaluator가 fresh context와 격리된 workspace를
+사용한다. 완료된 기준선은 같은 read-only snapshot을 서로 다른 독립 관점에서
+검토했으며, 정식 runtime 평가와 점수를 합산하지 않는다.
 
 | Agent | 대표 관점 | 집중 평가 |
 |---|---|---|
@@ -83,9 +86,9 @@ Agent A·B·C는 사용자 결과를, D는 구현 portability를, E는 치명적
 
 ## 4. 평가 데이터셋
 
-평가 시작 시 `eval/` 아래에 versioned case set을 만든다. 실제 고객 원문이나
+`eval/` 아래에 versioned case set을 만들었다. 실제 고객 원문이나
 credential은 사용하지 않고 public dummy·negative fixture와 추가 합성
-케이스만 사용한다.
+케이스만 사용한다. case 정의는 완료됐지만 30개 runtime 실행은 남아 있다.
 
 ### Case 구성
 
@@ -178,7 +181,7 @@ release 판정 기준은 다음과 같다.
 
 ## 8. 평가 산출물
 
-평가를 승인한 뒤에만 다음 파일을 만든다.
+기준선 결과와 runtime 평가 계약은 다음 위치에 있다.
 
 ```text
 eval/
@@ -203,7 +206,7 @@ eval/
 - 유지·축소·분리·보강할 skill
 - release `GO / CONDITIONAL GO / NO-GO`
 
-## 9. 평가 시작 전 결정할 것
+## 9. 정식 runtime 평가 시작 전 결정할 것
 
 1. 평가 snapshot을 현재 feature branch로 할지 `main` 병합 후로 할지
 2. Claude Code·Codex의 고정 model과 version
@@ -211,4 +214,5 @@ eval/
 4. 실행 비용·시간 상한
 5. Primary target의 산업 예시를 범용 SaaS로 둘지 AI B2B SaaS로 좁힐지
 
-이 다섯 항목을 확정하기 전에는 evaluator agent를 실행하지 않는다.
+이 다섯 항목은 정식 runtime case 실행 전에 고정한다. 이미 완료한 정적
+기준선은 remediation 대상을 찾기 위한 별도 단계로 유지한다.

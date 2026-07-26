@@ -49,7 +49,9 @@ Read:
 15. Create a reply draft only when the product, session, risk, purpose, and approval requirements can be evaluated.
 16. Keep `external_write=false` and do not call a send, reply, handover, assignment, tag, template, or fallback endpoint.
 17. Hand only verified and redacted CS events to `triage-customer-signals`.
-18. Report artifact validation, round-trip evidence, blocked capabilities, and unverified operational claims separately.
+18. When PMF Radar is the operational inbox, accept only its
+    `pmf-radar.stg.v1` export and validate it with `import-pmf-radar`.
+19. Report artifact validation, round-trip evidence, blocked capabilities, and unverified operational claims separately.
 
 ## Kakao product boundary
 
@@ -81,6 +83,7 @@ Return `unsupported` or `unconfirmed` directly. Do not hide either state behind 
 - Require a person to approve every connection change, reply, send, handover, assignment, tag mutation, template change, fallback, and production expansion.
 - Route safety, legal, privacy, security, billing, refund, account-access, deletion, harassment, vulnerable-person, and contractual-promise cases to human review.
 - Let `triage-customer-signals` classify the customer problem, severity, and theme. Do not duplicate that judgment here.
+- Let PMF Radar own long-running provider ingestion, retry, raw retention, and operator queues. This skill owns setup, contract validation, and the portable handoff.
 
 ## Outputs
 
@@ -123,6 +126,7 @@ Run the connector validator when the v0.2 command is available:
 ```bash
 python3 scripts/stg.py validate-connectors connectors/
 python3 scripts/stg.py validate-artifacts artifacts/
+python3 scripts/stg.py import-pmf-radar --input pmf-radar-export.jsonl
 ```
 
 Confirm all of the following:
