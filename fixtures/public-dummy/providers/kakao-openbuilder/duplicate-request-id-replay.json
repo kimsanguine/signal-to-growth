@@ -1,0 +1,37 @@
+{
+  "intent": {
+    "id": "intent-public-dummy-002",
+    "name": "결제확인문의"
+  },
+  "userRequest": {
+    "timezone": "Asia/Seoul",
+    "params": {
+      "surface": "BuilderBotTest"
+    },
+    "block": {
+      "id": "block-public-dummy-002",
+      "name": "결제 확인 문의"
+    },
+    "utterance": "결제 확인 문자가 두 번 왔는데 정상인가요?",
+    "lang": "ko",
+    "user": {
+      "id": "bot-user-public-dummy-002",
+      "type": "botUserKey",
+      "properties": {
+        "plusfriendUserKey": "channel-user-public-dummy-002"
+      }
+    }
+  },
+  "contexts": [],
+  "bot": {
+    "id": "bot-public-dummy-001",
+    "name": "Signal to Growth Test Bot"
+  },
+  "action": {
+    "name": "capture.customer.signal",
+    "clientExtra": null,
+    "params": {},
+    "id": "action-public-dummy-002",
+    "detailParams": {}
+  }
+}
