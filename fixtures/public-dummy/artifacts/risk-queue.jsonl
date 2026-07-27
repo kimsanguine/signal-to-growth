@@ -1,0 +1,1 @@
+{"signal_id":"SIG-20260725-002","risk_reason":"결제 분쟁 예고 문의 — billing/refund 카테고리는 자동 응답 금지 대상이며 사람 승인 없이는 어떤 답변도 발송하지 않는다.","owner":"cs-owner","review_status":"awaiting_human_review","deadline":"2026-07-28T18:00:00+09:00","source_pointer":"connector-artifacts/cs-events.jsonl#CSE-1d564ce1b7f495efb781d3a78c2a6b47"}

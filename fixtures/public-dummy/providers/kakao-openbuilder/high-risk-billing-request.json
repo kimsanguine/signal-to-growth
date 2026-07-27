@@ -1,0 +1,37 @@
+{
+  "intent": {
+    "id": "intent-public-dummy-003",
+    "name": "환불분쟁문의"
+  },
+  "userRequest": {
+    "timezone": "Asia/Seoul",
+    "params": {
+      "surface": "BuilderBotTest"
+    },
+    "block": {
+      "id": "block-public-dummy-003",
+      "name": "환불 분쟁 문의"
+    },
+    "utterance": "환불 안 해주시면 카드사에 이의신청하겠습니다. 지금 바로 처리해주세요.",
+    "lang": "ko",
+    "user": {
+      "id": "bot-user-public-dummy-003",
+      "type": "botUserKey",
+      "properties": {
+        "plusfriendUserKey": "channel-user-public-dummy-003"
+      }
+    }
+  },
+  "contexts": [],
+  "bot": {
+    "id": "bot-public-dummy-001",
+    "name": "Signal to Growth Test Bot"
+  },
+  "action": {
+    "name": "capture.customer.signal",
+    "clientExtra": null,
+    "params": {},
+    "id": "action-public-dummy-003",
+    "detailParams": {}
+  }
+}
