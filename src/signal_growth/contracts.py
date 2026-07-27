@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+from .schema_validation import validate_schema_record
+
 
 ID_PATTERNS = {
     "evidence": re.compile(r"^EV-\d{8}-\d{3,}$"),
@@ -67,6 +69,9 @@ REQUIRED_FIELDS = {
         "value_event",
         "data_source",
         "query_version",
+        "timezone",
+        "cohort_maturity_rule",
+        "exclusions",
         "baseline",
         "target",
         "target_source",
@@ -77,10 +82,14 @@ REQUIRED_FIELDS = {
         "decision_id",
         "made_at",
         "status",
+        "decision_question",
+        "selected_option",
         "hypothesis",
         "evidence_ids",
         "counterevidence",
         "alternatives",
+        "not_build",
+        "reversibility",
         "owner",
         "review_at",
         "success_condition",
@@ -106,6 +115,12 @@ REQUIRED_FIELDS = {
         "metric_id",
         "observed_at",
         "value",
+        "sample_size",
+        "maturity_status",
+        "query_version",
+        "comparison",
+        "conclusion",
+        "next_decision_id",
         "interpretation",
         "evidence_ids",
         "recorded_by",
@@ -163,6 +178,17 @@ ARTIFACT_FILES = {
     "outcomes.jsonl": "outcome",
     "run-state.json": "run_state",
 }
+ARTIFACT_KIND_FILES = {kind: filename for filename, kind in ARTIFACT_FILES.items()}
+
+SCHEMA_FILES = {
+    "evidence": "evidence.schema.json",
+    "signal": "signal.schema.json",
+    "metric": "metric.schema.json",
+    "decision": "decision.schema.json",
+    "action": "action.schema.json",
+    "outcome": "outcome.schema.json",
+    "run_state": "run-state.schema.json",
+}
 
 
 @dataclass(frozen=True)
@@ -200,10 +226,16 @@ def load_records(path: Path) -> list[dict[str, Any]]:
 
 def validate_record(kind: str, record: dict[str, Any], location: str) -> list[ValidationIssue]:
     """Validate required fields, identifiers, enums, and approval invariants."""
-    issues: list[ValidationIssue] = []
+    issues = [
+        ValidationIssue(location, message)
+        for message in validate_schema_record(SCHEMA_FILES[kind], record)
+    ]
     missing = sorted(REQUIRED_FIELDS[kind] - set(record))
     if missing:
-        issues.append(ValidationIssue(location, f"missing fields: {', '.join(missing)}"))
+        if not any("required property" in issue.message for issue in issues):
+            issues.append(
+                ValidationIssue(location, f"missing fields: {', '.join(missing)}")
+            )
         return issues
 
     id_field = ID_FIELDS[kind]
@@ -245,16 +277,94 @@ def validate_record(kind: str, record: dict[str, Any], location: str) -> list[Va
             issues.append(ValidationIssue(location, "external_write must be boolean"))
         if (
             record.get("external_write") is True
-            and record.get("status") == "executed"
-            and not record.get("approved_by")
+            and record.get("status") in {"approved", "executed"}
+            and (
+                not isinstance(record.get("approved_by"), str)
+                or not record["approved_by"].startswith("APR-")
+            )
         ):
             issues.append(
                 ValidationIssue(
                     location,
-                    "executed external writes require approved_by",
+                    "approved or executed external writes require an APR- approval reference",
                 )
             )
 
+    return issues
+
+
+def _check_evidence_sources(
+    artifact_directory: Path,
+    records: list[dict[str, Any]],
+) -> list[ValidationIssue]:
+    """Verify that each evidence excerpt exists at its declared source locator."""
+    issues: list[ValidationIssue] = []
+    allowed_root = artifact_directory.resolve().parent
+    for index, record in enumerate(records, 1):
+        location = f"evidence.jsonl[{index}]"
+        locator = record.get("locator")
+        excerpt = record.get("excerpt")
+        if not isinstance(locator, dict) or not isinstance(excerpt, str):
+            continue
+        relative_file = locator.get("file")
+        if not isinstance(relative_file, str) or not relative_file:
+            continue
+        source_path = Path(relative_file)
+        if source_path.is_absolute():
+            issues.append(
+                ValidationIssue(location, "locator.file must be relative to the artifact directory")
+            )
+            continue
+        resolved = (artifact_directory / source_path).resolve()
+        try:
+            resolved.relative_to(allowed_root)
+        except ValueError:
+            issues.append(
+                ValidationIssue(location, "locator.file escapes the approved source root")
+            )
+            continue
+        if not resolved.is_file():
+            issues.append(
+                ValidationIssue(location, "locator.file does not exist")
+            )
+            continue
+        try:
+            lines = resolved.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeError):
+            issues.append(
+                ValidationIssue(location, "locator.file cannot be read as UTF-8")
+            )
+            continue
+
+        declared_line = locator.get("line")
+        if declared_line is None:
+            if excerpt not in "\n".join(lines):
+                issues.append(
+                    ValidationIssue(location, "excerpt does not exist in locator.file")
+                )
+            continue
+        if (
+            not isinstance(declared_line, int)
+            or isinstance(declared_line, bool)
+            or declared_line < 1
+            or declared_line > len(lines)
+        ):
+            issues.append(
+                ValidationIssue(location, "locator.line is outside the source file")
+            )
+            continue
+        source_window = "\n".join(lines[declared_line - 1 : declared_line + 19])
+        excerpt_first_line = excerpt.splitlines()[0]
+        if (
+            excerpt_first_line not in lines[declared_line - 1]
+            or excerpt not in source_window
+        ):
+            issues.append(
+                ValidationIssue(
+                    location,
+                    "excerpt does not match the declared locator.file and locator.line",
+                )
+            )
     return issues
 
 
@@ -285,14 +395,17 @@ def _check_references(
             values = record.get(field, [])
             if not isinstance(values, list):
                 issues.append(
-                    ValidationIssue(f"{kind}[{index}]", f"{field} must be an array")
+                    ValidationIssue(
+                        f"{ARTIFACT_KIND_FILES[kind]}[{index}]",
+                        f"{field} must be an array",
+                    )
                 )
                 continue
             for value in values:
                 if value not in ids.get(target_kind, set()):
                     issues.append(
                         ValidationIssue(
-                            f"{kind}[{index}]",
+                            f"{ARTIFACT_KIND_FILES[kind]}[{index}]",
                             f"{field} references unknown {target_kind} ID",
                         )
                     )
@@ -303,7 +416,7 @@ def _check_references(
             if value not in ids.get(target_kind, set()):
                 issues.append(
                     ValidationIssue(
-                        f"{kind}[{index}]",
+                        f"{ARTIFACT_KIND_FILES[kind]}[{index}]",
                         f"{field} references unknown {target_kind} ID",
                     )
                 )
@@ -338,11 +451,19 @@ def validate_artifact_directory(
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             issues.append(ValidationIssue(filename, str(exc)))
             continue
+        if not items:
+            issues.append(
+                ValidationIssue(filename, "artifact must contain at least one record")
+            )
+            continue
         records[kind] = items
         for index, record in enumerate(items, 1):
             issues.extend(validate_record(kind, record, f"{filename}[{index}]"))
 
     if records:
+        issues.extend(
+            _check_evidence_sources(directory, records.get("evidence", []))
+        )
         issues.extend(_check_references(records, _collect_ids(records)))
     return issues
 

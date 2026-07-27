@@ -3,7 +3,7 @@
   "name": "signal-to-growth",
   "metadata": {
     "description": "Evidence-driven customer discovery and SaaS growth skills.",
-    "version": "0.1.0"
+    "version": "0.3.0"
   },
   "owner": {
     "name": "Sanggeun Kim"
@@ -13,7 +13,7 @@
       "name": "signal-to-growth",
       "source": "./",
       "description": "Turn customer evidence into measurable, human-approved growth actions.",
-      "version": "0.1.0",
+      "version": "0.3.0",
       "skills": [
         "./skills"
       ],

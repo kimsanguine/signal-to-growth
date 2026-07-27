@@ -1,7 +1,20 @@
 {
   "segment": "고객 증거를 수동으로 정리하는 초기 SaaS 팀",
+  "evidence_ids": [
+    "EV-20260725-001",
+    "EV-20260725-002"
+  ],
+  "channel": "consented research interview follow-up",
+  "offer": "기존 고객 증거 정리 흐름을 함께 점검하는 제한된 온보딩 세션",
   "value_moment": "첫 evidence-backed decision 승인",
   "capacity": 5,
+  "budget": {
+    "currency": "KRW",
+    "amount": 0
+  },
+  "batch_size": 2,
+  "review_at": "2026-08-08T14:00:00+09:00",
+  "stop_condition": "지원 capacity를 넘거나 unsupported decision rate가 증가하면 신규 초대를 중단한다.",
   "external_write": false,
   "metric_ids": [
     "MET-20260725-001",

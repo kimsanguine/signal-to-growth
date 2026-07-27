@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/pmf-radar-export.schema.json",
+  "title": "PMF Radar to Signal to Growth Export Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "export_version",
+    "source_record_ref",
+    "product_scope",
+    "segment",
+    "event"
+  ],
+  "properties": {
+    "export_version": {
+      "const": "pmf-radar.stg.v1"
+    },
+    "source_record_ref": {
+      "type": "string",
+      "pattern": "^ref:[A-Za-z0-9_-]{8,192}$"
+    },
+    "product_scope": {"type": "string", "minLength": 1},
+    "segment": {
+      "type": ["string", "null"],
+      "minLength": 1
+    },
+    "event": {"type": "object"}
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "evaluator": "Red Team",
+  "snapshot": "fe3dfc4",
+  "mode": "static_adversarial_review",
+  "score": 46,
+  "decision": "NO-GO",
+  "strengths": [
+    "The stated safety policy is conservative.",
+    "Negative connector fixtures already cover several direct-identifier and credential paths."
+  ],
+  "failures": [
+    "Evidence locators could point at the wrong line and still pass.",
+    "Additional properties and weak typed fields could bypass intended contracts.",
+    "Bare approval labels could be interpreted as external-write approval.",
+    "Same-ID conflicting content could be hidden by deduplication."
+  ]
+}

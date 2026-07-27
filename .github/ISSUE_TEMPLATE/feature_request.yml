@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose an evidence-backed workflow or connector improvement.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem and JTBD
+      description: Describe the user, situation, desired outcome, and current workaround.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Link public evidence or describe a safe observation. Do not include customer data.
+    validations:
+      required: true
+  - type: textarea
+    id: contract
+    attributes:
+      label: Proposed input and output contract
+      description: What artifact or skill behavior should change?
+    validations:
+      required: true
+  - type: dropdown
+    id: approval
+    attributes:
+      label: External-write impact
+      options:
+        - No external write
+        - Draft only
+        - Requires explicit human approval
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: This request contains no credentials, private URLs, or customer data.
+          required: true

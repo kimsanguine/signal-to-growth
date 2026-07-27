@@ -1,0 +1,13 @@
+{
+  "connection_id": "CONN-NEGATIVE-001",
+  "provider": "channel_talk",
+  "region": "kr",
+  "environment": "test",
+  "mode": "read_only",
+  "credential_ref": null,
+  "capabilities": [],
+  "retention_policy_ref": "POL-NEGATIVE-001",
+  "approved_by": null,
+  "verified_at": null,
+  "external_write_enabled": true
+}

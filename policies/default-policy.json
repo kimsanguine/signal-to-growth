@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "evidence": {
     "minimum_distinct_participants": null,
     "require_source_locator": true,
@@ -21,9 +21,32 @@
       "email",
       "direct_message",
       "publish",
+      "reply",
+      "send_message",
+      "assign_conversation",
+      "modify_template",
+      "enable_fallback",
       "delete",
       "refund",
       "deploy"
+    ]
+  },
+  "connectors": {
+    "default_mode": "read_only",
+    "outbound_default": false,
+    "fallback_default": false,
+    "require_secret_reference": true,
+    "require_verified_event_before_normalization": true,
+    "require_human_review_for_high_risk": true,
+    "require_connection_approval_for": [
+      "real_account_read",
+      "webhook_change",
+      "backfill",
+      "credential_use",
+      "retention_change"
+    ],
+    "blocked_verification_assurance": [
+      "none"
     ]
   },
   "metrics": {

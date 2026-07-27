@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/connector-state.schema.json",
+  "title": "Korean CS Connector State",
+  "description": "Operational cursor and reconciliation state. New state defaults to read-only with external writes disabled.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "connection_id",
+    "provider",
+    "mode",
+    "external_write_enabled",
+    "cursor",
+    "last_webhook_at",
+    "last_backfill_at",
+    "last_reconciled_at",
+    "ingested_count",
+    "duplicate_count",
+    "dead_letter_count",
+    "blocked_reasons",
+    "health",
+    "verification_level"
+  ],
+  "properties": {
+    "connection_id": {
+      "type": "string",
+      "pattern": "^CONN-[A-Z0-9][A-Z0-9._-]{7,127}$"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,63}$"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "read_only",
+        "draft_only",
+        "approved_write"
+      ],
+      "default": "read_only"
+    },
+    "external_write_enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "cursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1024
+    },
+    "last_webhook_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "last_backfill_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "last_reconciled_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "ingested_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "duplicate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "dead_letter_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "blocked_reasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      }
+    },
+    "health": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "healthy",
+        "degraded",
+        "blocked"
+      ]
+    },
+    "verification_level": {
+      "type": "string",
+      "enum": [
+        "none",
+        "weak",
+        "medium",
+        "strong"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "read_only",
+              "draft_only"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "external_write_enabled": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "approved_write"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "properties": {
+          "external_write_enabled": {
+            "const": true
+          }
+        }
+      }
+    }
+  ]
+}

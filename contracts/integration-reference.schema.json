@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/integration-reference.schema.json",
+  "title": "Cross-repository Integration Reference",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "integration_id",
+    "system",
+    "external_id",
+    "source_record_ref",
+    "direction",
+    "local_artifact_ids",
+    "observed_at",
+    "contract_version",
+    "status",
+    "context"
+  ],
+  "properties": {
+    "integration_id": {
+      "type": "string",
+      "pattern": "^INT-[A-F0-9]{16,64}$"
+    },
+    "system": {
+      "enum": ["pmf_radar", "hplan"]
+    },
+    "external_id": {"type": "string", "minLength": 1},
+    "source_record_ref": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^ref:[A-Za-z0-9_-]{8,192}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "direction": {
+      "enum": ["import", "export"]
+    },
+    "local_artifact_ids": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "observed_at": {"type": "string", "format": "date-time"},
+    "contract_version": {"type": "string", "minLength": 1},
+    "status": {
+      "enum": ["validated", "rejected", "needs_review"]
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["product_scope", "segment"],
+      "properties": {
+        "product_scope": {"type": "string", "minLength": 1},
+        "segment": {
+          "type": ["string", "null"],
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import tomllib
 from pathlib import Path
 
 from .contracts import ValidationIssue
@@ -13,6 +14,7 @@ EXPECTED_SKILLS = {
     "plan-customer-reach",
     "run-switch-interview",
     "synthesize-interviews",
+    "connect-customer-channels",
     "triage-customer-signals",
     "define-growth-metrics",
     "record-growth-decision",
@@ -20,6 +22,14 @@ EXPECTED_SKILLS = {
     "draft-evidence-content",
     "design-first-user-loop",
     "run-growth-loop",
+}
+
+EXPECTED_CONNECTOR_CONTRACTS = {
+    "channel-connection.schema.json",
+    "connector-state.schema.json",
+    "cs-event.schema.json",
+    "delivery-event.schema.json",
+    "reply-draft.schema.json",
 }
 
 
@@ -107,6 +117,91 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
                     )
                 )
 
+    try:
+        project_metadata = tomllib.loads(
+            (root / "pyproject.toml").read_text(encoding="utf-8")
+        )["project"]
+        project_version = project_metadata["version"]
+        project_dependencies = project_metadata.get("dependencies", [])
+    except (OSError, KeyError, tomllib.TOMLDecodeError):
+        project_version = None
+        project_dependencies = []
+        issues.append(
+            ValidationIssue("pyproject.toml", "project.version is missing or invalid")
+        )
+
+    dependency_names = {
+        re.split(r"[\s<>=!~;\[]", str(dependency), maxsplit=1)[0].casefold()
+        for dependency in project_dependencies
+    }
+    requirements_path = root / "requirements.txt"
+    try:
+        requirement_names = {
+            re.split(r"[\s<>=!~;\[]", line.strip(), maxsplit=1)[0].casefold()
+            for line in requirements_path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        }
+    except (OSError, UnicodeError):
+        requirement_names = set()
+        issues.append(
+            ValidationIssue(
+                "requirements.txt",
+                "hosted runtime dependency file is missing or unreadable",
+            )
+        )
+    missing_hosted_dependencies = dependency_names - requirement_names
+    if missing_hosted_dependencies:
+        issues.append(
+            ValidationIssue(
+                "requirements.txt",
+                "hosted runtime is missing project dependencies: "
+                + ", ".join(sorted(missing_hosted_dependencies)),
+            )
+        )
+
+    try:
+        lock_payload = tomllib.loads(
+            (root / "uv.lock").read_text(encoding="utf-8")
+        )
+        locked_projects = [
+            package
+            for package in lock_payload.get("package", [])
+            if package.get("name") == "signal-to-growth"
+        ]
+        locked_project = locked_projects[0]
+        lock_version = locked_project["version"]
+        lock_dependency_names = {
+            dependency.get("name", "").casefold()
+            for dependency in locked_project.get("dependencies", [])
+            if isinstance(dependency, dict)
+        }
+    except (OSError, KeyError, IndexError, tomllib.TOMLDecodeError):
+        lock_version = None
+        lock_dependency_names = set()
+        issues.append(
+            ValidationIssue(
+                "uv.lock",
+                "hosted lockfile is missing or invalid",
+            )
+        )
+    if project_version is not None and lock_version != project_version:
+        issues.append(
+            ValidationIssue(
+                "uv.lock",
+                f"project version must match pyproject.toml ({project_version})",
+            )
+        )
+    missing_lock_dependencies = dependency_names - lock_dependency_names
+    if missing_lock_dependencies:
+        issues.append(
+            ValidationIssue(
+                "uv.lock",
+                "hosted runtime is missing project dependencies: "
+                + ", ".join(sorted(missing_lock_dependencies)),
+            )
+        )
+
+    manifest_versions: list[tuple[str, object]] = []
     for relative in (
         ".claude-plugin/plugin.json",
         ".claude-plugin/marketplace.json",
@@ -124,6 +219,57 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
             continue
         if relative.endswith("plugin.json") and payload.get("name") != "signal-to-growth":
             issues.append(ValidationIssue(relative, "plugin name must be signal-to-growth"))
+        if relative in {
+            ".claude-plugin/plugin.json",
+            ".codex-plugin/plugin.json",
+        }:
+            manifest_versions.append((relative, payload.get("version")))
+        elif relative == ".claude-plugin/marketplace.json":
+            manifest_versions.append(
+                (f"{relative}:metadata", payload.get("metadata", {}).get("version"))
+            )
+            plugins = payload.get("plugins", [])
+            manifest_versions.extend(
+                (f"{relative}:plugins[{index}]", plugin.get("version"))
+                for index, plugin in enumerate(plugins)
+                if isinstance(plugin, dict)
+            )
+        elif relative == ".agents/plugins/marketplace.json":
+            plugins = payload.get("plugins", [])
+            manifest_versions.extend(
+                (f"{relative}:plugins[{index}]", plugin.get("version"))
+                for index, plugin in enumerate(plugins)
+                if isinstance(plugin, dict)
+            )
+
+    if project_version is not None:
+        for location, version in manifest_versions:
+            if version != project_version:
+                issues.append(
+                    ValidationIssue(
+                        location,
+                        f"version must match pyproject.toml ({project_version})",
+                    )
+                )
+
+    contract_root = root / "contracts"
+    for filename in sorted(EXPECTED_CONNECTOR_CONTRACTS):
+        path = contract_root / filename
+        if not path.exists():
+            issues.append(ValidationIssue(str(path), "connector contract is missing"))
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            issues.append(ValidationIssue(str(path), f"invalid JSON: {exc.msg}"))
+            continue
+        if payload.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+            issues.append(
+                ValidationIssue(
+                    str(path),
+                    "connector contract must use JSON Schema draft 2020-12",
+                )
+            )
 
     for path in root.rglob("*.md"):
         text = path.read_text(encoding="utf-8")

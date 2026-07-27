@@ -16,6 +16,9 @@
     "value_event",
     "data_source",
     "query_version",
+    "timezone",
+    "cohort_maturity_rule",
+    "exclusions",
     "baseline",
     "target",
     "target_source",
@@ -37,14 +40,75 @@
     "value_event": {"type": "string", "minLength": 1},
     "data_source": {"type": "string", "minLength": 1},
     "query_version": {"type": "string", "minLength": 1},
-    "baseline": {"type": ["object", "null"]},
-    "target": {"type": ["object", "null"]},
+    "timezone": {"type": "string", "minLength": 1},
+    "cohort_maturity_rule": {"type": "string", "minLength": 1},
+    "exclusions": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "baseline": {
+      "oneOf": [
+        {"$ref": "#/$defs/measurement"},
+        {"type": "null"}
+      ]
+    },
+    "target": {
+      "oneOf": [
+        {"$ref": "#/$defs/target"},
+        {"type": "null"}
+      ]
+    },
     "target_source": {"type": ["string", "null"]},
     "owner": {"type": "string", "minLength": 1},
     "counter_metric_ids": {
       "type": "array",
       "items": {"type": "string"},
+      "minItems": 1,
       "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "target": {
+            "type": "object"
+          }
+        },
+        "required": ["target"]
+      },
+      "then": {
+        "properties": {
+          "target_source": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "observed_at", "source_ref", "cohort_mature"],
+      "properties": {
+        "value": {},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "source_ref": {"type": "string", "minLength": 1},
+        "cohort_mature": {"type": "boolean"}
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "review_at", "rationale"],
+      "properties": {
+        "value": {},
+        "review_at": {"type": "string", "format": "date-time"},
+        "rationale": {"type": "string", "minLength": 1}
+      }
     }
   }
 }

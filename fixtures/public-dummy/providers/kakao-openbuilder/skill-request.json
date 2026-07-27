@@ -1,0 +1,37 @@
+{
+  "intent": {
+    "id": "intent-public-dummy-001",
+    "name": "고객문의"
+  },
+  "userRequest": {
+    "timezone": "Asia/Seoul",
+    "params": {
+      "surface": "BuilderBotTest"
+    },
+    "block": {
+      "id": "block-public-dummy-001",
+      "name": "고객문의 접수"
+    },
+    "utterance": "초기 설정 중 연결 단계에서 계속 멈춰요.",
+    "lang": "ko",
+    "user": {
+      "id": "bot-user-public-dummy-001",
+      "type": "botUserKey",
+      "properties": {
+        "plusfriendUserKey": "channel-user-public-dummy-001"
+      }
+    }
+  },
+  "contexts": [],
+  "bot": {
+    "id": "bot-public-dummy-001",
+    "name": "Signal to Growth Test Bot"
+  },
+  "action": {
+    "name": "capture.customer.signal",
+    "clientExtra": null,
+    "params": {},
+    "id": "action-public-dummy-001",
+    "detailParams": {}
+  }
+}

@@ -10,6 +10,12 @@
     "metric_id",
     "observed_at",
     "value",
+    "sample_size",
+    "maturity_status",
+    "query_version",
+    "comparison",
+    "conclusion",
+    "next_decision_id",
     "interpretation",
     "evidence_ids",
     "recorded_by"
@@ -28,7 +34,34 @@
       "pattern": "^MET-[0-9]{8}-[0-9]{3,}$"
     },
     "observed_at": {"type": "string", "format": "date-time"},
-    "value": {},
+    "value": {
+      "type": ["number", "string", "boolean", "object", "null"]
+    },
+    "sample_size": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "maturity_status": {
+      "enum": ["not_mature", "mature", "unknown"]
+    },
+    "query_version": {"type": "string", "minLength": 1},
+    "comparison": {
+      "enum": ["better", "worse", "flat", "inconclusive", "unknown"]
+    },
+    "conclusion": {
+      "enum": ["continue", "change", "stop", "hold", "unknown"]
+    },
+    "next_decision_id": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "interpretation": {"type": "string", "minLength": 1},
     "evidence_ids": {
       "type": "array",

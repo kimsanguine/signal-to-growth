@@ -43,5 +43,34 @@
     },
     "external_write": {"type": "boolean"},
     "approved_by": {"type": ["string", "null"]}
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "external_write": {
+            "const": true
+          },
+          "status": {
+            "enum": [
+              "approved",
+              "executed"
+            ]
+          }
+        },
+        "required": [
+          "external_write",
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approved_by": {
+            "type": "string",
+            "pattern": "^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
+          }
+        }
+      }
+    }
+  ]
 }

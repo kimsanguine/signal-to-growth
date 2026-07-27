@@ -7,10 +7,10 @@ Follow `contracts/metric.schema.json`. A metric must define:
 - entity and eligible population;
 - numerator and denominator;
 - value event;
-- observation window and maturity;
+- observation window, time zone, cohort-maturity rule, and exclusions;
 - data source and query version;
-- baseline or explicit unknown;
-- target and source, or explicit unknown;
+- baseline measurement with value, observation time, source, and maturity, or `null`;
+- target with value, review date, rationale, and source, or `null`;
 - owner;
 - counter-metric references.
 

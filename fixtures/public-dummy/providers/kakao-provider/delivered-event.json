@@ -1,0 +1,8 @@
+{
+  "fixture_notice": "Provider-neutral Kakao dealer status fixture.",
+  "provider": "public_dummy_dealer",
+  "product": "alimtalk",
+  "attempt_ref": "public-dummy-attempt-001",
+  "provider_status": "DELIVERED",
+  "observed_at": "2026-07-26T03:01:00Z"
+}

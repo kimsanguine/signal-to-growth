@@ -1,0 +1,45 @@
+name: Bug report
+description: Report a reproducible defect using public dummy data.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include credentials, customer content, private URLs, or account identifiers.
+        Report security or privacy vulnerabilities through private vulnerability reporting.
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: What happened, and which command or skill was involved?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Public-dummy reproduction
+      description: Provide the smallest safe reproduction and redacted output.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.3.0 or a commit SHA
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed credentials, private URLs, personal data, and customer content.
+          required: true

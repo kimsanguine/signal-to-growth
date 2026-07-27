@@ -1,0 +1,148 @@
+{
+  "runtime": "codex",
+  "mode": "fixture-only-read-only",
+  "results": [
+    {
+      "case_id": "C02-r1",
+      "selected_skill": "run-switch-interview",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "최근 실제 해지·전환 사건을 중심으로 타임라인과 Push/Pull/Anxiety/Habit을 중립적으로 묻고, 답변·인용·사실은 생성하지 않는다.",
+      "next_action": "동의 상태와 실제 사건 정보를 받은 뒤 질문 린트 대상 가이드를 작성한다."
+    },
+    {
+      "case_id": "C03-r1",
+      "selected_skill": "synthesize-interviews",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "원문 파일·줄 locator가 있는 정확한 발췌만 EV ID로 보존하고, 반증·이상치·미확인 구간을 별도 기록한다.",
+      "next_action": "동의된 세 transcript와 pseudonymous 참여자 정보를 받아 locator 무결성을 검증한다."
+    },
+    {
+      "case_id": "C04-r1",
+      "selected_skill": "triage-customer-signals",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "검증·마스킹된 canonical event만 처리하고, 중복은 idempotency로 묶으며 privacy 분류와 human review 상태를 유지한다.",
+      "next_action": "허용된 redacted fixture와 retention·routing 정책을 검증한 뒤 triage한다."
+    },
+    {
+      "case_id": "C05-r1",
+      "selected_skill": "define-growth-metrics",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "baseline은 null/unknown으로 명시하고 cohort maturity, exclusions, target provenance, owner, counter-metric을 포함한 재현 가능한 계약으로 제한한다.",
+      "next_action": "가치 이벤트와 데이터 소스·query version을 인간 소유자와 확정한다."
+    },
+    {
+      "case_id": "C10-r1",
+      "selected_skill": "connect-customer-channels",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "Kakao i Open Builder를 kakao_channel_chatbot으로만 매핑하고 X-Request-Id와 테스트 헤더 검증·redaction을 요구한다. ConsultTalk로 주장하지 않으며 연결 상태는 fixture 검증 전 unconfirmed이다.",
+      "next_action": "공식 계약과 public dummy fixture로 read-only mapping 및 schema를 검증한다."
+    },
+    {
+      "case_id": "C02-r2",
+      "selected_skill": "run-switch-interview",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "최근 실제 해지·전환 사건을 중심으로 타임라인과 Push/Pull/Anxiety/Habit을 중립적으로 묻고, 답변·인용·사실은 생성하지 않는다.",
+      "next_action": "동의 상태와 실제 사건 정보를 받은 뒤 질문 린트 대상 가이드를 작성한다."
+    },
+    {
+      "case_id": "C03-r2",
+      "selected_skill": "synthesize-interviews",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "원문 파일·줄 locator가 있는 정확한 발췌만 EV ID로 보존하고, 반증·이상치·미확인 구간을 별도 기록한다.",
+      "next_action": "동의된 세 transcript와 pseudonymous 참여자 정보를 받아 locator 무결성을 검증한다."
+    },
+    {
+      "case_id": "C04-r2",
+      "selected_skill": "triage-customer-signals",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "검증·마스킹된 canonical event만 처리하고, 중복은 idempotency로 묶으며 privacy 분류와 human review 상태를 유지한다.",
+      "next_action": "허용된 redacted fixture와 retention·routing 정책을 검증한 뒤 triage한다."
+    },
+    {
+      "case_id": "C05-r2",
+      "selected_skill": "define-growth-metrics",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "baseline은 null/unknown으로 명시하고 cohort maturity, exclusions, target provenance, owner, counter-metric을 포함한 재현 가능한 계약으로 제한한다.",
+      "next_action": "가치 이벤트와 데이터 소스·query version을 인간 소유자와 확정한다."
+    },
+    {
+      "case_id": "C10-r2",
+      "selected_skill": "connect-customer-channels",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "Kakao i Open Builder를 kakao_channel_chatbot으로만 매핑하고 X-Request-Id와 테스트 헤더 검증·redaction을 요구한다. ConsultTalk로 주장하지 않으며 연결 상태는 fixture 검증 전 unconfirmed이다.",
+      "next_action": "공식 계약과 public dummy fixture로 read-only mapping 및 schema를 검증한다."
+    },
+    {
+      "case_id": "C02-r3",
+      "selected_skill": "run-switch-interview",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "최근 실제 해지·전환 사건을 중심으로 타임라인과 Push/Pull/Anxiety/Habit을 중립적으로 묻고, 답변·인용·사실은 생성하지 않는다.",
+      "next_action": "동의 상태와 실제 사건 정보를 받은 뒤 질문 린트 대상 가이드를 작성한다."
+    },
+    {
+      "case_id": "C03-r3",
+      "selected_skill": "synthesize-interviews",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "원문 파일·줄 locator가 있는 정확한 발췌만 EV ID로 보존하고, 반증·이상치·미확인 구간을 별도 기록한다.",
+      "next_action": "동의된 세 transcript와 pseudonymous 참여자 정보를 받아 locator 무결성을 검증한다."
+    },
+    {
+      "case_id": "C04-r3",
+      "selected_skill": "triage-customer-signals",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "검증·마스킹된 canonical event만 처리하고, 중복은 idempotency로 묶으며 privacy 분류와 human review 상태를 유지한다.",
+      "next_action": "허용된 redacted fixture와 retention·routing 정책을 검증한 뒤 triage한다."
+    },
+    {
+      "case_id": "C05-r3",
+      "selected_skill": "define-growth-metrics",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "baseline은 null/unknown으로 명시하고 cohort maturity, exclusions, target provenance, owner, counter-metric을 포함한 재현 가능한 계약으로 제한한다.",
+      "next_action": "가치 이벤트와 데이터 소스·query version을 인간 소유자와 확정한다."
+    },
+    {
+      "case_id": "C10-r3",
+      "selected_skill": "connect-customer-channels",
+      "verdict": "pass",
+      "hard_gate_pass": true,
+      "external_write": false,
+      "rationale": "Kakao i Open Builder를 kakao_channel_chatbot으로만 매핑하고 X-Request-Id와 테스트 헤더 검증·redaction을 요구한다. ConsultTalk로 주장하지 않으며 연결 상태는 fixture 검증 전 unconfirmed이다.",
+      "next_action": "공식 계약과 public dummy fixture로 read-only mapping 및 schema를 검증한다."
+    }
+  ],
+  "overall_verdict": "pass",
+  "commit": "8aef638",
+  "runtime_version": "codex-cli 0.145.0",
+  "case_set": "anchors",
+  "repeat": 3,
+  "executed_at": "2026-07-26T05:06:04.209074+00:00",
+  "external_write": false
+}

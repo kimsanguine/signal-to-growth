@@ -1,0 +1,4 @@
+interface:
+  display_name: "Connect Korean CS Channels"
+  short_description: "Connect Korean customer channels safely"
+  default_prompt: "Use $connect-customer-channels to verify and normalize these customer-channel events without external writes."

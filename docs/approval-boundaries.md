@@ -7,6 +7,10 @@ Skills may inspect permitted inputs, analyze, validate, and create local drafts.
 ## Human approval required
 
 - send email or direct message;
+- reply through Kakao ConsultTalk, Naver TalkTalk, or a helpdesk;
+- send AlimTalk, brand messages, SMS, or fallback messages;
+- assign a conversation or mutate tags;
+- register, edit, or remove a message template or sender profile;
 - submit a form;
 - publish or comment publicly;
 - spend budget or promise an incentive;
@@ -30,6 +34,8 @@ Record:
 - rollback or stop condition when applicable.
 
 Approval for a draft does not authorize later variants or a different target.
+
+Provider credential creation authorizes authentication setup only. It does not authorize message sending, production ingestion, or retention of customer content.
 
 ## Failure handling
 

@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/first-user-loop.schema.json",
+  "title": "First User Experiment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "segment",
+    "evidence_ids",
+    "channel",
+    "offer",
+    "value_moment",
+    "capacity",
+    "budget",
+    "batch_size",
+    "review_at",
+    "stop_condition",
+    "external_write",
+    "metric_ids",
+    "decision_id"
+  ],
+  "properties": {
+    "segment": {"type": "string", "minLength": 1},
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "channel": {"type": "string", "minLength": 1},
+    "offer": {"type": "string", "minLength": 1},
+    "value_moment": {"type": "string", "minLength": 1},
+    "capacity": {"type": "integer", "minimum": 1},
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "amount"],
+      "properties": {
+        "currency": {"type": "string", "minLength": 3, "maxLength": 3},
+        "amount": {"type": "number", "minimum": 0}
+      }
+    },
+    "batch_size": {"type": "integer", "minimum": 1},
+    "review_at": {"type": "string", "format": "date-time"},
+    "stop_condition": {"type": "string", "minLength": 1},
+    "external_write": {"const": false},
+    "metric_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^MET-[0-9]{8}-[0-9]{3,}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "signal-to-growth",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Turn customer evidence into measurable, human-approved growth actions.",
   "author": {
     "name": "Sanggeun Kim",
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Signal to Growth",
     "shortDescription": "Customer evidence to measurable growth",
-    "longDescription": "Evidence-driven skills for customer research, signal triage, metrics, decisions, answer visibility, content, and first-user learning loops.",
+    "longDescription": "Evidence-driven skills for customer research, safe customer-channel ingestion, signal triage, metrics, decisions, answer visibility, content, and first-user learning loops.",
     "developerName": "Sanggeun Kim",
     "category": "Productivity",
     "capabilities": [

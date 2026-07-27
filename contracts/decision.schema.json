@@ -8,10 +8,14 @@
     "decision_id",
     "made_at",
     "status",
+    "decision_question",
+    "selected_option",
     "hypothesis",
     "evidence_ids",
     "counterevidence",
     "alternatives",
+    "not_build",
+    "reversibility",
     "owner",
     "review_at",
     "success_condition",
@@ -29,6 +33,8 @@
     "status": {
       "enum": ["draft", "awaiting_human_review", "approved", "rejected", "superseded"]
     },
+    "decision_question": {"type": "string", "minLength": 1},
+    "selected_option": {"type": "string", "minLength": 1},
     "hypothesis": {"type": "string", "minLength": 1},
     "evidence_ids": {
       "type": "array",
@@ -47,6 +53,15 @@
       "type": "array",
       "items": {"type": "string"},
       "minItems": 1
+    },
+    "not_build": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "reversibility": {
+      "enum": ["reversible", "partially_reversible", "hard_to_reverse"]
     },
     "owner": {"type": "string", "minLength": 1},
     "review_at": {"type": "string", "format": "date-time"},

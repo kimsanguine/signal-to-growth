@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["evaluator", "score", "decision", "hard_gate_failures", "strengths", "gaps", "coverage_limit"],
+  "properties": {
+    "evaluator": {"type": "string"},
+    "score": {"type": "integer", "minimum": 0, "maximum": 100},
+    "decision": {"type": "string", "enum": ["GO", "CONDITIONAL_GO", "NO_GO", "HOLD"]},
+    "hard_gate_failures": {"type": "array", "items": {"type": "string"}},
+    "strengths": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "gaps": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "coverage_limit": {"type": "string", "minLength": 1}
+  }
+}

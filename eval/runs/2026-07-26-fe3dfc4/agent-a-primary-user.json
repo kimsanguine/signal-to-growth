@@ -1,0 +1,16 @@
+{
+  "evaluator": "Primary User",
+  "snapshot": "fe3dfc4",
+  "mode": "static_adversarial_review",
+  "score": 71,
+  "decision": "NO-GO",
+  "strengths": [
+    "The end-to-end growth vocabulary is understandable for an early SaaS team.",
+    "Artifact examples make the intended workflow concrete."
+  ],
+  "failures": [
+    "Filename-led completion could misroute a partial workspace.",
+    "The next action was not reliably derived from valid artifact state.",
+    "Operational connector claims were easier to overread than their evidence allowed."
+  ]
+}

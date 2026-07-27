@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/cs-event.schema.json",
+  "title": "Canonical Korean CS Event",
+  "description": "A privacy-reduced, provider-neutral inbound or conversation event. Delivery outcomes belong in delivery-event.schema.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "provider",
+    "provider_event_id",
+    "channel",
+    "direction",
+    "event_type",
+    "occurred_at",
+    "received_at",
+    "conversation_ref",
+    "message_ref",
+    "customer_ref_hmac",
+    "content_redacted",
+    "attachment_metadata",
+    "raw_payload_ref",
+    "privacy",
+    "consent_or_processing_basis_ref",
+    "idempotency_key",
+    "auth_verified",
+    "verification_assurance",
+    "provider_status",
+    "canonical_status",
+    "source_evidence_ids"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^CSE-[A-Za-z0-9._-]{8,128}$"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{1,63}$"
+    },
+    "provider_event_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "channel": {
+      "type": "string",
+      "enum": [
+        "naver_talktalk",
+        "channel_talk",
+        "happytalk",
+        "kakao_channel_chatbot",
+        "kakao_consulttalk",
+        "kakao_alimtalk",
+        "kakao_brand_message",
+        "web_chat",
+        "other"
+      ]
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "inbound",
+        "outbound",
+        "system"
+      ]
+    },
+    "event_type": {
+      "description": "Delivery status events are intentionally excluded.",
+      "type": "string",
+      "enum": [
+        "message_received",
+        "message_sent",
+        "conversation_opened",
+        "conversation_closed",
+        "assignment_changed",
+        "tag_changed",
+        "other"
+      ]
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "received_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "conversation_ref": {
+      "$ref": "#/$defs/opaqueRef"
+    },
+    "message_ref": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/opaqueRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "customer_ref_hmac": {
+      "type": "string",
+      "pattern": "^hmac(?:-sha256)?:[A-Za-z0-9_-]{16,128}$"
+    },
+    "content_redacted": {
+      "type": "string",
+      "maxLength": 20000
+    },
+    "attachment_metadata": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "$ref": "#/$defs/attachment"
+      }
+    },
+    "raw_payload_ref": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^restricted://[A-Za-z0-9][A-Za-z0-9/._-]{2,255}$"
+        },
+        {
+          "type": "string",
+          "pattern": "^fixture\\+sha256://[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "privacy": {
+      "$ref": "#/$defs/privacy"
+    },
+    "consent_or_processing_basis_ref": {
+      "type": "string",
+      "pattern": "^POL-[A-Z0-9][A-Z0-9._-]{2,127}$"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 256
+    },
+    "auth_verified": {
+      "type": "boolean"
+    },
+    "verification_assurance": {
+      "type": "string",
+      "enum": [
+        "none",
+        "weak",
+        "medium",
+        "strong"
+      ]
+    },
+    "provider_status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    },
+    "canonical_status": {
+      "type": "string",
+      "enum": [
+        "received",
+        "normalized",
+        "ignored",
+        "dead_letter",
+        "unknown"
+      ]
+    },
+    "source_evidence_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^EV-[A-Z0-9][A-Z0-9._-]{2,127}$"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "provider": {
+            "const": "kakao_openbuilder"
+          }
+        },
+        "required": [
+          "provider"
+        ]
+      },
+      "then": {
+        "properties": {
+          "channel": {
+            "const": "kakao_channel_chatbot"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "provider": {
+            "const": "channel_talk"
+          }
+        },
+        "required": [
+          "provider"
+        ]
+      },
+      "then": {
+        "properties": {
+          "channel": {
+            "const": "channel_talk"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "provider": {
+            "const": "naver_talktalk"
+          }
+        },
+        "required": [
+          "provider"
+        ]
+      },
+      "then": {
+        "properties": {
+          "channel": {
+            "const": "naver_talktalk"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "opaqueRef": {
+      "type": "string",
+      "pattern": "^(ref|hmac):[A-Za-z0-9_-]{8,192}$"
+    },
+    "attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mime_type",
+        "size_bytes",
+        "sha256",
+        "restricted_ref"
+      ],
+      "properties": {
+        "mime_type": {
+          "type": "string",
+          "pattern": "^[a-z0-9.+-]+/[a-zA-Z0-9.+-]+$",
+          "maxLength": 127
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "restricted_ref": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^restricted://[A-Za-z0-9][A-Za-z0-9/._-]{2,255}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "redaction_status",
+        "pii_types_removed"
+      ],
+      "properties": {
+        "classification": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal",
+            "restricted"
+          ]
+        },
+        "redaction_status": {
+          "type": "string",
+          "enum": [
+            "not_required",
+            "redacted",
+            "blocked",
+            "unknown"
+          ]
+        },
+        "pii_types_removed": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "name",
+              "phone",
+              "email",
+              "address",
+              "account_identifier",
+              "other"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

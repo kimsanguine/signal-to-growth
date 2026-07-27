@@ -12,6 +12,7 @@
 Signal to Growth는 고객 인터뷰·CS·행동 지표에서 얻은 신호를 출처와 함께 정리하고, 사람이 성장 판단을 승인한 뒤, 콘텐츠·첫 사용자 루프·측정으로 연결하는 Agent Skills 제품입니다.
 
 하나의 `skills/` 소스를 Claude Code와 OpenAI Codex에서 함께 사용합니다.
+[변경 이력](CHANGELOG.md)에서 release 단위의 차이를 확인할 수 있습니다.
 
 ## 왜 만들었나
 
@@ -28,6 +29,7 @@ Signal to Growth는 이 연결을 하나의 artifact lineage로 관리합니다.
 ```text
 quote
   → evidence
+  → channel event (when a connector is configured)
   → signal / theme
   → decision
   → action
@@ -48,22 +50,23 @@ quote
 6. **Artifacts connect skills** — 대화 기억보다 JSON·JSONL·Markdown 산출물로 다음 단계를 연결합니다.
 7. **Fail loud** — 근거·동의·schema·승인이 부족하면 이유를 남기고 멈춥니다.
 
-## 10개 스킬
+## 11개 스킬
 
 | 순서 | 스킬 | 하는 일 | 핵심 산출물 |
 |---:|---|---|---|
 | 1 | `plan-customer-reach` | 조사 대상·채널·동의·draft-only 접촉 계획 | `reach-plan.json` |
 | 2 | `run-switch-interview` | 실제 과거 행동 중심 Switch Interview 설계 | `interview-guide.md` |
 | 3 | `synthesize-interviews` | quote·theme·반증을 evidence ID로 연결 | `evidence.jsonl` |
-| 4 | `triage-customer-signals` | CS·review·survey 신호 정규화와 위험 분기 | `signals.jsonl` |
-| 5 | `define-growth-metrics` | 분모·cohort·value event가 있는 지표 계약 | `metrics.jsonl` |
-| 6 | `record-growth-decision` | 근거·대안·중단 조건·결과의 append-only 기록 | `decisions.jsonl` |
-| 7 | `audit-answer-visibility` | SEO·GEO·AEO 표면의 날짜가 있는 관찰 감사 | `visibility-observations.jsonl` |
-| 8 | `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
-| 9 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
-| 10 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
+| 4 | `connect-customer-channels` | 한국형 CS event 검증·정규화·중복 제거·상태 대사 | `cs-events.jsonl` |
+| 5 | `triage-customer-signals` | CS·review·survey 신호 정규화와 위험 분기 | `signals.jsonl` |
+| 6 | `define-growth-metrics` | 분모·cohort·value event가 있는 지표 계약 | `metrics.jsonl` |
+| 7 | `record-growth-decision` | 근거·대안·중단 조건·결과의 append-only 기록 | `decisions.jsonl` |
+| 8 | `audit-answer-visibility` | SEO·GEO·AEO 표면의 날짜가 있는 관찰 감사 | `visibility-observations.jsonl` |
+| 9 | `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
+| 10 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
+| 11 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
 
-각 스킬은 독립적으로 사용할 수 있습니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
+각 스킬은 독립적으로 사용할 수 있습니다. connector를 설정하지 않으면 기존 manual signal flow를 그대로 사용합니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
 
 ## 설치
 
@@ -111,7 +114,8 @@ npx skills add kimsanguine/signal-to-growth -a claude-code -a codex
 
 ## 5분 로컬 체험
 
-Python 3.11 이상만 필요합니다. 런타임 외부 dependency는 없습니다.
+Python 3.11 이상이 필요합니다. 설치 시 Draft 2020-12 계약 검증을 위한
+`jsonschema` runtime dependency가 함께 설치됩니다.
 
 ```bash
 git clone https://github.com/kimsanguine/signal-to-growth.git
@@ -148,7 +152,7 @@ signal-to-growth validate-repo .
 
 검사 범위:
 
-- 10개 스킬 존재 여부
+- 11개 스킬 존재 여부
 - portable frontmatter
 - skill 이름과 폴더 일치
 - `agents/openai.yaml`
@@ -173,6 +177,128 @@ signal-to-growth validate-artifacts artifacts/
 - `run-state.json`
 
 validator는 ID 형식, 필수 필드, 승인 상태, 외부 실행 승인, evidence→decision→action→metric→outcome 참조를 확인합니다.
+
+Connector를 사용하는 run은 5개 추가 contract를 사용합니다.
+
+- `channel-connection.json`
+- `cs-events.jsonl`
+- `reply-drafts.jsonl`
+- `delivery-events.jsonl`
+- `connector-state.json`
+
+```bash
+signal-to-growth validate-connectors artifacts/
+signal-to-growth normalize-event \
+  --provider kakao-openbuilder \
+  --request-id request-public-dummy-001 \
+  --input fixtures/public-dummy/providers/kakao-openbuilder/skill-request.json
+```
+
+`normalize-event`는 로컬 payload만 처리하며 provider network에 연결하거나 답변을 발송하지 않습니다.
+
+### PMF Radar import와 hplan intake
+
+PMF Radar의 normalized export는 기본적으로 dry-run 검증만 합니다.
+
+```bash
+signal-to-growth import-pmf-radar \
+  --input fixtures/public-dummy/integrations/pmf-radar/stg-export.jsonl
+```
+
+검증된 이벤트를 artifact directory에 쓰려면 `--write`를 명시합니다.
+이 단계는 `cs-events.jsonl`과 source reference만 만들며 interview evidence나
+customer signal을 자동 추론하지 않습니다.
+
+승인된 growth decision은 hplan의 Build Gate 입력 초안으로 변환할 수 있습니다.
+
+```bash
+signal-to-growth export-hplan \
+  --artifacts fixtures/public-dummy/artifacts \
+  --product-name "Signal to Growth demo" \
+  --jtbd "고객 근거를 다음 성장 결정으로 연결한다" \
+  --functional-requirement "source-linked decision intake 생성"
+```
+
+출력의 `hplan_gate_decision`은 항상 `null`입니다. Signal to Growth는 hplan의
+gate 통과나 구현 가능성을 대신 판정하지 않습니다. 계약과 상태 전이는
+[PMF Radar and hplan integration](docs/integrations/pmf-radar-hplan.md)에
+정리했습니다.
+
+### 한국형 CS 지원 수준
+
+| 표면 | 현재 구현 | 아직 검증하지 않은 것 |
+|---|---|---|
+| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel Preview→Supabase 합성 E2E, live idempotency, `version=2.0` 응답 | Chatbot Admin Center 개발 채널 왕복, 실제 반복 발화에서 서로 다른 `X-Request-Id`가 생성되는지, Production |
+| Naver TalkTalk | public dummy event 정규화·마스킹·중복 제거 | 실제 test account webhook, backfill, 발송 |
+| Channel Talk | webhook 정규화와 injected read-only backfill·대사 | 실제 credential·HTTPS endpoint 왕복 |
+| Kakao 상담톡 via Channel Talk | product boundary와 계정 설정 절차 | 실제 채널 이관·상담 event |
+| Happytalk | 공식 규격 reference와 public dummy fixture | credential 기반 adapter |
+| Kakao 공식 딜러 | accepted/delivered 상태 fixture와 state projection | 선택된 딜러의 simulator·callback·polling |
+
+`fixture-validated`, `test-account verified`, `production-operational`을 서로 다른 상태로 기록합니다.
+
+강의 핵심 E2E는 `Kakao Channel chatbot through Kakao i Open Builder`입니다.
+Channel Talk는 Open API key 발급에 유료 plan이 필요한 선택형 connector로
+유지하며, 강의 본편에서는 구조와 확장 경로만 소개합니다. Kakao chatbot
+skill request는 상담톡이나 native 1:1 상담 이력 API가 아닙니다.
+
+`KakaoSkillApplication`은 정규화 event를 먼저 저장한 뒤 fixed
+`version=2.0` 응답을 반환하는 deployment-neutral WSGI application입니다.
+`app.py`는 Vercel entry point, `SupabaseEventSink`는 server-only secret을
+사용하는 저장 adapter입니다. 저장 실패 시 성공 응답을 반환하지 않습니다.
+승인 참조는 canonical 고객 event와 분리된 `approval_ref` 열에 저장합니다.
+공개 root route는 secret이나 설정 상태 대신 문서·health route만 반환합니다.
+
+### Kakao test endpoint 배포
+
+Kakao Developers API key는 사용하지 않습니다. Open Builder skill header와
+서버가 공유할 임의의 `x-api-key` 하나와 고객 식별자 HMAC용 별도 secret을
+생성합니다. 두 값과 Supabase secret key는 repository나 채팅에 입력하지
+않고 Vercel Environment Variables에 저장합니다. Kakao shared key의 복구
+사본만 운영자 password manager에 보관합니다.
+
+필수 환경 변수 이름은 [`.env.example`](.env.example)에 있습니다.
+
+```text
+KAKAO_SKILL_API_KEY
+STG_CUSTOMER_HMAC_KEY
+STG_APPROVAL_REF
+SUPABASE_URL
+SUPABASE_SECRET_KEY
+```
+
+다음 두 값은 기본값이 있지만, 검증 환경에서는 의도를 고정하기 위해 함께
+등록했습니다.
+
+```text
+STG_PROCESSING_BASIS_REF
+SUPABASE_KAKAO_EVENTS_TABLE
+```
+
+1. 별도의 Supabase test project에서 `supabase/migrations/`의 migration을
+   순서대로 적용합니다.
+2. Vercel project에 필수 환경 변수를 server-side secret으로 등록합니다.
+3. preview를 배포하고 `GET /api/health`가 `status=configured`인지 확인합니다.
+4. 합성 Kakao payload를 `POST /api/kakao/skill`로 보내 `version=2.0`을 확인합니다.
+5. Supabase에서 같은 `event_id`가 한 행만 저장됐는지 확인합니다.
+6. Kakao Chatbot Admin Center의 skill URL과 test header를 등록한 뒤 개발 채널에서 왕복을 확인합니다.
+
+2026-07-26 기준 1~5단계는 격리된 Supabase test project와 Vercel
+Preview에서 실제로 검증했습니다. `health=200/configured`, 잘못된
+`x-api-key=401`, 정상 합성 요청 두 회 모두 `200/version=2.0`, 같은
+`X-Request-Id`의 저장 행은 한 건이었습니다. 6단계인 Kakao 개발 채널
+왕복은 아직 별도 검증 대상입니다. 실행 증거와 남은 경계는
+[Verification](docs/verification.md)에 기록합니다.
+
+이 table은 RLS를 활성화하고 `anon`·`authenticated` 권한을 제거하며,
+두 browser role에 명시적인 deny policy도 적용합니다.
+`sb_secret_...` key는 backend 전용이며 브라우저나 교안에 노출하지 않습니다.
+실제 고객 데이터가 아닌 합성 발화만 사용합니다.
+`STG_APPROVAL_REF`에는 secret이나 자유 서술 대신 `APR-KAKAO-TEST-001` 같은
+비민감 승인 record ID를 사용합니다. 각 행의 `expires_at`은 7일 뒤를
+가리키지만 자동 삭제 작업은 아닙니다. 삭제 절차와 승인 경계는
+[Kakao test retention runbook](docs/operations/kakao-test-retention.md)을
+따릅니다.
 
 ### 개인정보 pattern 검사
 
@@ -276,6 +402,16 @@ Core JSON Schema:
 | Outcome | [`outcome.schema.json`](contracts/outcome.schema.json) | `OUT-YYYYMMDD-NNN` |
 | Run state | [`run-state.schema.json`](contracts/run-state.schema.json) | `RUN-YYYYMMDD-NNN` |
 
+Connector JSON Schema:
+
+| 객체 | Schema |
+|---|---|
+| Channel connection | [`channel-connection.schema.json`](contracts/channel-connection.schema.json) |
+| Canonical CS event | [`cs-event.schema.json`](contracts/cs-event.schema.json) |
+| Reply draft | [`reply-draft.schema.json`](contracts/reply-draft.schema.json) |
+| Delivery event | [`delivery-event.schema.json`](contracts/delivery-event.schema.json) |
+| Connector state | [`connector-state.schema.json`](contracts/connector-state.schema.json) |
+
 상세 연결 규칙은 [Artifact contracts](docs/artifact-contracts.md)를 확인하세요.
 
 ## Claude Code와 Codex를 함께 지원하는 방식
@@ -306,6 +442,7 @@ signal-to-growth/
 ├── .agents/plugins/marketplace.json
 ├── .claude-plugin/
 ├── .codex-plugin/
+├── app.py
 ├── contracts/
 ├── docs/
 ├── fixtures/
@@ -314,6 +451,7 @@ signal-to-growth/
 ├── policies/
 ├── scripts/
 ├── skills/
+├── supabase/migrations/
 ├── src/signal_growth/
 └── tests/
 ```
@@ -344,6 +482,13 @@ python3 /path/to/skill-creator/scripts/quick_validate.py \
 6. **Cross-runtime** — Claude Code와 Codex의 핵심 artifact 비교
 
 현재 release에서 자동화한 범위와 남은 runtime 검증은 [Verification](docs/verification.md)에 기록합니다.
+5개 독립 evaluator agent의 정적·적대적 기준선은 평균 67점,
+`NO-GO`였습니다. 확인된 취약점은 이번 버전에서 보강했지만, 30개 case의
+정식 runtime 재평가와 Claude Code·Codex 실제 호출 parity는 남아 있습니다.
+평가 범위와 원점수는 [Skill evaluation plan](docs/skill-evaluation-plan.md)과
+[Evaluation summary](eval/summary.md)에 기록합니다.
+현재 branch 상태, 재개 명령, 승인 필요 항목은
+[Continuation handoff](docs/HANDOFF.md)를 먼저 확인하세요.
 
 ## 경쟁 제품과 다른 점
 
@@ -360,24 +505,39 @@ Signal to Growth가 집중하는 공백:
 
 ## 프로젝트 상태
 
-`v0.1.0`은 public alpha입니다.
+`v0.3.0`은 PMF Radar→Signal to Growth→hplan handoff와 계약·보안
+hardening을 추가한 release candidate입니다.
 
 포함:
 
-- 10개 portable skill
+- 11개 portable skill
 - Claude Code·Codex plugin manifest
-- 7개 core artifact schema
-- 표준 라이브러리만 사용하는 validator CLI
+- 7개 core artifact schema, first-user-loop schema, 5개 connector schema
+- 전체 Draft 2020-12 schema와 exact evidence locator를 검증하는 CLI
 - 합성 한국어 fixture
 - unit·integration·negative tests
+- objective와 유효 artifact 상태를 사용하는 deterministic router
+- PMF Radar normalized event dry-run import
+- hplan Build Gate 이전 intake export
+- Naver TalkTalk event normalization
+- Channel Talk read-only adapter contract
+- Kakao Open Builder용 Vercel WSGI endpoint와 Supabase restricted sink
+- 격리된 Vercel Preview→Supabase 합성 E2E와 live idempotency 증거
+- synthetic event approval reference와 7일 deletion-eligibility marker
+- provider-neutral dedupe·redaction·delivery state projection
 
 아직 포함하지 않음:
 
-- CRM·helpdesk·analytics connector
+- 실제 Kakao development channel과 배포 endpoint의 왕복 검증
+- Happytalk·카카오 공식 딜러의 live adapter
 - 자동 발송·게시
-- hosted service
 - 익명 telemetry
 - 보편적인 SaaS benchmark
+- 30-case Claude Code·Codex runtime 재평가와 실제 invocation parity
+
+한국형 CS connector의 설계 근거와 단계별 검증 계획은 [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 기록합니다. 현재 P0 source·fixture와 격리된 hosted synthetic E2E는 검증됐지만, Kakao Chatbot Admin Center 개발 채널 연결이나 Production 운영 상태를 뜻하지 않습니다.
+
+Channel Talk·Kakao 상담톡·Naver TalkTalk test account를 준비할 때는 [Provider setup checklist](docs/provider-setup-checklist.md)를 따르세요. API secret, 고객 원문, 전화번호는 repository나 AI 대화에 입력하지 마세요.
 
 ## 기여
 

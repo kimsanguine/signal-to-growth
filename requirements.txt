@@ -1,0 +1,2 @@
+# Fallback for Python hosts that do not select the repository's uv.lock.
+jsonschema>=4.23,<5
