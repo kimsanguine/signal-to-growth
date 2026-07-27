@@ -1,11 +1,21 @@
 # Continuation handoff
 
-- Updated: 2026-07-26
-- Branch: `agent/korean-cs-connectors-v0-2`
-- Last implementation commit: `149cf97`
+- Updated: 2026-07-27
+- Branch: `main` (feature branch merged)
+- Merge commit: `9ab08d2`
 - Last probed Preview commit: `e28c563`
-- Pull request: [Draft PR #1](https://github.com/kimsanguine/signal-to-growth/pull/1)
-- Release gate: **HOLD / NO-GO**
+- Pull request: [PR #1](https://github.com/kimsanguine/signal-to-growth/pull/1) — **MERGED 2026-07-27**
+- Release gate: **HOLD / NO-GO** (unchanged)
+
+`main` now publishes version `0.3.0` with 11 skills. This merge was approved for
+one purpose only: the Part 6 course exercise needs `connect-customer-channels`,
+which previously existed only on the feature branch, so a student installing from
+`main` could not complete the clip. See `harness/decisions.jsonl`
+(`dec-stg-course-distribution-20260727-001`).
+
+The merge did **not** change the release gate. Release tag, Vercel Production
+promotion, provider operation, and external writes remain unapproved and the
+`hold` in `dec-stg-release-20260726-001` stays in force.
 
 This file is the continuation entry point. Read it before changing a skill,
 connector, integration contract, or deployment.
@@ -53,8 +63,9 @@ Kakao-to-Supabase idempotency evidence belongs to commit `903f571`.
 5. hplan owns its Build Gate. A Signal to Growth intake is not a gate pass.
 6. Channel Talk remains an optional paid connector in the course. Kakao Open
    Builder is the primary course E2E.
-7. No Production promotion, external reply, release tag, or default-branch
-   merge has been approved.
+7. The default-branch merge was approved on 2026-07-27 for course distribution
+   only. No Production promotion, external reply, or release tag has been
+   approved.
 
 The append-only release decision is in
 [`../harness/decisions.jsonl`](../harness/decisions.jsonl).
@@ -130,4 +141,5 @@ After a separate approval:
 - Decide whether evaluation stays fixture-only or permits limited read-only
   research.
 - Approve PMF Radar schema/migration work before applying it to Supabase.
-- Approve Draft PR merge, release tag, and Production promotion separately.
+- Approve the release tag and Production promotion separately. (The default-branch
+  merge was approved on 2026-07-27 for course distribution and is done.)
