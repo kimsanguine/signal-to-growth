@@ -109,21 +109,27 @@ def _objective_route(objective: str | None) -> str | None:
     return None
 
 
-def next_skill(
+def _route(
     artifact_directory: Path,
     objective: str | None = None,
-) -> str | None:
-    """Return the next specialist using objective, validity, and dependencies."""
+) -> tuple[str | None, str]:
+    """Return (next_skill, reason) using objective, validity, and dependencies."""
     connector_state = _connector_state(artifact_directory)
     if connector_state in {"partial", "invalid"}:
-        return CONNECTOR_SKILL
+        return CONNECTOR_SKILL, (
+            f"CS connector artifacts are {connector_state} — finish or fix the "
+            "connection with connect-customer-channels."
+        )
 
     valid = _valid_artifacts(artifact_directory)
     requested = _objective_route(objective)
     if requested is not None:
         requested_file = dict(CORE_SKILL_FILES).get(requested)
         if requested == CONNECTOR_SKILL or requested_file not in valid:
-            return requested
+            return requested, (
+                f"The stated objective points to '{requested}' and its artifact "
+                "is not yet valid."
+            )
 
     has_customer_input = (
         "evidence.jsonl" in valid
@@ -132,21 +138,52 @@ def next_skill(
     )
     if has_customer_input:
         if "evidence.jsonl" not in valid and connector_state != "valid":
-            return "synthesize-interviews"
+            return "synthesize-interviews", (
+                "Customer input exists but evidence.jsonl is not yet valid."
+            )
         if "signals.jsonl" not in valid:
-            return "triage-customer-signals"
+            return "triage-customer-signals", (
+                "Evidence is valid but signals.jsonl is not yet valid."
+            )
         if "metrics.jsonl" not in valid:
-            return "define-growth-metrics"
+            return "define-growth-metrics", (
+                "Signals are valid but metrics.jsonl is not yet valid."
+            )
         if "decisions.jsonl" not in valid:
-            return "record-growth-decision"
+            return "record-growth-decision", (
+                "Metrics are valid but decisions.jsonl is not yet valid."
+            )
         if "first-user-loop.json" not in valid:
-            return "design-first-user-loop"
-        return None
+            return "design-first-user-loop", (
+                "A decision is valid but first-user-loop.json is not yet valid."
+            )
+        return None, (
+            "All core skill artifacts and the connector state are valid — "
+            "there is no required next skill."
+        )
 
     for skill_name, filename in CORE_SKILL_FILES[:3]:
         if filename not in valid:
-            return skill_name
-    return "triage-customer-signals"
+            return skill_name, f"{filename} does not exist yet."
+    return "triage-customer-signals", (
+        "Initial research artifacts exist but signal triage has not run yet."
+    )
+
+
+def next_skill(
+    artifact_directory: Path,
+    objective: str | None = None,
+) -> str | None:
+    """Return the next specialist using objective, validity, and dependencies."""
+    return _route(artifact_directory, objective)[0]
+
+
+def next_skill_reason(
+    artifact_directory: Path,
+    objective: str | None = None,
+) -> str:
+    """Return a plain-language reason for the next_skill routing decision."""
+    return _route(artifact_directory, objective)[1]
 
 
 def completed_skills(artifact_directory: Path) -> list[str]:

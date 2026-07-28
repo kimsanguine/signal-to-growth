@@ -10,7 +10,7 @@ from shutil import copy2
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from signal_growth.workflow import completed_skills, next_skill
+from signal_growth.workflow import completed_skills, next_skill, next_skill_reason
 
 
 class WorkflowTests(unittest.TestCase):
@@ -56,6 +56,27 @@ class WorkflowTests(unittest.TestCase):
                 "define-growth-metrics",
                 next_skill(path, objective="activation 지표 계약을 설계한다"),
             )
+
+    def test_reason_matches_empty_workspace_routing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            reason = next_skill_reason(path)
+            self.assertIn("reach-plan.json", reason)
+
+    def test_reason_is_none_when_no_next_skill_is_required(self) -> None:
+        path = ROOT / "fixtures" / "public-dummy" / "artifacts"
+        reason = next_skill_reason(path)
+        self.assertIn("no required next skill", reason)
+
+    def test_reason_explains_partial_connector_state(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            for filename in ("reach-plan.json", "interview-guide.md", "evidence.jsonl"):
+                (path / filename).touch()
+            (path / "channel-connection.json").touch()
+
+            reason = next_skill_reason(path)
+            self.assertIn("partial", reason)
 
 
 if __name__ == "__main__":

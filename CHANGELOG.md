@@ -7,6 +7,11 @@ versioning once a version is tagged.
 
 ### Added
 
+- An `append-record` CLI command and matching `PreToolUse` plugin hook that
+  deny direct Edit/Write on the twelve append-only JSONL artifacts, so
+  concurrent agents cannot interleave writes or silently rewrite history.
+- A `reason` field on `next-step` output explaining in plain language why a
+  given skill is next.
 - A portable `connect-customer-channels` skill shared by Claude Code and Codex.
 - Korean CS connector contracts, public dummy fixtures, and deterministic
   validation for Kakao Open Builder, Naver TalkTalk, and Channel Talk.

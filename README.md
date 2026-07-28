@@ -68,6 +68,11 @@ quote
 
 각 스킬은 독립적으로 사용할 수 있습니다. connector를 설정하지 않으면 기존 manual signal flow를 그대로 사용합니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
 
+> **연동 문서를 쓰기 전에**: `verify_event`·`normalize_event`의 실제 시그니처는 항상
+> [`src/signal_growth/adapters/base.py`](src/signal_growth/adapters/base.py)의
+> `ChannelAdapter` Protocol이 유일한 정답입니다. 교안·튜토리얼·타 문서에 의사코드를 적을 때
+> 이 파일과 대조하지 않으면 시그니처 드리프트가 생깁니다(실제로 한 번 발생해 발견·수정함).
+
 ## 설치
 
 ### Claude Code
@@ -324,7 +329,7 @@ signal-to-growth lint-questions interview-guide.md
 signal-to-growth next-step artifacts/
 ```
 
-artifact가 준비된 순서를 기준으로 첫 누락 스킬과 완료된 스킬을 JSON으로 반환합니다.
+artifact가 준비된 순서를 기준으로 첫 누락 스킬과 완료된 스킬을 JSON으로 반환합니다. `reason` 필드에 왜 그 스킬이 다음인지 사람이 읽는 한 문장이 함께 나옵니다.
 
 ## 실제 사용 예
 

@@ -13,6 +13,7 @@ from .adapters import (
     KakaoOpenBuilderAdapter,
     NaverTalkTalkAdapter,
 )
+from .append_only import AppendOnlyError, append_record
 from .channel_contracts import RequestContext
 from .connector_validation import validate_connector_directory
 from .contracts import render_issues, validate_artifact_directory
@@ -25,7 +26,7 @@ from .integrations import (
 from .privacy import scan_path
 from .questions import lint_questions
 from .repo_validation import validate_repository
-from .workflow import completed_skills, next_skill
+from .workflow import completed_skills, next_skill, next_skill_reason
 
 
 _PUBLIC_DUMMY_HMAC_KEY = b"signal-to-growth-public-dummy"
@@ -110,11 +111,30 @@ def command_lint_questions(args: argparse.Namespace) -> int:
     return _print_validation(issues, "No configured interview-question risk detected.")
 
 
+def command_append_record(args: argparse.Namespace) -> int:
+    try:
+        record = json.loads(args.record)
+    except json.JSONDecodeError as exc:
+        print(f"--record is not valid JSON: {exc}", file=sys.stderr)
+        return 1
+    if not isinstance(record, dict):
+        print("--record must be a JSON object.", file=sys.stderr)
+        return 1
+    try:
+        line_count = append_record(args.path.resolve(), record)
+    except AppendOnlyError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(f"Appended 1 line to {args.path} ({line_count} lines total).")
+    return 0
+
+
 def command_next_step(args: argparse.Namespace) -> int:
     directory = args.directory.resolve()
     payload = {
         "completed_skills": completed_skills(directory),
         "next_skill": next_skill(directory, objective=args.objective),
+        "reason": next_skill_reason(directory, objective=args.objective),
     }
     print(json.dumps(payload, ensure_ascii=False, indent=2))
     return 0
@@ -236,6 +256,11 @@ def build_parser() -> argparse.ArgumentParser:
     lint_questions_parser = subparsers.add_parser("lint-questions")
     lint_questions_parser.add_argument("path", type=Path)
     lint_questions_parser.set_defaults(func=command_lint_questions)
+
+    append_record_parser = subparsers.add_parser("append-record")
+    append_record_parser.add_argument("path", type=Path)
+    append_record_parser.add_argument("record", help="A single JSON object.")
+    append_record_parser.set_defaults(func=command_append_record)
 
     next_step = subparsers.add_parser("next-step")
     next_step.add_argument("directory", type=Path)
