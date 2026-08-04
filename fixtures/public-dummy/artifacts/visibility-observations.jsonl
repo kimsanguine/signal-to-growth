@@ -1,1 +1,1 @@
-{"observation_id":"VIS-20260725-001","observed_at":"2026-07-25T15:30:00+09:00","surface":"public-dummy","status":"not-live","claim_state":"observed","note":"실제 공개 페이지가 없는 합성 fixture이므로 가시성 성과를 판단하지 않는다."}
+{"observation_id": "VIS-20260725-001", "observed_at": "2026-07-25T15:30:00+09:00", "surface": "public-dummy", "status": "not-live", "claim_state": "observed", "note": "실제 공개 페이지가 없는 합성 fixture이므로 가시성 성과를 판단하지 않는다.", "prev_hash": null, "record_hash": "sha256:75988a21985dd1a2479a93ba6b288a040fd332b3aecdc6cf36096515490494e5"}

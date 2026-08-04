@@ -51,6 +51,17 @@ Create:
 
 Read [references/output-contract.md](references/output-contract.md) before writing them.
 
+Add every new record to `metrics.jsonl` with the `append-record` command, never
+by writing or editing the file:
+
+```bash
+python3 scripts/stg.py append-record <artifact-directory>/metrics.jsonl '<json-object>'
+```
+
+It takes an exclusive lock and hash-chains each line to the one before it, so a
+later reader can tell whether history was rewritten. In a packaged runtime the
+same command is `signal-to-growth append-record`.
+
 ## Stop conditions
 
 Stop when the value event is undefined, the denominator cannot be reconstructed, the requested target has no source, or the available data cannot answer the question.

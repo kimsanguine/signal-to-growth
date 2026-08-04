@@ -100,6 +100,18 @@ Create only the artifacts required by the requested operation:
 
 Follow [references/output-contract.md](references/output-contract.md).
 
+Add every new record to `cs-events.jsonl`, `reply-drafts.jsonl`, `delivery-
+events.jsonl` and `integration-references.jsonl` with the `append-record`
+command, never by writing or editing the file:
+
+```bash
+python3 scripts/stg.py append-record <artifact-directory>/cs-events.jsonl '<json-object>'
+```
+
+It takes an exclusive lock and hash-chains each line to the one before it, so a
+later reader can tell whether history was rewritten. In a packaged runtime the
+same command is `signal-to-growth append-record`.
+
 ## Stop conditions
 
 Stop and create a partial artifact when:

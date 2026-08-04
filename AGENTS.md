@@ -30,9 +30,14 @@ Run from the repository root:
 
 ```bash
 python3 scripts/stg.py validate-repo .
+python3 scripts/stg.py validate-artifacts fixtures/public-dummy/artifacts --require-complete
 python3 scripts/stg.py demo .
 python3 -m unittest discover -s tests -v
-python3 /Users/sanguinekim/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py .
 ```
 
-Also run `quick_validate.py` for every changed skill.
+`make check` runs the same set.
+
+There is no separate per-skill validation script. `validate-repo` already checks
+every skill's frontmatter, description triggers, line limit, required reference,
+and the three-way agreement between `SKILL.md`, `references/output-contract.md`,
+and `workflow.SKILL_OUTPUT_FILES`, so a changed skill is covered by running it.

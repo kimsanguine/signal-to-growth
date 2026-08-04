@@ -65,6 +65,87 @@ def compute_record_hash(record: dict[str, Any], prev_hash: str | None) -> str:
     return HASH_PREFIX + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+# A predecessor hash that cannot be known because the record before it carries
+# no `record_hash`. It is not `None`, so it never silently matches a record that
+# legitimately declares `"prev_hash": null`.
+_UNVERIFIABLE = object()
+
+
+def verify_append_chain(
+    records: list[dict[str, Any]],
+    filename: str,
+) -> list[tuple[str, str]]:
+    """Recompute one artifact's append chain. Return (location, message) pairs.
+
+    Chain fields stay optional for a whole file so artifacts written before the
+    chain existed remain valid. That exemption is deliberately all-or-nothing:
+    once *any* record in the file is chained, every record must be, otherwise
+    stripping the two fields from a single edited line would be enough to hide
+    the edit.
+
+    This is tamper *evidence*, not tamper proofing. The hash uses no secret, so
+    anyone who can rewrite the file can also recompute a consistent chain. It
+    catches edits that did not bother to, and pairs with git history for the
+    rest.
+    """
+    issues: list[tuple[str, str]] = []
+    if not any(record.get(RECORD_HASH_FIELD) is not None for record in records):
+        return issues
+
+    previous_hash: object = None
+    for index, record in enumerate(records, 1):
+        location = f"{filename}[{index}]"
+        declared = record.get(RECORD_HASH_FIELD)
+        if declared is None:
+            issues.append(
+                (
+                    location,
+                    f"{RECORD_HASH_FIELD} is missing while other records in this "
+                    "artifact are chained — a partially chained artifact cannot "
+                    "be verified",
+                )
+            )
+            previous_hash = _UNVERIFIABLE
+            continue
+        declared_prev = record.get(PREV_HASH_FIELD)
+        if previous_hash is not _UNVERIFIABLE and declared_prev != previous_hash:
+            issues.append(
+                (
+                    location,
+                    f"{PREV_HASH_FIELD} does not match the preceding "
+                    f"{RECORD_HASH_FIELD} — a record was edited, reordered, or "
+                    "removed",
+                )
+            )
+        if declared != compute_record_hash(record, declared_prev):
+            issues.append(
+                (location, f"{RECORD_HASH_FIELD} does not match the record contents")
+            )
+        previous_hash = declared
+    return issues
+
+
+def chain_records(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return `records` relinked into a fresh append chain.
+
+    Used by writers that materialize a whole artifact at once instead of
+    appending line by line. Any caller-supplied chain field is replaced.
+    """
+    chained: list[dict[str, Any]] = []
+    previous_hash: str | None = None
+    for record in records:
+        linked = {
+            key: value
+            for key, value in record.items()
+            if key not in (RECORD_HASH_FIELD, PREV_HASH_FIELD)
+        }
+        linked[PREV_HASH_FIELD] = previous_hash
+        linked[RECORD_HASH_FIELD] = compute_record_hash(linked, previous_hash)
+        previous_hash = linked[RECORD_HASH_FIELD]
+        chained.append(linked)
+    return chained
+
+
 def _tail_record_hash(lines: list[str], path: Path) -> str | None:
     """Return the `record_hash` of the last record, or None for a fresh chain."""
     if not lines:

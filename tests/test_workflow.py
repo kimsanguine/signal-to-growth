@@ -11,7 +11,25 @@ import json
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from signal_growth.append_only import chain_records
 from signal_growth.workflow import completed_skills, next_skill, next_skill_reason
+
+
+def _write_chained(path: Path, records: list[dict]) -> None:
+    """Write a mutated artifact back as a valid append chain.
+
+    These tests simulate a workspace that legitimately reached a different
+    state, not one whose history was rewritten. Writing the edited records back
+    without relinking them would trip the tamper-evidence check instead of the
+    routing behavior under test.
+    """
+    path.write_text(
+        "".join(
+            json.dumps(record, ensure_ascii=False) + "\n"
+            for record in chain_records(records)
+        ),
+        encoding="utf-8",
+    )
 
 
 class WorkflowTests(unittest.TestCase):
@@ -116,14 +134,51 @@ class WorkflowTests(unittest.TestCase):
             records = [json.loads(line) for line in evidence_path.read_text(encoding="utf-8").splitlines()]
             records[0]["strength"] = "awaiting_human_tag"
             records[0]["approved_by"] = None
-            evidence_path.write_text(
-                "\n".join(json.dumps(record, ensure_ascii=False) for record in records) + "\n",
-                encoding="utf-8",
-            )
+            _write_chained(evidence_path, records)
 
             self.assertEqual("synthesize-interviews", next_skill(path))
             self.assertIn("awaiting human strength approval", next_skill_reason(path))
             self.assertNotIn("synthesize-interviews", completed_skills(path))
+
+
+class VisibilityBranchRoutingTests(unittest.TestCase):
+    """run-growth-loop declares this skill as a routing node, so it must route.
+
+    While it was absent from OBJECTIVE_ROUTES and SKILL_OUTPUT_FILES, a
+    visibility objective silently fell through to the core sequence and the
+    three-way output-contract drift check degraded to a two-way one.
+    """
+
+    def test_a_visibility_objective_routes_to_the_visibility_audit(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            for objective in (
+                "AI 검색 가시성 점검",
+                "run an answer engine visibility audit",
+                "우리 제품 인용 현황 확인",
+            ):
+                self.assertEqual(
+                    "audit-answer-visibility",
+                    next_skill(path, objective=objective),
+                    objective,
+                )
+
+    def test_an_incomplete_visibility_audit_names_its_missing_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "artifacts"
+            copytree(ROOT / "fixtures" / "public-dummy" / "artifacts", path)
+            (path / "citation-gaps.md").unlink()
+
+            objective = "가시성 감사"
+            self.assertEqual("audit-answer-visibility", next_skill(path, objective=objective))
+            self.assertIn("citation-gaps.md", next_skill_reason(path, objective=objective))
+
+    def test_a_complete_visibility_audit_does_not_re_route_to_itself(self) -> None:
+        path = ROOT / "fixtures" / "public-dummy" / "artifacts"
+        self.assertNotEqual(
+            "audit-answer-visibility",
+            next_skill(path, objective="가시성 감사"),
+        )
 
 
 class ContentBranchRoutingTests(unittest.TestCase):
@@ -193,11 +248,7 @@ class ApprovalWaitReasonTests(unittest.TestCase):
                 if str(record.get("approved_by", "")).startswith("APR-"):
                     record["status"] = pending_status
                     record["approved_by"] = None
-            target.write_text(
-                "\n".join(json.dumps(record, ensure_ascii=False) for record in records)
-                + "\n",
-                encoding="utf-8",
-            )
+            _write_chained(target, records)
         (path / "approvals.jsonl").unlink()
         return path
 

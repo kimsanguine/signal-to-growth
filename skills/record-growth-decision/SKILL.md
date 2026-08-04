@@ -58,6 +58,17 @@ Create or append:
 
 Read [references/output-contract.md](references/output-contract.md) before writing them.
 
+Add every new record to `decisions.jsonl` and `approvals.jsonl` with the
+`append-record` command, never by writing or editing the file:
+
+```bash
+python3 scripts/stg.py append-record <artifact-directory>/decisions.jsonl '<json-object>'
+```
+
+It takes an exclusive lock and hash-chains each line to the one before it, so a
+later reader can tell whether history was rewritten. In a packaged runtime the
+same command is `signal-to-growth append-record`.
+
 ## Stop conditions
 
 Stop when evidence references are invalid, the owner or review date is absent, alternatives are missing, or approval is implied rather than explicit.

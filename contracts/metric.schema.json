@@ -66,6 +66,14 @@
       "items": {"type": "string"},
       "minItems": 1,
       "uniqueItems": true
+    },
+    "record_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "prev_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
     }
   },
   "allOf": [

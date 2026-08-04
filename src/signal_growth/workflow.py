@@ -66,6 +66,22 @@ SKILL_OUTPUT_FILES = {
         "channel-backlog.md",
         "learning-review.md",
     ),
+    # The two optional-branch skills have no entry in CORE_SKILL_FILES because
+    # nothing downstream requires them. They still belong here: without a routed
+    # output contract, the three-way drift check silently degrades to a two-way
+    # one and the router can call either skill done with artifacts missing.
+    "audit-answer-visibility": (
+        "visibility-observations.jsonl",
+        "citation-gaps.md",
+        "technical-findings.md",
+        "recommendations.md",
+    ),
+    "draft-evidence-content": (
+        "content-brief.md",
+        "claim-ledger.jsonl",
+        "draft.md",
+        "review-checklist.md",
+    ),
 }
 CONNECTOR_SKILL = "connect-customer-channels"
 CONNECTOR_FILES = (
@@ -79,6 +95,10 @@ APPROVAL_FILE = "approvals.jsonl"
 # from an untested claim. Adding this edge is why no twelfth skill was created.
 CONTENT_SKILL = "draft-evidence-content"
 CONTENT_PREREQUISITE = "design-first-user-loop"
+# The visibility audit is the other entry to the optional content branch. It
+# reads public surfaces rather than the growth loop, so it has no prerequisite
+# skill and is only reachable from an explicit objective.
+VISIBILITY_SKILL = "audit-answer-visibility"
 OBJECTIVE_ROUTES = (
     (("연결", "connector", "webhook", "channel talk", "카카오"), CONNECTOR_SKILL),
     (("신호", "triage", "signal", "cs 분류"), "triage-customer-signals"),
@@ -88,6 +108,19 @@ OBJECTIVE_ROUTES = (
     (("인터뷰 합성", "synthesis", "quote"), "synthesize-interviews"),
     (("인터뷰 질문", "switch interview"), "run-switch-interview"),
     (("인터뷰 모집", "research participant"), "plan-customer-reach"),
+    (
+        (
+            "가시성",
+            # Not a bare "인용": an interview quote is 인용 too, and that work
+            # belongs to synthesize-interviews.
+            "인용 현황",
+            "answer engine",
+            "ai 검색",
+            "citation",
+            "visibility audit",
+        ),
+        VISIBILITY_SKILL,
+    ),
     (
         ("소개 페이지", "소개페이지", "landing page", "답변형 콘텐츠", "content draft"),
         CONTENT_SKILL,
@@ -216,8 +249,10 @@ def _skill_complete(
     skill_name: str,
     valid_artifacts: set[str],
 ) -> bool:
-    primary = dict(CORE_SKILL_FILES)[skill_name]
-    if primary not in valid_artifacts:
+    # An optional-branch skill has no primary artifact that later skills depend
+    # on, so its output contract is the whole completion gate.
+    primary = dict(CORE_SKILL_FILES).get(skill_name)
+    if primary is not None and primary not in valid_artifacts:
         return False
     if _missing_skill_outputs(artifact_directory, skill_name):
         return False
@@ -233,8 +268,8 @@ def _incomplete_reason(
     skill_name: str,
     valid_artifacts: set[str],
 ) -> str:
-    primary = dict(CORE_SKILL_FILES)[skill_name]
-    if primary not in valid_artifacts:
+    primary = dict(CORE_SKILL_FILES).get(skill_name)
+    if primary is not None and primary not in valid_artifacts:
         return f"{primary} does not exist yet or fails validation."
     missing = _missing_skill_outputs(artifact_directory, skill_name)
     if missing:
@@ -303,9 +338,8 @@ def _route(
             + _incomplete_reason(artifact_directory, CONTENT_PREREQUISITE, valid)
         )
     if requested is not None:
-        requested_file = dict(CORE_SKILL_FILES).get(requested)
         if requested == CONNECTOR_SKILL or (
-            requested_file is not None
+            requested in SKILL_OUTPUT_FILES
             and not _skill_complete(artifact_directory, requested, valid)
         ):
             return requested, (
