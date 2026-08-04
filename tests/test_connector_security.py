@@ -88,7 +88,6 @@ class ConnectorSecurityTests(unittest.TestCase):
         adapter = ChannelTalkAdapter(
             b"public-dummy-hmac",
             expected_webhook_token="expected-fixture-token",
-            allow_unverified_fixture=False,
         )
 
         with self.assertRaises(EventVerificationError):
@@ -102,10 +101,7 @@ class ConnectorSecurityTests(unittest.TestCase):
             )
 
     def test_channel_talk_rejects_unverified_production_ingress(self):
-        adapter = ChannelTalkAdapter(
-            b"public-dummy-hmac",
-            allow_unverified_fixture=True,
-        )
+        adapter = ChannelTalkAdapter(b"public-dummy-hmac")
 
         with self.assertRaises(EventVerificationError):
             adapter.ingest(
@@ -115,10 +111,7 @@ class ConnectorSecurityTests(unittest.TestCase):
             )
 
     def test_naver_rejects_source_outside_documented_ranges(self):
-        adapter = NaverTalkTalkAdapter(
-            b"public-dummy-hmac",
-            allow_unverified_fixture=False,
-        )
+        adapter = NaverTalkTalkAdapter(b"public-dummy-hmac")
         raw = json.dumps(
             {"event": "send", "user": "public-dummy-user"}
         ).encode("utf-8")

@@ -32,6 +32,7 @@ from ..connector_validation import (
     raw_payload_ref,
     redact_text_with_metadata,
 )
+from ..policy import ConnectorPolicy, default_connector_policy
 from .base import BaseChannelAdapter
 
 
@@ -63,13 +64,15 @@ class NaverTalkTalkAdapter(BaseChannelAdapter):
         customer_hmac_key: bytes,
         *,
         processing_basis_ref: str = "POL-PUBLIC-DUMMY",
-        allow_unverified_fixture: bool = True,
+        policy: ConnectorPolicy | None = None,
     ) -> None:
         if not customer_hmac_key:
             raise ValueError("customer_hmac_key is required")
         self._customer_hmac_key = customer_hmac_key
         self._processing_basis_ref = processing_basis_ref
-        self._allow_unverified_fixture = allow_unverified_fixture
+        # The repository policy decides which assurance levels may be ingested.
+        # Callers normalizing public dummy fixtures pass fixture_ingest_policy().
+        self._policy = policy or default_connector_policy()
 
     def capabilities(
         self,
@@ -132,11 +135,12 @@ class NaverTalkTalkAdapter(BaseChannelAdapter):
                 )
             auth_verified = True
             assurance = VerificationAssurance.WEAK
-        elif not self._allow_unverified_fixture:
-            raise EventVerificationError(
-                "Naver payload-bound authentication is unavailable; "
-                "a trusted source IP is required outside fixture mode"
-            )
+
+        # Enforced against policies/default-policy.json, not a constructor
+        # default: editing that file changes what this endpoint accepts. With
+        # no trusted source IP the assurance stays `none`, which the shipped
+        # policy blocks, so unverified traffic is refused here.
+        self._policy.require_allowed_assurance(self.provider, assurance)
 
         payload = parse_json_body(raw_body)
         event_name = payload.get("event")

@@ -90,6 +90,13 @@ class ConnectorPolicy:
 
     source: str
     blocked_verification_assurance: frozenset[str]
+    # RESERVED, NOT ENFORCED. `default_mode` is parsed and validated so the
+    # file stays well-formed, but no runtime check consults it today: the
+    # read-only stance is structural instead. `BaseChannelAdapter.send_approved`
+    # raises `UnsupportedCapability` unconditionally and every adapter lists
+    # `REPLY_SEND` in `disabled_by_policy`, so there is no write attempt for a
+    # mode check to gate. When an outbound path is added, gate it here rather
+    # than leaving this field decorative.
     default_mode: str
 
     @classmethod

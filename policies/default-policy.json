@@ -33,6 +33,7 @@
   },
   "connectors": {
     "default_mode": "read_only",
+    "default_mode_note": "Reserved, not enforced at runtime. This release has no outbound write path for a mode check to gate: BaseChannelAdapter.send_approved always raises and every adapter disables REPLY_SEND. Wire this field to an enforcement point before relying on it.",
     "outbound_default": false,
     "fallback_default": false,
     "require_secret_reference": true,
