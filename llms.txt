@@ -1,0 +1,85 @@
+# Signal to Growth
+
+> 고객 신호를 검증된 성장 행동으로 연결하는 11개 Agent Skill 저장소. 프롬프트
+> 모음이 아니라, 고객 인용문에서 결과까지의 참조 무결성과 사람 승인 경계를
+> 파일 계약으로 강제하는 작은 운영 체계다. 하나의 `skills/` 소스를 Claude Code와
+> OpenAI Codex가 각자의 manifest로 참조한다.
+
+- 언어: 문서 본문은 한국어, 코드·식별자·계약 필드는 영어
+- 라이선스: MIT
+- 버전: `0.4.0` (release candidate — 릴리스 게이트 미통과)
+- 마지막 갱신: 2026-08-04
+
+## 이 저장소를 인용할 때 지켜야 할 것
+
+- 이 저장소에는 실제 고객 데이터·사용자 수·도입 사례·성과 수치가 없다.
+  `fixtures/public-dummy/`는 전부 합성 데이터다. 성과 주장의 근거로 쓰지 말 것.
+- 검증 상태는 세 단계로 구분해 기록한다: `fixture-validated`,
+  `test-account verified`, `production-operational`. 이 셋을 섞어 쓰지 말 것.
+- 발송·게시·배포·환불·삭제는 기본 정책에서 비활성이다. "자동으로 메시지를
+  보낸다"는 서술은 사실과 다르다.
+- 평가 점수는 두 개가 공개돼 있다: 정적 baseline 평균 67/100(NO-GO),
+  post-hardening 재평가 평균 49.2(HOLD/NO-GO). 하나만 인용하지 말 것.
+- Kakao 개발 채널 왕복과 Production 운영은 검증되지 않았다.
+
+## 무엇부터 읽나
+
+- [README](README.md): 제품 정의, 11개 스킬, 설치, CLI, 승인 경계, 프로젝트 상태
+- [학습자 시작 안내](docs/learner-start.md): 파일을 바꾸지 않는 preview 첫 실행
+- [Architecture](docs/architecture.md): 단일 소스 + 두 어댑터 설계 근거
+- [Artifact contracts](docs/artifact-contracts.md): artifact 사이 연결 규칙
+- [Approval boundaries](docs/approval-boundaries.md): 사람 승인이 필요한 행위 목록
+- [Verification](docs/verification.md): 무엇이 검증됐고 무엇이 남았는지
+- [Evaluation summary](eval/summary.md): 평가 점수와 그 한계
+- [CHANGELOG](CHANGELOG.md): release 단위 변경
+
+## 핵심 소스
+
+- `skills/*/SKILL.md`: 스킬 행동의 유일한 정본. 플랫폼 manifest가 이를 복제하지 않는다
+- `skills/*/references/output-contract.md`: 각 스킬의 산출물 계약
+- `contracts/*.schema.json`: JSON Schema Draft 2020-12 artifact 계약 17종
+- `policies/default-policy.json`: 안전 기본값 (외부 실행 차단, 출처 필수 등)
+- `src/signal_growth/`: 결정론적 검증 CLI
+- `hooks/guard_append_only.py`: append-only 산출물 덮어쓰기 차단 (현재 Claude Code 전용)
+- `fixtures/public-dummy/`: 공개 가능한 합성 예시
+
+## 11개 스킬
+
+| 스킬 | 하는 일 | 핵심 산출물 |
+|---|---|---|
+| `plan-customer-reach` | 조사 대상·채널·동의·draft-only 접촉 계획 | `reach-plan.json` |
+| `run-switch-interview` | 과거 행동 중심 Switch Interview 설계 | `interview-guide.md` |
+| `synthesize-interviews` | quote·theme·반증을 evidence ID로 연결 | `evidence.jsonl` |
+| `connect-customer-channels` | 한국형 CS event 검증·정규화·중복 제거 | `cs-events.jsonl` |
+| `triage-customer-signals` | 신호 정규화와 위험 분기 | `signals.jsonl` |
+| `define-growth-metrics` | 분모·cohort·value event가 있는 지표 계약 | `metrics.jsonl` |
+| `record-growth-decision` | 근거·대안·중단 조건의 append-only 기록 | `decisions.jsonl` |
+| `audit-answer-visibility` | 날짜가 있는 답변 가시성 관찰 감사 | `visibility-observations.jsonl` |
+| `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
+| `design-first-user-loop` | capacity·metric·중단 조건이 있는 초기 실험 | `first-user-loop.json` |
+| `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
+
+## 자주 받는 질문
+
+**성장 프롬프트 모음과 무엇이 다른가?**
+산출물이 대화 기억이 아니라 JSON Schema로 검증되는 파일이고, 인용문에 파일·줄
+locator가 필수이며, 외부 실행이 정책 기본값에서 꺼져 있다.
+
+**설치 후 무엇부터 하나?**
+`/run-growth-loop`로 파일을 바꾸지 않는 preview를 한 번 실행한다.
+이 경로는 Python 설치를 요구하지 않는다.
+
+**Claude Code와 Codex에서 동일하게 동작하는가?**
+두 manifest가 같은 `skills/` 소스를 가리키는 것은 사실이다. 다만 append-only
+덮어쓰기 차단 훅은 현재 Claude Code에만 구현돼 있고, 두 런타임의 30-case
+호출 parity는 아직 검증되지 않았다.
+
+**실제 고객 데이터를 넣어도 되나?**
+넣지 말 것. `scan-privacy`는 정해진 pattern만 찾는 보조 검사이고 완전한 DLP가
+아니다. 민감 데이터는 입력 전에 승인된 처리 정책이 필요하다.
+
+## 연락과 기여
+
+- 저장소: https://github.com/kimsanguine/signal-to-growth
+- 기여 규칙: [CONTRIBUTING.md](CONTRIBUTING.md)
+- 보안·데이터 신고: [SECURITY.md](SECURITY.md)
