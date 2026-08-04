@@ -27,8 +27,9 @@ Require:
 5. Create an offer and message as drafts.
 6. Link the action to a decision, success metric, counter-metric, review date, and stop condition.
 7. State what will be learned if the result is positive, negative, or inconclusive.
-8. Require human approval before spend, posting, email, direct message, or customer promise.
-9. Record outcomes and return them to the decision log.
+8. Require human approval in a later user turn before spend, posting, email, direct message, or customer promise.
+9. Record that approval in `approvals.jsonl` with the exact action ID before changing an external action to approved or executed.
+10. Record outcomes and return them to the decision log.
 
 ## Boundaries
 
@@ -46,6 +47,7 @@ Create:
 - `experiment-cards.md`
 - `channel-backlog.md`
 - append a draft event to `actions.jsonl`
+- append a scoped record to `approvals.jsonl` only after a person approves in a later turn
 - `learning-review.md`
 
 Read [references/output-contract.md](references/output-contract.md) before writing them.

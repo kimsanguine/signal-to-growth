@@ -16,7 +16,7 @@
     "관찰 기간을 채운 cohort가 아직 없다."
   ],
   "approvals": {
-    "decision": "fixture-reviewer",
+    "decision": "APR-PUBLIC-DUMMY-001",
     "external_write": null
   },
   "artifact_versions": {

@@ -4,7 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from shutil import copy2
+from shutil import copy2, copytree
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,9 +20,9 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual("plan-customer-reach", next_skill(path))
             self.assertEqual([], completed_skills(path))
 
-    def test_completed_fixture_has_no_missing_specialist_skill(self) -> None:
+    def test_outcome_review_fixture_routes_to_follow_up_decision(self) -> None:
         path = ROOT / "fixtures" / "public-dummy" / "artifacts"
-        self.assertIsNone(next_skill(path))
+        self.assertEqual("record-growth-decision", next_skill(path))
         self.assertEqual(7, len(completed_skills(path)))
 
     def test_partial_connector_routes_to_connector_skill(self) -> None:
@@ -63,10 +63,25 @@ class WorkflowTests(unittest.TestCase):
             reason = next_skill_reason(path)
             self.assertIn("reach-plan.json", reason)
 
-    def test_reason_is_none_when_no_next_skill_is_required(self) -> None:
+    def test_reason_explains_why_outcome_review_needs_a_decision(self) -> None:
         path = ROOT / "fixtures" / "public-dummy" / "artifacts"
         reason = next_skill_reason(path)
-        self.assertIn("no required next skill", reason)
+        self.assertIn("not mature", reason)
+        self.assertIn("follow-up decision", reason)
+
+    def test_active_complete_artifacts_without_an_outcome_review_have_no_next_skill(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "artifacts"
+            copytree(ROOT / "fixtures" / "public-dummy" / "artifacts", path)
+            copytree(ROOT / "fixtures" / "public-dummy" / "interviews", root / "interviews")
+            (path / "outcomes.jsonl").unlink()
+            (path / "run-state.json").unlink()
+
+            self.assertIsNone(next_skill(path))
+            self.assertIn("no required next skill", next_skill_reason(path))
 
     def test_reason_explains_partial_connector_state(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

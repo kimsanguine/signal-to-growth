@@ -1,0 +1,1 @@
+{"approval_id":"APR-PUBLIC-DUMMY-001","decided_at":"2026-07-25T14:34:00+09:00","approver_id":"fixture-reviewer","approver_type":"human","user_turn_ref":"TURN-PUBLIC-DUMMY-001","status":"approved","scope":{"decision_ids":["DEC-20260725-001"],"action_ids":["ACT-20260725-002"],"external_write":true,"expires_at":null}}

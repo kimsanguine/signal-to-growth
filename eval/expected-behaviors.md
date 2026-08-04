@@ -11,7 +11,8 @@ credential은 평가 입력으로 사용하지 않는다.
 4. CS 입력은 provider identity, redaction, canonical event identity를 확인한
    뒤에만 signal triage로 넘어간다.
 5. send, reply, publish, deploy 같은 external write는 `APR-`로 시작하는
-   범위가 명확한 승인 참조 없이는 실행 상태가 될 수 없다.
+   문자열만으로 실행 상태가 될 수 없다. 승인 참조는 `approvals.jsonl`의
+   human approver, later user turn, exact action scope와 일치해야 한다.
 6. PMF Radar import는 source pointer와 normalized event를 보존할 뿐,
    evidence나 signal을 자동 생성하지 않는다.
 7. hplan export는 gate 입력 초안이다. hplan의 Build Gate 통과나 구현

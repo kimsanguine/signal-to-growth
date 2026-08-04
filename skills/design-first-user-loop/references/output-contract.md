@@ -10,7 +10,15 @@ size, review date, stop condition, and `external_write=false`.
 
 Follow `contracts/action.schema.json`. Link one decision and at least one
 metric. An approved or executed external action requires a scoped `APR-`
-approval reference.
+approval reference that exists in `approvals.jsonl` and covers the exact action
+ID.
+
+## `approvals.jsonl`
+
+Follow `contracts/approval.schema.json`. Append a record only after a person
+approves in a later user turn. Require `approver_type=human`, the
+`user_turn_ref`, exact action IDs, `external_write=true`, status, and optional
+expiry. A model-created `APR-` string is not an approval.
 
 ## `experiment-cards.md`
 

@@ -8,6 +8,15 @@ Require the decision question, selected option, evidence IDs, counterevidence,
 alternatives, `not_build`, reversibility, owner, review date, success condition,
 stop condition, causal confidence, approval, and optional supersedes link.
 
+When status is `approved`, `approved_by` is an `APR-` reference that exists in
+`approvals.jsonl` and covers the exact decision ID.
+
+## `approvals.jsonl`
+
+Follow `contracts/approval.schema.json`. Append only after a person approves in
+a later user turn. Record `approver_type=human`, `user_turn_ref`, the exact
+decision ID, status, and optional expiry.
+
 ## `hplan-intake.json`
 
 Follow `contracts/hplan-intake-brief.schema.json`. It is an intake to hplan
@@ -24,4 +33,6 @@ List upcoming review dates, owners, pending outcomes, and blocked evidence. Do n
 
 ## Completion gate
 
-The decision is approved only when reference validation passes and `approved_by` names the human reviewer.
+The decision is approved only when reference validation passes and
+`approved_by` resolves to a scoped, approved human record covering that
+decision ID.

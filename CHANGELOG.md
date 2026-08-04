@@ -8,8 +8,11 @@ versioning once a version is tagged.
 ### Added
 
 - An `append-record` CLI command and matching `PreToolUse` plugin hook that
-  deny direct Edit/Write on the twelve append-only JSONL artifacts, so
+  deny direct Edit/Write or recognized Bash overwrite patterns on the thirteen
+  append-only JSONL artifacts, so
   concurrent agents cannot interleave writes or silently rewrite history.
+- A scoped `approvals.jsonl` contract that requires a human approver, later
+  user-turn reference, exact decision or action IDs, and approval status.
 - A `reason` field on `next-step` output explaining in plain language why a
   given skill is next.
 - A portable `connect-customer-channels` skill shared by Claude Code and Codex.
@@ -29,7 +32,11 @@ versioning once a version is tagged.
 
 ### Changed
 
-- The skill suite now contains 11 skills and reports version `0.3.0`.
+- The skill suite now contains 11 skills and reports version `0.4.0`.
+- `run-growth-loop` now defaults to a read-only six-part learning/preview
+  response and waits for explicit confirmation in a later turn before apply.
+- `next-step` now reads outcome-review state and routes an immature or held
+  outcome to a follow-up growth decision instead of stopping at file completeness.
 - Core artifacts now use complete Draft 2020-12 runtime validation, exact
   evidence-locator checks, and stronger metric, decision, outcome, and
   first-user-loop contracts.
@@ -52,7 +59,8 @@ versioning once a version is tagged.
 - Supabase browser roles have no access to the test event table.
 - An explicit deny policy protects the test event table from browser roles even
   if table grants drift later.
-- Approval references must be non-secret identifiers beginning with `APR-`.
+- External-write approval references must resolve to scoped human approval
+  records; an `APR-`-looking string alone is rejected.
 - Conflicting same-ID events now fail instead of being silently deduplicated.
 - High-risk Korean identifiers and unauthenticated Channel Talk production
   ingress fail the portable connector gate.

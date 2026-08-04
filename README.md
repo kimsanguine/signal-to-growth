@@ -117,9 +117,28 @@ npx skills add kimsanguine/signal-to-growth -a claude-code -a codex
 
 플랫폼의 공식 plugin 설치가 1순위이며 범용 installer는 보조 경로입니다.
 
+### 수강생 권장 경로: Python 없이 preview부터
+
+Claude Code에서 skill을 설치하고 학습·preview 모드로 읽는 데 Python 3.11
+설치를 선행할 필요는 없습니다. 첫 호출은 파일을 바꾸지 않고 AI 판단,
+deterministic 검증 상태, 사람 결정, 다음 skill을 분리합니다.
+
+```text
+/run-growth-loop
+
+fixtures/public-dummy/artifacts를 학습 모드로 점검해줘.
+파일을 바꾸지 말고 다음 skill 하나와 이유를 보여줘.
+AI가 제안할 것, 사람이 결정할 것, 검증됨과 미확인을 분리해줘.
+```
+
+미리보기를 검토한 뒤 별도의 다음 메시지에서 변경할 파일과 범위를 확인해야
+`apply`로 전환합니다. Python CLI가 없거나 실행되지 않으면 해당 검증은
+`not verified`로 남고 preview는 계속할 수 있습니다.
+
 ## 5분 로컬 체험
 
-Python 3.11 이상이 필요합니다. 설치 시 Draft 2020-12 계약 검증을 위한
+아래는 선택형 deterministic CLI 실습이며 Python 3.11 이상이 필요합니다.
+설치 시 Draft 2020-12 계약 검증을 위한
 `jsonschema` runtime dependency가 함께 설치됩니다.
 
 ```bash
@@ -510,14 +529,14 @@ Signal to Growth가 집중하는 공백:
 
 ## 프로젝트 상태
 
-`v0.3.0`은 PMF Radar→Signal to Growth→hplan handoff와 계약·보안
-hardening을 추가한 release candidate입니다.
+`v0.4.0`은 수강생용 preview/apply 경계, outcome-aware routing, scoped
+human approval, Bash overwrite guard를 추가한 release candidate입니다.
 
 포함:
 
 - 11개 portable skill
 - Claude Code·Codex plugin manifest
-- 7개 core artifact schema, first-user-loop schema, 5개 connector schema
+- 7개 core artifact schema, scoped approval schema, first-user-loop schema, 5개 connector schema
 - 전체 Draft 2020-12 schema와 exact evidence locator를 검증하는 CLI
 - 합성 한국어 fixture
 - unit·integration·negative tests

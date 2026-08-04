@@ -52,15 +52,24 @@ draft
 
 `rejected`, `blocked`, and `superseded` preserve why a path stopped or changed. Approval cannot be inferred from the existence of a file.
 
+`approvals.jsonl` follows `contracts/approval.schema.json`. Each approval names
+a human approver, the later user turn that granted authority, exact decision or
+action IDs, external-write scope, status, and optional expiry. An `APR-` prefix
+by itself is not approval.
+
 ## Reference rules
 
 - A decision references existing evidence IDs.
 - An action references one existing decision and at least one metric.
 - An outcome references one existing action and metric.
 - An approved evidence strength names a human reviewer.
-- An approved decision names a human reviewer.
-- An executed external action names a human reviewer.
+- An approved decision's approval artifact names a human reviewer.
+- An approved decision references a scoped `APR-` approval artifact covering
+  the exact decision ID.
+- An approved or executed external action's approval artifact names a human reviewer.
 - An approved or executed external action references a scoped `APR-` approval artifact.
+- The referenced approval is `approved`, has `approver_type=human`, records a
+  `user_turn_ref`, and covers the exact decision or action ID.
 - A connector stores secret references, never credential values.
 - A normalized event records provider identity, verification assurance, and an idempotency key.
 - A reply remains `external_write=false` until a separate approval artifact authorizes the exact target and content.

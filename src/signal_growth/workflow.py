@@ -73,6 +73,44 @@ def _valid_json_object(path: Path) -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
+def _valid_jsonl_objects(path: Path) -> list[dict[str, Any]]:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        values = [json.loads(line) for line in lines if line.strip()]
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return []
+    return values if all(isinstance(value, dict) for value in values) else []
+
+
+def _outcome_review_reason(artifact_directory: Path) -> str | None:
+    run_state = _valid_json_object(artifact_directory / "run-state.json")
+    outcomes = _valid_jsonl_objects(artifact_directory / "outcomes.jsonl")
+    if not run_state or not outcomes:
+        return None
+    if run_state.get("phase") != "outcome-review" or run_state.get("status") not in {
+        "awaiting_human_review",
+        "blocked",
+    }:
+        return None
+
+    latest = outcomes[-1]
+    if latest.get("next_decision_id") is not None:
+        return None
+    maturity = latest.get("maturity_status")
+    conclusion = latest.get("conclusion")
+    if maturity == "not_mature":
+        return (
+            "The latest outcome is not mature and the outcome-review run is awaiting "
+            "human review — append a follow-up decision with the resume condition."
+        )
+    if conclusion in {"change", "stop", "hold"}:
+        return (
+            f"The latest outcome conclusion is '{conclusion}' and has no linked next "
+            "decision — append a follow-up decision."
+        )
+    return None
+
+
 def _first_user_loop_valid(artifact_directory: Path) -> bool:
     payload = _valid_json_object(artifact_directory / "first-user-loop.json")
     return payload is not None and not validate_schema_record(
@@ -157,6 +195,9 @@ def _route(
             return "design-first-user-loop", (
                 "A decision is valid but first-user-loop.json is not yet valid."
             )
+        outcome_review_reason = _outcome_review_reason(artifact_directory)
+        if outcome_review_reason is not None:
+            return "record-growth-decision", outcome_review_reason
         return None, (
             "All core skill artifacts and the connector state are valid — "
             "there is no required next skill."

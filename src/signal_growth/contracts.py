@@ -19,6 +19,7 @@ ID_PATTERNS = {
     "action": re.compile(r"^ACT-\d{8}-\d{3,}$"),
     "outcome": re.compile(r"^OUT-\d{8}-\d{3,}$"),
     "run_state": re.compile(r"^RUN-\d{8}-\d{3,}$"),
+    "approval": re.compile(r"^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"),
 }
 
 ID_FIELDS = {
@@ -29,6 +30,7 @@ ID_FIELDS = {
     "action": "action_id",
     "outcome": "outcome_id",
     "run_state": "run_id",
+    "approval": "approval_id",
 }
 
 REQUIRED_FIELDS = {
@@ -136,6 +138,15 @@ REQUIRED_FIELDS = {
         "approvals",
         "artifact_versions",
     },
+    "approval": {
+        "approval_id",
+        "decided_at",
+        "approver_id",
+        "approver_type",
+        "user_turn_ref",
+        "status",
+        "scope",
+    },
 }
 
 ENUM_FIELDS = {
@@ -167,6 +178,7 @@ ENUM_FIELDS = {
         "blocked",
         "complete",
     },
+    ("approval", "status"): {"approved", "revoked"},
 }
 
 ARTIFACT_FILES = {
@@ -177,7 +189,19 @@ ARTIFACT_FILES = {
     "actions.jsonl": "action",
     "outcomes.jsonl": "outcome",
     "run-state.json": "run_state",
+    "approvals.jsonl": "approval",
 }
+REQUIRED_COMPLETE_FILES = frozenset(
+    {
+        "evidence.jsonl",
+        "signals.jsonl",
+        "metrics.jsonl",
+        "decisions.jsonl",
+        "actions.jsonl",
+        "outcomes.jsonl",
+        "run-state.json",
+    }
+)
 ARTIFACT_KIND_FILES = {kind: filename for filename, kind in ARTIFACT_FILES.items()}
 
 SCHEMA_FILES = {
@@ -188,6 +212,7 @@ SCHEMA_FILES = {
     "action": "action.schema.json",
     "outcome": "outcome.schema.json",
     "run_state": "run-state.schema.json",
+    "approval": "approval.schema.json",
 }
 
 
@@ -428,6 +453,58 @@ def _check_references(
     check_one("action", "decision_id", "decision")
     check_one("outcome", "action_id", "action")
     check_one("outcome", "metric_id", "metric")
+
+    approvals_by_id = {
+        approval.get("approval_id"): approval
+        for approval in records.get("approval", [])
+        if isinstance(approval.get("approval_id"), str)
+    }
+    for index, decision in enumerate(records.get("decision", []), 1):
+        if decision.get("status") != "approved":
+            continue
+        location = f"decisions.jsonl[{index}]"
+        approval_id = decision.get("approved_by")
+        approval = approvals_by_id.get(approval_id)
+        if approval is None:
+            issues.append(
+                ValidationIssue(location, "approved_by references unknown approval ID")
+            )
+            continue
+        scope = approval.get("scope")
+        decision_ids = scope.get("decision_ids", []) if isinstance(scope, dict) else []
+        if decision.get("decision_id") not in decision_ids:
+            issues.append(
+                ValidationIssue(location, "approval does not cover decision ID")
+            )
+        if approval.get("status") != "approved":
+            issues.append(
+                ValidationIssue(location, "approval is not in approved status")
+            )
+
+    for index, action in enumerate(records.get("action", []), 1):
+        if not (
+            action.get("external_write") is True
+            and action.get("status") in {"approved", "executed"}
+        ):
+            continue
+        location = f"actions.jsonl[{index}]"
+        approval_id = action.get("approved_by")
+        approval = approvals_by_id.get(approval_id)
+        if approval is None:
+            issues.append(
+                ValidationIssue(location, "approved_by references unknown approval ID")
+            )
+            continue
+        scope = approval.get("scope")
+        action_ids = scope.get("action_ids", []) if isinstance(scope, dict) else []
+        if action.get("action_id") not in action_ids:
+            issues.append(
+                ValidationIssue(location, "approval does not cover action ID")
+            )
+        if approval.get("status") != "approved":
+            issues.append(
+                ValidationIssue(location, "approval is not in approved status")
+            )
     return issues
 
 
@@ -443,7 +520,7 @@ def validate_artifact_directory(
     for filename, kind in ARTIFACT_FILES.items():
         path = directory / filename
         if not path.exists():
-            if require_complete:
+            if require_complete and filename in REQUIRED_COMPLETE_FILES:
                 issues.append(ValidationIssue(filename, "required artifact is missing"))
             continue
         try:

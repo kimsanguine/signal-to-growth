@@ -30,10 +30,11 @@ Require:
 5. Classify the decision as reversible, partially reversible, or hard to reverse.
 6. State expected mechanism, success condition, stop condition, and review date.
 7. Mark causal confidence as unknown, low, medium, or high.
-8. Keep status at `draft` or `awaiting_human_review` until a person decides.
-9. Append the decision event. Never modify an earlier event to make a later result look expected.
-10. At review time, compare mature outcomes with the original metric contract and record continue, change, stop, or hold.
-11. Link a superseding decision instead of rewriting the original.
+8. Keep status at `draft` or `awaiting_human_review` until a person decides in a later user turn.
+9. Append a scoped `approvals.jsonl` record covering the exact decision ID before setting status to `approved`.
+10. Append the decision event. Never modify an earlier event to make a later result look expected.
+11. At review time, compare mature outcomes with the original metric contract and record continue, change, stop, or hold.
+12. Link a superseding decision instead of rewriting the original.
 
 ## Boundaries
 
@@ -50,6 +51,7 @@ Require:
 Create or append:
 
 - `decisions.jsonl`
+- `approvals.jsonl` only after a person approves in a later turn
 - `decision-summary.md`
 - `review-queue.md`
 

@@ -1,5 +1,29 @@
 # Verification
 
+## Local v0.4.0 candidate — 2026-08-04
+
+Confirmed in the current checkout:
+
+- repository and public-dummy demo validation passed;
+- 87 unit, schema, negative, integration, routing, approval, and hook tests passed;
+- Claude marketplace validation passed;
+- `next-step` routed the public outcome-review fixture to
+  `record-growth-decision`, matching its `next-action.md`;
+- an unregistered `APR-MODEL-SELF` external-write approval failed artifact
+  validation;
+- the hook denied shell redirection and `Path.write_text` against append-only
+  artifacts while allowing `append-record` and read-only commands.
+
+Not confirmed:
+
+- the updated six-part learning/preview response in a fresh Claude Code runtime.
+  A local `--plugin-dir` attempt stopped at `Budget limit reached ($0.52 of
+  $0.3)` before returning a usable skill result. Do not infer runtime task
+  success from the plugin schema or unit-test results.
+- Codex `quick_validate.py` and `validate_plugin.py` could not be rerun because
+  their previously available system-skill paths disappeared during this
+  session. Claude's marketplace validator did run successfully.
+
 ## Release evidence
 
 Local verification date: 2026-07-26.

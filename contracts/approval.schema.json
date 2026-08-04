@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/approval.schema.json",
+  "title": "Scoped Human Approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "approval_id",
+    "decided_at",
+    "approver_id",
+    "approver_type",
+    "user_turn_ref",
+    "status",
+    "scope"
+  ],
+  "properties": {
+    "approval_id": {
+      "type": "string",
+      "pattern": "^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
+    },
+    "decided_at": {"type": "string", "format": "date-time"},
+    "approver_id": {"type": "string", "minLength": 1},
+    "approver_type": {"const": "human"},
+    "user_turn_ref": {"type": "string", "minLength": 1},
+    "status": {"enum": ["approved", "revoked"]},
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_ids", "action_ids", "external_write", "expires_at"],
+      "properties": {
+        "decision_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
+          },
+          "uniqueItems": true
+        },
+        "action_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^ACT-[0-9]{8}-[0-9]{3,}$"
+          },
+          "uniqueItems": true
+        },
+        "external_write": {"type": "boolean"},
+        "expires_at": {"type": ["string", "null"], "format": "date-time"}
+      },
+      "anyOf": [
+        {"properties": {"decision_ids": {"minItems": 1}}},
+        {"properties": {"action_ids": {"minItems": 1}}}
+      ]
+    }
+  }
+}

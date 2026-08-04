@@ -28,6 +28,7 @@ APPEND_ONLY_FILES = frozenset(
         "integration-references.jsonl",
         "claim-ledger.jsonl",
         "visibility-observations.jsonl",
+        "approvals.jsonl",
     }
 )
 

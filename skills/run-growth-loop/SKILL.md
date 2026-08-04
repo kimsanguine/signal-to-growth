@@ -13,21 +13,53 @@ Require:
 
 - workspace or artifact directory;
 - user objective;
+- operating mode: `learning`/`preview` or `apply`;
 - selected policy set;
 - current `run-state.json`, if one exists;
 - approval and blocker context.
 
+Default to `learning`/`preview` when the mode is omitted, the request is
+educational, or the authority to modify files is unclear.
+
+## Operating modes
+
+### Learning / preview
+
+Use this mode on the first turn. Read and validate available artifacts without
+creating, editing, appending, sending, publishing, or deploying anything.
+Return these six labeled parts in plain language:
+
+1. inputs read;
+2. model interpretation;
+3. deterministically verified facts;
+4. unverified or blocked facts;
+5. decisions that require a person;
+6. proposed file changes and exactly one next skill with its reason.
+
+If the deterministic CLI cannot run, keep working from readable artifacts but
+label deterministic validation `not verified`. Do not require a learner to
+install Python merely to receive the preview.
+
+### Apply
+
+Enter `apply` only after the person reviews the preview and explicitly confirms
+the named files and authority in a later user turn. A prior generic approval,
+an `APR-`-looking model string, or the existence of an output file is not that
+confirmation. External writes additionally require a valid scoped human record
+in `approvals.jsonl`.
+
 ## Workflow
 
-1. Validate repository and available artifacts.
-2. Read the run objective, completed skills, approvals, and blockers.
-3. Reconcile stated completion with files and reference integrity.
-4. Identify the first missing or invalid gate.
-5. Route to exactly one specialist skill unless independent work is explicitly requested.
-6. Preserve partial outputs and explain why the run cannot advance.
-7. Ask for human approval at decision and external-action transitions.
-8. Update `run-state.json` as a new auditable state.
-9. Create a handoff that distinguishes completed, locally validated, externally executed, and outcome-recorded work.
+1. Set the operating mode and default to `learning`/`preview`.
+2. Validate repository and available artifacts when the deterministic runtime is available.
+3. Read the run objective, completed skills, approvals, and blockers.
+4. Reconcile stated completion with files and reference integrity.
+5. Identify the first missing or invalid gate.
+6. Route to exactly one specialist skill unless independent work is explicitly requested.
+7. Preserve partial outputs and explain why the run cannot advance.
+8. Ask for human approval at decision and external-action transitions.
+9. In `apply` mode only, update `run-state.json` as a new auditable state.
+10. In `apply` mode only, create a handoff that distinguishes completed, locally validated, externally executed, and outcome-recorded work.
 
 ## Routing graph
 
@@ -60,13 +92,16 @@ for them.
 - Let the model interpret blockers and propose the next specialist.
 - Use deterministic checks for artifact existence, schema, references, state transitions, and approval.
 - Require a person to approve important decisions and every external write.
+- Keep `learning`/`preview` read-only and wait for a later user turn before `apply`.
 - Do not recreate interview, metric, content, or channel analysis inside the router.
 - Do not call provider APIs directly or treat an unconfigured connector as a blocker for manual signal input.
 - Do not mark a run complete because files exist; required validation and approval must also pass.
 
 ## Outputs
 
-Create or update:
+In `learning`/`preview`, return only the six-part preview and do not write files.
+
+In `apply`, create or update:
 
 - `run-state.json`
 - `next-action.md`

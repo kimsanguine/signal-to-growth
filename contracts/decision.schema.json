@@ -70,5 +70,21 @@
     "causal_confidence": {"enum": ["unknown", "low", "medium", "high"]},
     "approved_by": {"type": ["string", "null"]},
     "supersedes": {"type": ["string", "null"]}
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"const": "approved"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "approved_by": {
+            "type": "string",
+            "pattern": "^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
+          }
+        }
+      }
+    }
+  ]
 }

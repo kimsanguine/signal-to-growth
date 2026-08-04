@@ -101,6 +101,174 @@ class ContractValidationTests(unittest.TestCase):
             [issue.render() for issue in issues],
         )
 
+    def test_external_write_rejects_unregistered_apr_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact_dir = Path(directory)
+            record = {
+                "action_id": "ACT-20260726-001",
+                "decision_id": "DEC-20260726-001",
+                "created_at": "2026-07-26T00:00:00Z",
+                "action_type": "publish_content",
+                "status": "approved",
+                "owner": "owner",
+                "metric_ids": ["MET-20260726-001"],
+                "external_write": True,
+                "approved_by": "APR-MODEL-SELF",
+            }
+            (artifact_dir / "actions.jsonl").write_text(
+                json.dumps(record) + "\n",
+                encoding="utf-8",
+            )
+
+            issues = validate_artifact_directory(artifact_dir)
+            self.assertTrue(
+                any("unknown approval ID" in issue.message for issue in issues),
+                [issue.render() for issue in issues],
+            )
+
+    def test_approval_artifact_rejects_model_as_approver(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact_dir = Path(directory)
+            approval = {
+                "approval_id": "APR-20260726-001",
+                "decided_at": "2026-07-26T00:00:00Z",
+                "approver_id": "claude",
+                "approver_type": "model",
+                "user_turn_ref": "TURN-001",
+                "status": "approved",
+                "scope": {
+                    "decision_ids": [],
+                    "action_ids": ["ACT-20260726-001"],
+                    "external_write": True,
+                    "expires_at": None,
+                },
+            }
+            (artifact_dir / "approvals.jsonl").write_text(
+                json.dumps(approval) + "\n",
+                encoding="utf-8",
+            )
+
+            issues = validate_artifact_directory(artifact_dir)
+            self.assertTrue(
+                any("approver_type" in issue.message for issue in issues),
+                [issue.render() for issue in issues],
+            )
+
+    def test_external_write_approval_must_cover_the_action(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact_dir = Path(directory)
+            action = {
+                "action_id": "ACT-20260726-001",
+                "decision_id": "DEC-20260726-001",
+                "created_at": "2026-07-26T00:00:00Z",
+                "action_type": "publish_content",
+                "status": "approved",
+                "owner": "owner",
+                "metric_ids": ["MET-20260726-001"],
+                "external_write": True,
+                "approved_by": "APR-20260726-001",
+            }
+            approval = {
+                "approval_id": "APR-20260726-001",
+                "decided_at": "2026-07-26T00:00:00Z",
+                "approver_id": "instructor",
+                "approver_type": "human",
+                "user_turn_ref": "TURN-001",
+                "status": "approved",
+                "scope": {
+                    "decision_ids": [],
+                    "action_ids": ["ACT-20260726-999"],
+                    "external_write": True,
+                    "expires_at": None,
+                },
+            }
+            (artifact_dir / "actions.jsonl").write_text(
+                json.dumps(action) + "\n",
+                encoding="utf-8",
+            )
+            (artifact_dir / "approvals.jsonl").write_text(
+                json.dumps(approval) + "\n",
+                encoding="utf-8",
+            )
+
+            issues = validate_artifact_directory(artifact_dir)
+            self.assertTrue(
+                any("does not cover action" in issue.message for issue in issues),
+                [issue.render() for issue in issues],
+            )
+
+    def test_approved_decision_rejects_unregistered_apr_reference(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact_dir = Path(directory)
+            decision = {
+                "decision_id": "DEC-20260726-001",
+                "made_at": "2026-07-26T00:00:00Z",
+                "status": "approved",
+                "decision_question": "가격 정책을 변경할 것인가?",
+                "selected_option": "보류",
+                "hypothesis": "추가 근거가 필요하다.",
+                "evidence_ids": ["EV-20260726-001"],
+                "counterevidence": [],
+                "alternatives": ["변경하지 않는다."],
+                "not_build": ["즉시 가격 변경"],
+                "reversibility": "hard_to_reverse",
+                "owner": "owner",
+                "review_at": "2026-08-26T00:00:00Z",
+                "success_condition": "사람이 승인한다.",
+                "stop_condition": "승인이 없다.",
+                "causal_confidence": "low",
+                "approved_by": "APR-MODEL-SELF",
+                "supersedes": None,
+            }
+            (artifact_dir / "decisions.jsonl").write_text(
+                json.dumps(decision, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+
+            issues = validate_artifact_directory(artifact_dir)
+            self.assertTrue(
+                any("unknown approval ID" in issue.message for issue in issues),
+                [issue.render() for issue in issues],
+            )
+
+    def test_decision_approval_must_cover_the_decision(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            artifact_dir = Path(directory)
+            source_decision = json.loads(
+                (ROOT / "fixtures/public-dummy/artifacts/decisions.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()[0]
+            )
+            source_decision["approved_by"] = "APR-20260726-001"
+            approval = {
+                "approval_id": "APR-20260726-001",
+                "decided_at": "2026-07-26T00:00:00Z",
+                "approver_id": "instructor",
+                "approver_type": "human",
+                "user_turn_ref": "TURN-001",
+                "status": "approved",
+                "scope": {
+                    "decision_ids": ["DEC-20260726-999"],
+                    "action_ids": [],
+                    "external_write": False,
+                    "expires_at": None,
+                },
+            }
+            (artifact_dir / "decisions.jsonl").write_text(
+                json.dumps(source_decision, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+            (artifact_dir / "approvals.jsonl").write_text(
+                json.dumps(approval) + "\n",
+                encoding="utf-8",
+            )
+
+            issues = validate_artifact_directory(artifact_dir)
+            self.assertTrue(
+                any("does not cover decision" in issue.message for issue in issues),
+                [issue.render() for issue in issues],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
