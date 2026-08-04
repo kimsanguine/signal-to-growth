@@ -46,8 +46,25 @@
       "items": {"type": "string", "minLength": 1},
       "uniqueItems": true
     },
-    "source_date": {"type": "string", "format": "date"},
-    "refresh_at": {"type": "string", "format": "date"}
+    "source_date": {"type": ["string", "null"], "format": "date"},
+    "refresh_at": {"type": ["string", "null"], "format": "date"},
+    "draft_locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "anchor"],
+      "properties": {
+        "file": {"type": "string", "minLength": 1},
+        "anchor": {"type": "string", "minLength": 1},
+        "line": {"type": "integer", "minimum": 1}
+      },
+      "description": "Where this claim appears in draft.md, so the claim-source link is checkable rather than asserted."
+    },
+    "verification": {
+      "type": "string",
+      "minLength": 1,
+      "description": "How and when a recommended claim's outcome will be checked."
+    },
+    "note": {"type": "string"}
   },
   "allOf": [
     {

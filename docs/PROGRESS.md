@@ -6,7 +6,8 @@
 
 - **Round**: 1 / 3
 - **Phase**: Wave 1 진행 중 (5개 구현 에이전트 dispatch 완료, 응답 대기)
-- **다음 행동**: impl-automation/impl-agent-dev/impl-product/impl-content/impl-marketing 완료 보고 수합 → 각 worktree 테스트 확인 → main으로 머지 → Wave 3(콘텐츠 통합) → Round 1 평가(fresh 5페르소나)
+- **다음 행동**: 콘텐츠·프로덕트·에이전트개발 3개는 main에 순차 머지 완료(`60fc522`, 126/126 테스트 통과, validate-repo/demo/validate-artifacts 전부 green). 자동화·마케팅 완료 대기 중 — 완료되는 대로 같은 방식으로 머지. **주의**: 마케팅의 산출물은 전부 `docs/self-marketing/` 패치노트뿐이라 Wave 3(README 통합) 전까지는 마케팅 페르소나 재평가 점수가 개선을 반영하지 못함. 5개 전부 머지 후 Wave 3(콘텐츠가 통합) → Round 1 평가.
+- **머지 중 발견한 실제 통합 결함(참고)**: 프로덕트가 만든 `claim-ledger.schema.json`과 콘텐츠가 만든 `claim-ledger.jsonl`이 서로 모르는 채 다른 필드(`draft_locator`/`note`/`refresh_by` vs 스키마)를 가정해 충돌 — 스키마를 확장해 해결(`60fc522`). 5개 worktree를 완전 블라인드 병렬로 돌리면 이런 통합 결함이 머지 시점에만 드러난다는 걸 실측 확인.
 - **WIP 체크포인트 커밋**: `b9bf161` (main). 5개 worktree는 `.worktrees/wt-{automation,agent-dev,product,content,marketing}`, 브랜치 `upgrade/round1-*`, 전부 `b9bf161`에서 분기.
 
 ## Decision Log
