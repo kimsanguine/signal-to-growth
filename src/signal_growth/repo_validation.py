@@ -27,6 +27,7 @@ EXPECTED_SKILLS = {
     "draft-evidence-content",
     "osmu-fanout",
     "design-first-user-loop",
+    "announce-release-to-customers",
     "run-growth-loop",
 }
 

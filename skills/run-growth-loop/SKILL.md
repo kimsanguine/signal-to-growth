@@ -85,6 +85,9 @@ optional content branch
   → audit-answer-visibility → draft-evidence-content
   → design-first-user-loop → draft-evidence-content
   → draft-evidence-content → osmu-fanout
+
+optional release branch
+  → record-growth-decision → announce-release-to-customers
 ```
 
 Route from the stated objective and valid available artifacts, not from a
@@ -104,6 +107,12 @@ When the objective asks to reuse existing content on other surfaces, route to
 `content-brief.json` validates against `contracts/content-brief.schema.json`.
 The brief is the shared input both surfaces read; without it each surface would
 re-decide the topic on its own.
+
+When the objective asks for a release note or customer-facing change
+announcement, route to `announce-release-to-customers` only after
+`record-growth-decision` is complete, so each shipped change can be described
+against the decision log rather than against a model's reading of the code.
+That skill drafts only; announcing to customers stays an external write.
 
 ## Boundaries
 

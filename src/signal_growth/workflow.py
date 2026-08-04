@@ -87,6 +87,11 @@ SKILL_OUTPUT_FILES = {
         "video-script.md",
         "fanout-coverage.md",
     ),
+    "announce-release-to-customers": (
+        "release-notes.jsonl",
+        "customer-announcement-draft.md",
+        "unlinked-changes.md",
+    ),
 }
 CONNECTOR_SKILL = "connect-customer-channels"
 CONNECTOR_FILES = (
@@ -100,11 +105,11 @@ APPROVAL_FILE = "approvals.jsonl"
 # from an untested claim.
 CONTENT_SKILL = "draft-evidence-content"
 CONTENT_PREREQUISITE = "design-first-user-loop"
-# Reuse of an existing draft on other surfaces. It is the one place a twelfth
-# skill earns its keep: the same brief has to reach an image prompt and a video
-# beat without the topic being re-decided per surface. Its prerequisite is the
-# draft itself, and its input is the brief both surfaces share, so a fanout
-# cannot start from a topic that was never written down.
+# Reuse of an existing draft on other surfaces: the same brief has to reach an
+# image prompt and a video beat without the topic being re-decided per surface.
+# Its prerequisite is the draft itself, and its input is the brief both
+# surfaces share, so a fanout cannot start from a topic that was never written
+# down.
 FANOUT_SKILL = "osmu-fanout"
 FANOUT_PREREQUISITE = CONTENT_SKILL
 CONTENT_BRIEF_FILE = "content-brief.json"
@@ -112,6 +117,19 @@ CONTENT_BRIEF_FILE = "content-brief.json"
 # reads public surfaces rather than the growth loop, so it has no prerequisite
 # skill and is only reachable from an explicit objective.
 VISIBILITY_SKILL = "audit-answer-visibility"
+# The release announcement runs after the loop has produced reviewable outcomes,
+# so a shipped change can be described against the decision that motivated it
+# rather than against a hopeful roadmap. It follows record-growth-decision
+# because that skill owns both the decision log and the outcome review.
+RELEASE_SKILL = "announce-release-to-customers"
+RELEASE_PREREQUISITE = "record-growth-decision"
+# An optional-branch skill that may only run once an earlier skill is complete.
+# Routing to the branch while its prerequisite is unfinished would let the run
+# describe work whose supporting record does not exist yet.
+BRANCH_PREREQUISITES = {
+    CONTENT_SKILL: CONTENT_PREREQUISITE,
+    RELEASE_SKILL: RELEASE_PREREQUISITE,
+}
 OBJECTIVE_ROUTES = (
     (("연결", "connector", "webhook", "channel talk", "카카오"), CONNECTOR_SKILL),
     (("신호", "triage", "signal", "cs 분류"), "triage-customer-signals"),
@@ -151,6 +169,17 @@ OBJECTIVE_ROUTES = (
             "content fanout",
         ),
         FANOUT_SKILL,
+    ),
+    (
+        (
+            "릴리스",
+            "리스노트",
+            "출시 안내",
+            "변경 안내",
+            "release note",
+            "changelog",
+        ),
+        RELEASE_SKILL,
     ),
 )
 
@@ -408,17 +437,18 @@ def _route(
 
     valid = _valid_artifacts(artifact_directory)
     requested = _objective_route(objective)
-    if requested == CONTENT_SKILL:
-        if _skill_complete(artifact_directory, CONTENT_PREREQUISITE, valid):
-            return CONTENT_SKILL, (
-                f"The stated objective points to '{CONTENT_SKILL}' and "
-                f"'{CONTENT_PREREQUISITE}' is complete, so the optional content "
-                "branch can run on a validated first-user loop."
+    prerequisite = BRANCH_PREREQUISITES.get(requested)
+    if prerequisite is not None:
+        if _skill_complete(artifact_directory, prerequisite, valid):
+            return requested, (
+                f"The stated objective points to '{requested}' and "
+                f"'{prerequisite}' is complete, so the optional branch can run "
+                "on a validated record."
             )
-        return CONTENT_PREREQUISITE, (
-            f"The stated objective points to '{CONTENT_SKILL}', which follows "
-            f"'{CONTENT_PREREQUISITE}': "
-            + _incomplete_reason(artifact_directory, CONTENT_PREREQUISITE, valid)
+        return prerequisite, (
+            f"The stated objective points to '{requested}', which follows "
+            f"'{prerequisite}': "
+            + _incomplete_reason(artifact_directory, prerequisite, valid)
         )
     if requested == FANOUT_SKILL and not _skill_complete(
         artifact_directory,
