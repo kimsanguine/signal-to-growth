@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .append_only import chain_records
+from .append_only import chain_records, verify_append_chain
 from .connector_validation import validate_cs_event_record
 from .contracts import load_records, validate_artifact_directory
 from .schema_validation import validate_schema_record
@@ -16,6 +16,13 @@ from .schema_validation import validate_schema_record
 
 class IntegrationContractError(ValueError):
     """An integration artifact cannot be accepted without inventing state."""
+
+
+# The append-only ledgers this module materializes. `integration-references.jsonl`
+# is emitted here and nowhere else, so if this module does not recompute its
+# chain, nothing in the repository ever does and the hashes it writes are
+# decoration rather than evidence.
+CHAINED_INTEGRATION_FILES = ("cs-events.jsonl", "integration-references.jsonl")
 
 
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -44,6 +51,10 @@ def _render_jsonl(records: Iterable[Mapping[str, Any]]) -> str:
         json.dumps(dict(record), ensure_ascii=False, separators=(",", ":")) + "\n"
         for record in records
     )
+
+
+def _parse_jsonl_text(text: str) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in text.splitlines() if line.strip()]
 
 
 def _integration_id(system: str, external_id: str) -> str:
@@ -116,6 +127,21 @@ def import_pmf_radar(
         "cs-events.jsonl": _render_jsonl(chain_records(events)),
         "integration-references.jsonl": _render_jsonl(chain_records(references)),
     }
+    # Verify what will actually be persisted, re-read from the rendered text
+    # rather than from the in-memory records. Checking the objects we just
+    # chained would only restate `chain_records`; checking the bytes catches a
+    # serialization defect that would ship a ledger nobody can verify.
+    for filename in CHAINED_INTEGRATION_FILES:
+        chain_issues = verify_append_chain(
+            _parse_jsonl_text(output_files[filename]),
+            filename,
+        )
+        if chain_issues:
+            raise IntegrationContractError(
+                "; ".join(
+                    f"{location}: {message}" for location, message in chain_issues
+                )
+            )
     if write:
         if output_directory is None:
             raise IntegrationContractError("--write requires an output directory")

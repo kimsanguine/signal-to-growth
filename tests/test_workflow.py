@@ -272,5 +272,64 @@ class ApprovalWaitReasonTests(unittest.TestCase):
             self.assertIn("awaiting human approval in a later user turn", reason)
 
 
+class ConnectorObjectiveTests(unittest.TestCase):
+    """A connector objective must route, not crash.
+
+    `connect-customer-channels` is deliberately absent from SKILL_OUTPUT_FILES
+    because its artifacts are governed by the connector contract rather than by
+    a routed output contract. The objective branch forgot that and indexed the
+    table directly, so every connector hint raised KeyError before any user saw
+    a routing answer.
+    """
+
+    def test_every_connector_objective_hint_routes_without_raising(self) -> None:
+        path = ROOT / "fixtures" / "public-dummy" / "artifacts"
+        for objective in ("카카오 연결", "connector 설정", "webhook", "channel talk"):
+            with self.subTest(objective=objective):
+                self.assertEqual(
+                    "connect-customer-channels",
+                    next_skill(path, objective=objective),
+                )
+                self.assertIn(
+                    "connect-customer-channels",
+                    next_skill_reason(path, objective=objective),
+                )
+
+    def test_an_unconfigured_connector_is_named_as_the_reason(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            reason = next_skill_reason(path, objective="카카오 연결")
+            self.assertIn("not-configured", reason)
+
+    def test_a_valid_connector_objective_hands_off_instead_of_looping(self) -> None:
+        """Asking to connect what is already connected must not re-route there."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            source = ROOT / "fixtures" / "public-dummy" / "connector-artifacts"
+            for item in source.iterdir():
+                copy2(item, path / item.name)
+
+            self.assertNotEqual(
+                "connect-customer-channels",
+                next_skill(path, objective="카카오 연결"),
+            )
+
+    def test_every_routable_objective_target_can_be_judged_complete(self) -> None:
+        """The KeyError came from a routing target with no completion rule.
+
+        Asserting the table agreement here means adding a future objective
+        route without a completion rule fails a test instead of a user's run.
+        """
+        from signal_growth.workflow import (
+            CONNECTOR_SKILL,
+            OBJECTIVE_ROUTES,
+            SKILL_OUTPUT_FILES,
+        )
+
+        for _, skill in OBJECTIVE_ROUTES:
+            with self.subTest(skill=skill):
+                self.assertTrue(skill == CONNECTOR_SKILL or skill in SKILL_OUTPUT_FILES)
+
+
 if __name__ == "__main__":
     unittest.main()

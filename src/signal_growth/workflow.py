@@ -128,6 +128,26 @@ OBJECTIVE_ROUTES = (
 )
 
 
+# `connect-customer-channels` is absent from SKILL_OUTPUT_FILES on purpose: its
+# artifacts are governed by the connector contract, not by a routed output
+# contract. Its completion therefore reads from the connector state, and these
+# are the reasons a caller sees for each state that is not yet `valid`.
+_CONNECTOR_INCOMPLETE_REASONS = {
+    "not-configured": (
+        f"{CONNECTOR_SKILL} has not run yet: the connector is not-configured, so "
+        f"none of {', '.join(CONNECTOR_FILES)} exists."
+    ),
+    "partial": (
+        f"{CONNECTOR_SKILL} is partial: some of "
+        f"{', '.join(CONNECTOR_FILES)} exist and the rest are missing."
+    ),
+    "invalid": (
+        f"{CONNECTOR_SKILL} is invalid: all of {', '.join(CONNECTOR_FILES)} exist "
+        "but they fail connector validation."
+    ),
+}
+
+
 def _connector_state(artifact_directory: Path) -> str:
     exists = [(artifact_directory / filename).exists() for filename in CONNECTOR_FILES]
     if all(exists):
@@ -249,6 +269,8 @@ def _skill_complete(
     skill_name: str,
     valid_artifacts: set[str],
 ) -> bool:
+    if skill_name == CONNECTOR_SKILL:
+        return _connector_state(artifact_directory) == "valid"
     # An optional-branch skill has no primary artifact that later skills depend
     # on, so its output contract is the whole completion gate.
     primary = dict(CORE_SKILL_FILES).get(skill_name)
@@ -268,6 +290,12 @@ def _incomplete_reason(
     skill_name: str,
     valid_artifacts: set[str],
 ) -> str:
+    if skill_name == CONNECTOR_SKILL:
+        state = _connector_state(artifact_directory)
+        return _CONNECTOR_INCOMPLETE_REASONS.get(
+            state,
+            f"{CONNECTOR_SKILL} is not complete.",
+        )
     primary = dict(CORE_SKILL_FILES).get(skill_name)
     if primary is not None and primary not in valid_artifacts:
         return f"{primary} does not exist yet or fails validation."
@@ -337,15 +365,15 @@ def _route(
             f"'{CONTENT_PREREQUISITE}': "
             + _incomplete_reason(artifact_directory, CONTENT_PREREQUISITE, valid)
         )
-    if requested is not None:
-        if requested == CONNECTOR_SKILL or (
-            requested in SKILL_OUTPUT_FILES
-            and not _skill_complete(artifact_directory, requested, valid)
-        ):
-            return requested, (
-                f"The stated objective points to '{requested}': "
-                + _incomplete_reason(artifact_directory, requested, valid)
-            )
+    if requested is not None and not _skill_complete(
+        artifact_directory,
+        requested,
+        valid,
+    ):
+        return requested, (
+            f"The stated objective points to '{requested}': "
+            + _incomplete_reason(artifact_directory, requested, valid)
+        )
 
     has_customer_input = (
         "evidence.jsonl" in valid
