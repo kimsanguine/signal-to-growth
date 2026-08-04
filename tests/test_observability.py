@@ -118,6 +118,34 @@ class StructuredLoggerTests(unittest.TestCase):
         self.assertEqual(422, record["status_code"])
         self.assertEqual("CSE-public-dummy-001", record["event_id"])
 
+    def test_ingest_accepted_records_the_success_path(self) -> None:
+        # Without a success line, "healthy" and "webhook disconnected" both
+        # produce an empty log, so this line is what makes them distinguishable.
+        self.structured.ingest_accepted(
+            event=EVENT,
+            approval_ref="APR-KAKAO-TEST-001",
+            duration_ms=12.5,
+        )
+
+        record = json.loads(self.handler.lines[0])
+        self.assertEqual("ingest_accepted", record["event"])
+        self.assertEqual("persisted", record["outcome"])
+        self.assertEqual("CSE-public-dummy-001", record["event_id"])
+        self.assertEqual("kakao_openbuilder", record["provider"])
+        self.assertEqual(12.5, record["duration_ms"])
+
+    def test_ingest_accepted_never_writes_customer_content(self) -> None:
+        self.structured.ingest_accepted(
+            event=EVENT,
+            approval_ref="APR-KAKAO-TEST-001",
+            duration_ms=1.0,
+        )
+
+        line = self.handler.lines[0]
+        self.assertNotIn(UTTERANCE, line)
+        self.assertNotIn("hmac:0123456789abcdef", line)
+        self.assertNotIn("ref:0123456789abcdef", line)
+
     def test_error_type_reports_the_class_not_the_message(self) -> None:
         self.assertEqual("KeyError", error_type(KeyError("secret-detail")))
 

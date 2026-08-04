@@ -73,11 +73,18 @@ def command_validate_connectors(args: argparse.Namespace) -> int:
 def command_normalize_event(args: argparse.Namespace) -> int:
     raw_body = args.input.resolve().read_bytes()
     received_at = args.received_at or datetime.now(UTC).isoformat()
+    # This command normalizes repository fixtures, which carry no provider
+    # authentication, so the fixture-only policy relaxation is explicit for
+    # every adapter it constructs.
     adapters = {
-        "naver-talktalk": NaverTalkTalkAdapter(_PUBLIC_DUMMY_HMAC_KEY),
-        "channel-talk": ChannelTalkAdapter(_PUBLIC_DUMMY_HMAC_KEY),
-        # This command normalizes repository fixtures, which carry no provider
-        # authentication, so the fixture-only policy relaxation is explicit.
+        "naver-talktalk": NaverTalkTalkAdapter(
+            _PUBLIC_DUMMY_HMAC_KEY,
+            policy=fixture_ingest_policy(),
+        ),
+        "channel-talk": ChannelTalkAdapter(
+            _PUBLIC_DUMMY_HMAC_KEY,
+            policy=fixture_ingest_policy(),
+        ),
         "kakao-openbuilder": KakaoOpenBuilderAdapter(
             _PUBLIC_DUMMY_HMAC_KEY,
             policy=fixture_ingest_policy(),

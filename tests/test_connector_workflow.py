@@ -61,7 +61,10 @@ class ConnectorWorkflowTests(unittest.TestCase):
         self.assertEqual([], errors, [error.message for error in errors])
 
     def test_naver_fixture_normalizes_deterministically_and_dedupes(self):
-        adapter = NaverTalkTalkAdapter(b"public-dummy-hmac")
+        adapter = NaverTalkTalkAdapter(
+            b"public-dummy-hmac",
+            policy=fixture_ingest_policy(),
+        )
         raw = (PROVIDERS / "naver-talktalk" / "send-event.json").read_bytes()
 
         first = adapter.ingest(
@@ -98,6 +101,7 @@ class ConnectorWorkflowTests(unittest.TestCase):
         adapter = ChannelTalkAdapter(
             b"public-dummy-hmac",
             credential_ref="secret://channel-talk/test",
+            policy=fixture_ingest_policy(),
         )
         webhook = adapter.ingest(
             (PROVIDERS / "channel-talk" / "message-event.json").read_bytes(),

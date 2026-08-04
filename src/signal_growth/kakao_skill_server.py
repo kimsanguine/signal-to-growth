@@ -7,8 +7,12 @@ way, which is wrong in both directions: it makes a permanently-rejected event
 look retryable (the provider re-sends forever and the event is still lost), and
 it hides which dependency broke. Persistence failures are therefore split:
 
-- **Availability** (`TransportError`): the write may succeed later. Fail closed
-  with 503 so Kakao retries. Nothing is lost, so no dead-letter row is written.
+- **Availability** (`TransportError`): the write may succeed later, so fail
+  closed with 503 rather than acknowledging. The design intends the provider to
+  re-send and no event to be lost — but that outcome depends on Kakao's retry
+  behavior, which this repository has not observed against a live channel
+  (`docs/PROGRESS.md`). Treat it as the intent, not a verified guarantee. No
+  dead-letter row is written on this path.
 - **Contract** (`ValueError` family, including `SupabaseWriteRejected`): an
   identical retry can never succeed. Divert the event to the dead-letter sink
   and acknowledge with 200 — the event *is* durably stored, just not in the
@@ -22,6 +26,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from datetime import UTC, datetime
 from typing import Any, Callable, Iterable, Mapping
 
@@ -102,6 +107,7 @@ class KakaoSkillApplication:
                 {"error": "not_found"},
             )
 
+        started_at = time.perf_counter()
         try:
             raw_body = self._read_body(environ)
             event = self._adapter.ingest(
@@ -158,6 +164,13 @@ class KakaoSkillApplication:
                 {"error": "event_persistence_failed"},
             )
 
+        # Success is logged too. With failure-only logging, a healthy endpoint
+        # and a webhook that stopped delivering look identical: both are silent.
+        self._logger.ingest_accepted(
+            event=payload,
+            approval_ref=self._approval_ref,
+            duration_ms=round((time.perf_counter() - started_at) * 1000, 3),
+        )
         return self._json_response(
             start_response,
             "200 OK",

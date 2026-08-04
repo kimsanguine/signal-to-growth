@@ -136,8 +136,13 @@ class KakaoSkillServerTests(unittest.TestCase):
             )
 
 
-class IngestFailureRoutingTests(unittest.TestCase):
-    """A failed write must be classified, because the recovery paths differ."""
+class IngestOutcomeLoggingTests(unittest.TestCase):
+    """Every ingest outcome must be logged, because the recovery paths differ.
+
+    Failures are classified so an operator knows whether a retry can help.
+    Success is logged too, so silence in this log means "nothing arrived"
+    rather than "everything worked".
+    """
 
     def setUp(self):
         self.dead_letters = []
@@ -186,6 +191,42 @@ class IngestFailureRoutingTests(unittest.TestCase):
 
     def log_records(self):
         return [json.loads(line) for line in self.handler.lines]
+
+    def test_successful_ingest_is_logged_so_silence_means_no_traffic(self):
+        captured, _ = self.request(self.build(lambda event, approval_ref: None))
+
+        self.assertEqual("200 OK", captured["status"])
+        record = self.log_records()[0]
+        self.assertEqual("ingest_accepted", record["event"])
+        self.assertEqual("persisted", record["outcome"])
+        self.assertEqual("kakao_openbuilder", record["provider"])
+        self.assertEqual("APR-KAKAO-TEST-001", record["approval_ref"])
+        self.assertIn("event_id", record)
+        self.assertGreaterEqual(record["duration_ms"], 0)
+        # The redact contract still holds on the success path.
+        self.assertNotIn("content_redacted", record)
+        self.assertNotIn(UTTERANCE, self.handler.lines[0])
+
+    def test_a_rejected_request_emits_no_success_line(self):
+        raw = FIXTURE.read_bytes()
+        environ = {
+            "REQUEST_METHOD": "POST",
+            "PATH_INFO": "/api/kakao/skill",
+            "CONTENT_LENGTH": str(len(raw)),
+            "HTTP_X_API_KEY": "wrong-fixture-key",
+            "HTTP_X_REQUEST_ID": "request-001",
+            "wsgi.input": io.BytesIO(raw),
+        }
+        captured = {}
+
+        def start_response(status, headers):
+            captured["status"] = status
+
+        app = self.build(lambda event, approval_ref: None)
+        b"".join(app(environ, start_response))
+
+        self.assertEqual("401 Unauthorized", captured["status"])
+        self.assertEqual([], self.log_records())
 
     def test_availability_failure_fails_closed_without_dead_lettering(self):
         # Supabase may accept this same write in a minute, so the event must

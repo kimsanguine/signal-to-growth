@@ -33,6 +33,7 @@ from ..connector_validation import (
     raw_payload_ref,
     redact_text_with_metadata,
 )
+from ..policy import ConnectorPolicy, default_connector_policy
 from .base import BaseChannelAdapter, InjectedTransport, send_with_injected_transport
 
 
@@ -50,7 +51,7 @@ class ChannelTalkAdapter(BaseChannelAdapter):
         expected_webhook_token: str | None = None,
         credential_ref: str | None = None,
         processing_basis_ref: str = "POL-PUBLIC-DUMMY",
-        allow_unverified_fixture: bool = True,
+        policy: ConnectorPolicy | None = None,
     ) -> None:
         if not customer_hmac_key:
             raise ValueError("customer_hmac_key is required")
@@ -60,7 +61,9 @@ class ChannelTalkAdapter(BaseChannelAdapter):
         self._expected_webhook_token = expected_webhook_token
         self._credential_ref = credential_ref
         self._processing_basis_ref = processing_basis_ref
-        self._allow_unverified_fixture = allow_unverified_fixture
+        # The repository policy decides which assurance levels may be ingested.
+        # Callers normalizing public dummy fixtures pass fixture_ingest_policy().
+        self._policy = policy or default_connector_policy()
 
     def capabilities(
         self,
@@ -118,13 +121,17 @@ class ChannelTalkAdapter(BaseChannelAdapter):
                 raise EventVerificationError("Channel Talk webhook token mismatch")
             auth_verified = True
             assurance = VerificationAssurance.WEAK
-        elif context.environment == "fixture" and self._allow_unverified_fixture:
+        elif context.environment == "fixture":
             auth_verified = False
             assurance = VerificationAssurance.NONE
         else:
             raise EventVerificationError(
                 "legacy Channel Talk webhook requires the configured URL token"
             )
+
+        # Enforced against policies/default-policy.json, not a constructor
+        # default: editing that file changes what this endpoint accepts.
+        self._policy.require_allowed_assurance(self.provider, assurance)
 
         payload = parse_json_body(raw_body)
         if payload.get("event") != "push":
@@ -322,6 +329,16 @@ class ChannelTalkAdapter(BaseChannelAdapter):
         ):
             raise TransportError("Channel Talk backfill response requires messages")
 
+        backfill_assurance = (
+            VerificationAssurance.MEDIUM
+            if response.authenticated
+            else VerificationAssurance.NONE
+        )
+        # Backfill is a second way canonical events enter the store, so the same
+        # policy decides it. Otherwise an unauthenticated transport could seed
+        # events the webhook path would have refused.
+        self._policy.require_allowed_assurance(self.provider, backfill_assurance)
+
         normalized_received_at = isoformat_utc(received_at)
         events: list[CanonicalChannelEvent] = []
         for message in payload["messages"]:
@@ -339,11 +356,7 @@ class ChannelTalkAdapter(BaseChannelAdapter):
                     raw_body=raw_message,
                     received_at=normalized_received_at,
                     auth_verified=response.authenticated,
-                    assurance=(
-                        VerificationAssurance.MEDIUM
-                        if response.authenticated
-                        else VerificationAssurance.NONE
-                    ),
+                    assurance=backfill_assurance,
                 )
             )
 

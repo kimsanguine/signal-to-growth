@@ -45,6 +45,7 @@ LOGGABLE_FIELDS = frozenset(
     {
         "approval_ref",
         "dead_lettered",
+        "duration_ms",
         "error_type",
         "failure_class",
         "outcome",
@@ -97,6 +98,30 @@ class StructuredLogger:
                 sort_keys=True,
                 separators=(",", ":"),
             ),
+        )
+
+    def ingest_accepted(
+        self,
+        *,
+        event: Mapping[str, Any],
+        approval_ref: str,
+        duration_ms: float | None = None,
+        outcome: str = "persisted",
+    ) -> None:
+        """Record a successfully persisted event.
+
+        Without this line the log only ever shows failures, so a healthy
+        endpoint and a disconnected webhook are indistinguishable: both produce
+        silence. The fields are the same allowlisted identifiers the failure
+        path uses, so no customer content is added by logging the happy path.
+        """
+        self.emit(
+            "ingest_accepted",
+            level=logging.INFO,
+            outcome=outcome,
+            approval_ref=approval_ref,
+            duration_ms=duration_ms,
+            **safe_event_descriptor(event),
         )
 
     def ingest_failure(
