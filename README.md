@@ -21,7 +21,7 @@
   다음 단계에 연결됩니다.
 - 발송·게시·배포·환불·삭제는 기본 정책에서 꺼져 있습니다
   (`policies/default-policy.json`의 `external_write_default: false`).
-- 인용문에는 파일·줄 locator가 필요하고, 합성 quote는 허용하지 않습니다
+- 인용문에는 파일·줄 [locator](docs/glossary.md#locator-로케이터)가 필요하고, 합성 quote는 허용하지 않습니다
   (`allow_synthetic_quotes: false`).
 
 **먼저 할 일 하나** — 파일을 바꾸지 않는 preview를 한 번 돌려보세요.
@@ -36,6 +36,40 @@ fixtures/public-dummy/artifacts를 학습 모드로 점검해줘. 파일은 바�
 이 저장소는 아직 **릴리스 게이트를 통과하지 않았습니다.** 공개된 평가 점수와
 남은 검증 범위는 [「프로젝트 상태」](#프로젝트-상태)에 그대로 적어 두었습니다.
 [변경 이력](CHANGELOG.md)에서 release 단위의 차이를 확인할 수 있습니다.
+
+## 목차
+
+> 처음 보는 단어가 나오면 [**용어집**](docs/glossary.md)을 보세요.
+> `deterministic`·`locator`·`parity`·`idempotency`·`dedupe`·`state projection`·`WSGI`·`RLS` 등을
+> 비개발 PM 기준으로 풀어 두었습니다.
+
+**시작하기**
+
+- [설치](#설치)
+- [첫 실행: Python 없이 preview부터](#첫-실행-python-없이-preview부터)
+- [5분 로컬 체험](#5분-로컬-체험)
+
+**무엇을 하는가**
+
+- [11개 스킬](#11개-스킬)
+- [실제 사용 예](#실제-사용-예)
+- [안전과 승인 경계](#안전과-승인-경계)
+- [Artifact contract](#artifact-contract)
+
+**왜 이렇게 만들었는가**
+
+- [왜 만들었나](#왜-만들었나)
+- [핵심 원칙](#핵심-원칙)
+- [경쟁 제품과 다른 점](#경쟁-제품과-다른-점)
+
+**참고**
+
+- [CLI](#cli)
+- [Claude Code와 Codex를 함께 지원하는 방식](#claude-code와-codex를-함께-지원하는-방식)
+- [저장소 구조](#저장소-구조)
+- [개발과 검증](#개발과-검증)
+- [프로젝트 상태](#프로젝트-상태)
+- [기여](#기여) · [출처와 감사](#출처와-감사) · [License](#license)
 
 ## 설치
 
@@ -94,7 +128,7 @@ npx skills add kimsanguine/signal-to-growth -a claude-code -a codex
 
 Claude Code에서 skill을 설치하고 학습·preview 모드로 읽는 데 Python 3.11
 설치를 선행할 필요는 없습니다. 첫 호출은 파일을 바꾸지 않고 AI 판단,
-deterministic 검증 상태, 사람 결정, 다음 skill을 분리합니다.
+[deterministic](docs/glossary.md#deterministic-결정론적) 검증 상태, 사람 결정, 다음 skill을 분리합니다.
 
 ```text
 /run-growth-loop
@@ -333,7 +367,7 @@ quote
 현재 Claude Code에만 구현돼 있습니다(`hooks/hooks.json`). Codex에서는 같은
 규칙이 `SKILL.md`의 지시와 `append-record` CLI로만 유지되며, 도구 수준의
 강제는 아직 없습니다(`.codex-plugin/plugin.json`에 hooks 키 없음). Codex 대응은
-진행 중입니다. 두 런타임의 30-case 호출 parity 역시 미검증 상태입니다
+진행 중입니다. 두 런타임의 30-case 호출 [parity](docs/glossary.md#parity-동등성) 역시 미검증 상태입니다
 ([Evaluation summary](eval/summary.md)). 승인 경계·정책·schema 검증은 두 런타임
 공통이며, 차이는 훅이라는 한 층입니다.
 
@@ -436,7 +470,7 @@ gate 통과나 구현 가능성을 대신 판정하지 않습니다. 계약과 �
 
 | 표면 | 현재 구현 | 아직 검증하지 않은 것 |
 |---|---|---|
-| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel Preview→Supabase 합성 E2E, live idempotency, `version=2.0` 응답 | Chatbot Admin Center 개발 채널 왕복, 실제 반복 발화에서 서로 다른 `X-Request-Id`가 생성되는지, Production |
+| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel Preview→Supabase 합성 E2E, live [idempotency](docs/glossary.md#idempotency-멱등성), `version=2.0` 응답 | Chatbot Admin Center 개발 채널 왕복, 실제 반복 발화에서 서로 다른 `X-Request-Id`가 생성되는지, Production |
 | Naver TalkTalk | public dummy event 정규화·마스킹·중복 제거 | 실제 test account webhook, backfill, 발송 |
 | Channel Talk | webhook 정규화와 injected read-only backfill·대사 | 실제 credential·HTTPS endpoint 왕복 |
 | Kakao 상담톡 via Channel Talk | product boundary와 계정 설정 절차 | 실제 채널 이관·상담 event |
@@ -451,7 +485,7 @@ Channel Talk는 Open API key 발급에 유료 plan이 필요한 선택형 connec
 skill request는 상담톡이나 native 1:1 상담 이력 API가 아닙니다.
 
 `KakaoSkillApplication`은 정규화 event를 먼저 저장한 뒤 fixed
-`version=2.0` 응답을 반환하는 deployment-neutral WSGI application입니다.
+`version=2.0` 응답을 반환하는 deployment-neutral [WSGI](docs/glossary.md#wsgi) application입니다.
 `app.py`는 Vercel entry point, `SupabaseEventSink`는 server-only secret을
 사용하는 저장 adapter입니다. 저장 실패 시 성공 응답을 반환하지 않습니다.
 승인 참조는 canonical 고객 event와 분리된 `approval_ref` 열에 저장합니다.
@@ -498,7 +532,7 @@ Preview에서 실제로 검증했습니다. `health=200/configured`, 잘못된
 왕복은 아직 별도 검증 대상입니다. 실행 증거와 남은 경계는
 [Verification](docs/verification.md)에 기록합니다.
 
-이 table은 RLS를 활성화하고 `anon`·`authenticated` 권한을 제거하며,
+이 table은 [RLS](docs/glossary.md#rls-row-level-security-행-수준-보안)를 활성화하고 `anon`·`authenticated` 권한을 제거하며,
 두 browser role에 명시적인 deny policy도 적용합니다.
 `sb_secret_...` key는 backend 전용이며 브라우저나 교안에 노출하지 않습니다.
 실제 고객 데이터가 아닌 합성 발화만 사용합니다.
@@ -680,7 +714,7 @@ parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인�
 - Kakao Open Builder용 Vercel WSGI endpoint와 Supabase restricted sink
 - 격리된 Vercel Preview→Supabase 합성 E2E와 live idempotency 증거
 - synthetic event approval reference와 7일 deletion-eligibility marker
-- provider-neutral dedupe·redaction·delivery state projection
+- provider-neutral [dedupe](docs/glossary.md#dedupe-중복-제거)·redaction·delivery [state projection](docs/glossary.md#state-projection-상태-투영)
 
 아직 포함하지 않음:
 
