@@ -53,8 +53,9 @@
 - 공백: 평균 67(baseline)은 README에 있고, post-hardening 평균 49.2는
   `eval/summary.md:49`에만 있다. 상단만 읽은 독자는 더 낮은 재평가 점수를
   보지 못한다.
-- 비고: Wave 3에서 점수 공시 절충안(상단 링크 + 하위 섹션에 둘 다 명시)이
-  적용될 예정이다 (`docs/PROGRESS.md:40`).
+- 비고: Wave 3의 점수 공시 절충안(상단 링크 + 하위 섹션에 둘 다 명시)은
+  적용됐고 (`docs/PROGRESS.md:119`), README.md:674 표가 67과 49.2를
+  나란히 싣는다. 이 공백은 해소됐다 (VIS-20260804-013).
 
 ## 해석 (inference)
 

@@ -29,7 +29,7 @@
         "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
       },
       "uniqueItems": true,
-      "description": "Supporting evidence IDs. May be empty only when state is unknown."
+      "description": "Supporting evidence IDs. May be empty only when state is unknown, or when source_urls names the checked source instead."
     },
     "state": {
       "enum": ["observed", "reported", "inferred", "recommended", "unknown"],
@@ -76,13 +76,22 @@
   },
   "allOf": [
     {
-      "description": "A claim asserted as observed or reported must name at least one evidence ID.",
+      "description": "A claim asserted as observed or reported must name where it was checked: at least one evidence ID, or at least one entry in source_urls. skills/draft-evidence-content/references/output-contract.md asks for 'evidence IDs or source URLs', so a claim whose source is a repository file rather than an interview stays checkable without inventing an EV- ID it cannot resolve. A claim that names neither is still rejected.",
       "if": {
         "properties": {"state": {"enum": ["observed", "reported"]}},
         "required": ["state"]
       },
       "then": {
-        "properties": {"evidence_ids": {"minItems": 1}}
+        "anyOf": [
+          {
+            "properties": {"evidence_ids": {"minItems": 1}},
+            "required": ["evidence_ids"]
+          },
+          {
+            "properties": {"source_urls": {"minItems": 1}},
+            "required": ["source_urls"]
+          }
+        ]
       }
     },
     {
