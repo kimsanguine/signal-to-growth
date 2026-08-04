@@ -14,7 +14,7 @@
 | `llms.txt` | 감사 시점 not present → 이번에 추가 | VIS-20260804-004 |
 | 헤딩 위계 | present, 편향 있음 | H1 1개 + H2 16개 + H3 14개. 질문형 헤딩 1개뿐 (VIS-20260804-002) |
 | answer block (질문 → 직답 단위) | not present | FAQ·Q&A 섹션 없음 (VIS-20260804-002) |
-| 출처 링크 | present | 내부 문서 링크 다수 + 외부 참고 5건 (README.md:581-585) |
+| 출처 링크 | present | 내부 문서 링크 다수 + 외부 참고 5건 (README.md:740-744) |
 | manifest homepage / websiteURL | present, 순환 참조 | 세 필드 동일 GitHub URL (VIS-20260804-005) |
 | 문서 index | not present | `docs/` 진입 index 없음 (VIS-20260804-006) |
 | 언어 신호 | ko-KR 본문 + 영어 tagline 1줄 | VIS-20260804-007 |

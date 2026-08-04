@@ -151,6 +151,25 @@ class ClaimLedgerContractTests(unittest.TestCase):
         )
         self.assertNotEqual([], issues)
 
+    def test_observed_claim_may_anchor_on_a_source_url_instead(self) -> None:
+        """A repository-sourced claim has a locator but no EV- record to name.
+
+        The skill output contract asks for "evidence IDs or source URLs", so an
+        observed claim that names its source stays valid rather than forcing an
+        evidence ID that would resolve to nothing.
+        """
+        issues = validate_record(
+            "claim",
+            {
+                **self._record(),
+                "state": "observed",
+                "evidence_ids": [],
+                "source_urls": ["README.md:12-13"],
+            },
+            "claim-ledger.jsonl[1]",
+        )
+        self.assertEqual([], issues, [issue.render() for issue in issues])
+
 
 class VisibilityObservationContractTests(unittest.TestCase):
     def _record(self) -> dict:

@@ -105,8 +105,8 @@ append-only 산출물 덮어쓰기를 막는 PreToolUse 훅이 Claude Code 쪽�
 | 두 manifest가 같은 `skills/` 소스를 가리킨다 | `.claude-plugin/plugin.json:19`, `.codex-plugin/plugin.json:19` |
 | append-only 훅은 Claude Code PreToolUse에만 등록됐다 | `hooks/hooks.json:3-5` |
 | Codex manifest에 hooks 키가 없다 | `.codex-plugin/plugin.json:1-39` |
-| append-only 대상은 13종 JSONL이다 | `src/signal_growth/append_only.py:17-33` |
-| 훅 없이도 `append-record` CLI 경로는 동작한다 | `src/signal_growth/append_only.py:40-60` |
+| append-only 대상은 13종 JSONL이다 | `src/signal_growth/append_only.py:22-38` |
+| 훅 없이도 `append-record` CLI 경로는 동작한다 | `src/signal_growth/append_only.py:172-181` |
 | 두 런타임 호출 parity가 미검증이다 | `eval/summary.md:40-51` |
 
 같은 근거가 `claim-ledger.jsonl`의 CLM-20260804-002, -006, -007, -010에도

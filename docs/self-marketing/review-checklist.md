@@ -74,7 +74,7 @@
 
 ## 중단 조건 확인
 
-`skills/draft-evidence-content/SKILL.md:54`의 stop condition 대비:
+`skills/draft-evidence-content/SKILL.md:63`의 stop condition 대비:
 
 | 조건 | 상태 |
 |---|---|

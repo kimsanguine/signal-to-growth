@@ -123,3 +123,62 @@ follow-up that needs a superseding fixture record appended through
 
 Do not read these two contracts as full coverage of their skills' output
 contracts. They are an enforced floor.
+
+## 4. `docs/self-marketing/` — contract-shaped files outside `validate-artifacts`
+
+Recorded: 2026-08-04 (Round 3).
+
+Round 1 ran `audit-answer-visibility` and `draft-evidence-content` on this
+repository itself and wrote the results to `docs/self-marketing/`. Both ledgers
+carry contract file names but were written against no contract:
+`claim-ledger.jsonl` used `claim_state`, `source_locators`,
+`public_eligibility`, `source_checked_at`, `approval`, and `refresh_by`, and
+`visibility-observations.jsonl` used `url_or_file` and `access_state`. Measured
+before the fix: 19/19 claim records and 12/12 observation records failed their
+schema. Nothing reported it, because no module, script, Makefile target, or
+test named the directory.
+
+### Why `validate-artifacts` cannot own this directory
+
+`validate-artifacts` validates one **run's** artifact directory, and two of its
+checks are relative to that directory:
+
+- `_check_evidence_sources` resolves each evidence locator under the artifact
+  directory's parent and rejects anything above it;
+- `check_many("claim", "evidence_ids", "evidence")` resolves claim evidence IDs
+  against a sibling `evidence.jsonl`.
+
+This ledger's sources are files across the whole repository — `src/`, `hooks/`,
+`policies/`, `README.md` — which sit outside `docs/`. Registering the folder
+would report `locator.file escapes the approved source root` for citations that
+are correct. The directory is a self-referential ledger, not a run.
+
+### What is enforced instead
+
+`tests/test_self_marketing_artifacts.py` checks the part that is checkable:
+every record against its schema, the append chain of both ledgers, and whether
+every `file:line` pointer in the directory still resolves. `make check` picks it
+up through unittest discovery. The pointer check is a floor — it catches a
+missing file or a line past the end, not a pointer that still lands inside the
+file but on different content.
+
+### The anchor rule in `claim-ledger.schema.json`
+
+`skills/draft-evidence-content/references/output-contract.md` asks each claim
+for "evidence IDs **or** source URLs", but the schema required at least one
+evidence ID for every `observed` or `reported` claim. A claim whose source is a
+repository file has a locator and no `EV-` record, so the only ways to pass were
+to invent an evidence ID that resolves to nothing or to downgrade an observed
+claim to a weaker state. Both defeat the contract's purpose. The rule now
+accepts a non-empty `evidence_ids` **or** a non-empty `source_urls`, and still
+rejects a claim that names neither.
+
+### The one-time rewrite
+
+Both ledgers are append-only protected by basename, so the 2026-08-04
+normalization is a deliberate exception, not a precedent: the records were
+rebuilt through `append_record` — the same writer the guard points at — so the
+hash chain is genuine, the pre-migration file stays in git history, and
+`CLM-20260804-020` states in the ledger itself what was renamed and why
+`public` became `false`. A later correction to either ledger appends a
+superseding record instead, as `CLM-20260804-018` and `VIS-20260804-013` do.
