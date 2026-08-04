@@ -9,7 +9,7 @@
 ## 1. 정확성
 
 - [x] 모든 material claim이 `claim-ledger.jsonl`에 ID로 등록돼 있다
-      (17건 + 정정 1건 = 18줄).
+      (17건 + 정정 2건 = 19줄).
 - [x] 각 claim에 저장소 내 `file:line` locator가 하나 이상 있다.
 - [x] `observed` / `reported` / `inferred` / `recommended` / `unknown`이 서로
       구분돼 있다.
