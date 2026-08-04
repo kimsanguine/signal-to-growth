@@ -30,7 +30,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = []
+dev = [
+  "ruff>=0.16,<0.17"
+]
 
 [project.urls]
 Homepage = "https://github.com/kimsanguine/signal-to-growth"
@@ -39,6 +41,22 @@ Issues = "https://github.com/kimsanguine/signal-to-growth/issues"
 
 [project.scripts]
 signal-to-growth = "signal_growth.cli:main"
+
+[tool.ruff]
+target-version = "py311"
+extend-exclude = [".venv", "build", "dist"]
+
+[tool.ruff.lint]
+# Pinned explicitly rather than relying on ruff's defaults, so upgrading ruff
+# cannot turn a green CI red on rules nobody chose. This set is the safety net
+# the workflow was missing: undefined names, unused imports, and syntax or
+# statement errors. Style-only rules stay out to keep the gate meaningful.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests bootstrap `src` onto sys.path before importing the package, so their
+# imports are deliberately not at the top of the file.
+"tests/*" = ["E402"]
 
 [tool.setuptools]
 package-dir = { "" = "src" }

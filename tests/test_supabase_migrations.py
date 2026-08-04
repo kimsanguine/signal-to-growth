@@ -38,6 +38,39 @@ class SupabaseMigrationTests(unittest.TestCase):
         self.assertIn("kakao_cs_events_test_expires_at_idx", migration)
         self.assertNotIn("cron.schedule", migration)
 
+    def test_dead_letter_table_matches_the_primary_privacy_posture(self) -> None:
+        # A dead-letter table holds the same customer events as the primary
+        # one, so a weaker grant here would quietly undo the main table's rules.
+        migration = (
+            MIGRATIONS / "20260804090000_create_kakao_cs_dead_letters_test.sql"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("enable row level security", migration)
+        self.assertIn(
+            "revoke all on table public.kakao_cs_dead_letters_test "
+            "from public, anon, authenticated",
+            migration,
+        )
+        self.assertIn(
+            "grant insert, select on table public.kakao_cs_dead_letters_test "
+            "to service_role",
+            migration,
+        )
+        self.assertIn("to anon, authenticated", migration)
+        self.assertIn("using (false)", migration)
+        self.assertIn("with check (false)", migration)
+
+    def test_dead_letter_table_records_why_the_event_failed(self) -> None:
+        migration = (
+            MIGRATIONS / "20260804090000_create_kakao_cs_dead_letters_test.sql"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("failure_class text not null", migration)
+        self.assertIn("error_type text not null", migration)
+        self.assertIn("kakao_cs_dead_letters_test_approval_ref_format", migration)
+        self.assertIn("interval '7 days'", migration)
+        self.assertNotIn("cron.schedule", migration)
+
     def test_client_roles_have_an_explicit_deny_policy(self) -> None:
         migration = (
             MIGRATIONS / "20260726024618_deny_client_kakao_event_access.sql"
