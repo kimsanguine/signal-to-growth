@@ -94,7 +94,8 @@ Claude Code 안에서 marketplace를 추가합니다.
 
 설치 뒤에는 새 Claude Code 세션에서 `/run-growth-loop` preview를 한 번 실행합니다.
 repository의 release 버전과 이미 설치된 plugin cache 버전은 별개일 수 있으므로,
-preview 안내가 이 README의 six-part preview와 다르면 `/plugin` 화면에서 설치된
+preview 안내가 이 README의 six-part preview 목록(아래 「수강생 권장 경로」)과
+다르면 `/plugin` 화면에서 설치된
 `signal-to-growth` 버전을 확인하고 위 install/reload 순서를 다시 실행하세요.
 이 확인은 Python 설치를 요구하지 않습니다. 자세한 첫 실행·복구 절차는
 [학습자 시작 안내](docs/learner-start.md)를 봅니다.
@@ -138,6 +139,19 @@ fixtures/public-dummy/artifacts를 학습 모드로 점검해줘.
 AI가 제안할 것, 사람이 결정할 것, 검증됨과 미확인을 분리해줘.
 ```
 
+정상적으로 설치됐다면 preview 응답은 다음 **여섯 개 항목**을 라벨과 함께 돌려줍니다.
+이 목록이 곧 설치 확인용 대조 기준입니다.
+
+1. **읽은 입력(inputs read)** — 어떤 artifact·파일을 실제로 읽었는가
+2. **모델 해석(model interpretation)** — AI가 그 입력을 어떻게 읽었는가
+3. **결정론적으로 검증된 사실(deterministically verified facts)** — CLI·schema로 확인된 것
+4. **미검증·차단된 사실(unverified or blocked facts)** — 확인하지 못했거나 막힌 것
+5. **사람이 결정해야 할 항목(decisions that require a person)** — AI가 대신 정하지 않는 것
+6. **제안된 파일 변경과 다음 skill 하나(proposed changes + next skill)** — 이유를 함께
+
+여섯 항목 중 일부만 돌아오거나 라벨이 없다면 설치·버전 문제일 가능성이 큽니다.
+[학습자 시작 안내](docs/learner-start.md)의 복구 절차를 따르세요.
+
 미리보기를 검토한 뒤 별도의 다음 메시지에서 변경할 파일과 범위를 확인해야
 `apply`로 전환합니다. Python CLI가 없거나 실행되지 않으면 해당 검증은
 `not verified`로 남고 preview는 계속할 수 있습니다.
@@ -174,6 +188,17 @@ signal-to-growth validate-artifacts \
 ## CLI
 
 CLI는 AI 판단을 대신하지 않습니다. schema, reference, privacy pattern, 질문 위험, workflow 상태처럼 결정론적으로 확인할 수 있는 부분을 담당합니다.
+
+### 두 가지 호출 형식은 같은 CLI입니다
+
+이 저장소에는 CLI를 부르는 방식이 두 개 있고, **둘 다 같은 진입점(`signal_growth.cli:main`)을 실행합니다.** 어느 쪽을 쓰든 결과는 동일합니다.
+
+| 형식 | 조건 | 주로 쓰는 곳 |
+|---|---|---|
+| `signal-to-growth <명령>` | `pip install -e .`로 패키지를 설치했고 venv가 활성화된 상태 | 이 README의 예시, 일상적인 로컬 사용 |
+| `python3 scripts/stg.py <명령>` | 설치 없이 저장소 checkout만 있는 상태 | 11개 `SKILL.md`의 검증 지시, CI, `CLAUDE.md`의 검증 절차 |
+
+`scripts/stg.py`는 `src/`를 `sys.path`에 넣고 같은 `main()`을 호출하는 얇은 wrapper입니다. `SKILL.md`가 wrapper 형식을 쓰는 이유는, skill을 읽는 학습자·에이전트가 패키지를 설치했는지 보장할 수 없기 때문입니다. 설치를 마쳤다면 `signal-to-growth`가 짧고, 설치 전이거나 다른 사람의 환경을 재현하는 중이라면 `python3 scripts/stg.py`가 항상 동작합니다.
 
 ### 저장소 검사
 
