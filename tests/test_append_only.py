@@ -22,6 +22,7 @@ from signal_growth.contracts import (
     CHAINED_KINDS,
     _check_append_chain,
 )
+from signal_growth.integrations import CHAINED_INTEGRATION_FILES
 
 
 def _records(path: Path) -> list[dict]:
@@ -126,7 +127,8 @@ class AppendChainTests(unittest.TestCase):
 
             issues = _check_append_chain({"outcome": records})
             self.assertEqual(1, len(issues))
-            self.assertIn("partially chained artifact", issues[0].message)
+            self.assertEqual("outcomes.jsonl[2]", issues[0].path)
+            self.assertIn("record_hash is missing", issues[0].message)
 
     def test_stripping_the_hash_before_the_chain_started_is_rejected(self) -> None:
         """Opting a leading record out of the chain must not be a free pass.
@@ -150,17 +152,49 @@ class AppendChainTests(unittest.TestCase):
             issues = _check_append_chain({"signal": records})
             self.assertEqual(1, len(issues))
             self.assertEqual("signals.jsonl[1]", issues[0].path)
-            self.assertIn("partially chained artifact", issues[0].message)
+            self.assertIn("record_hash is missing", issues[0].message)
 
-    def test_records_written_before_the_chain_existed_stay_valid(self) -> None:
-        legacy = [{"approval_id": "APR-legacy-001"}, {"approval_id": "APR-legacy-002"}]
-        self.assertEqual([], _check_append_chain({"approval": legacy}))
+    def test_an_entirely_unchained_artifact_is_rejected(self) -> None:
+        """Deleting every hash used to be a free pass out of tamper evidence.
 
-    def test_every_append_only_artifact_this_module_owns_is_chained(self) -> None:
-        """Chain coverage must follow APPEND_ONLY_FILES, not a hand-kept subset."""
-        covered = {ARTIFACT_KIND_FILES[kind] for kind in CHAINED_KINDS}
-        owned = set(ARTIFACT_KIND_FILES.values()) & APPEND_ONLY_FILES
-        self.assertEqual(owned, covered)
+        The exemption was written for artifacts predating the chain, but a file
+        with no hashes at all is indistinguishable from one whose hashes were
+        stripped on purpose, so the cheapest forgery was also the only one that
+        passed.
+        """
+        unchained = [{"approval_id": "APR-001"}, {"approval_id": "APR-002"}]
+        issues = _check_append_chain({"approval": unchained})
+        self.assertEqual(2, len(issues))
+        self.assertEqual("approvals.jsonl[1]", issues[0].path)
+        self.assertIn("record_hash is missing", issues[0].message)
+
+    def test_forging_content_then_deleting_every_hash_is_caught(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "decisions.jsonl"
+            append_record(path, {"decision_id": "DEC-20260728-001", "status": "draft"})
+            append_record(path, {"decision_id": "DEC-20260728-002", "status": "draft"})
+            records = _records(path)
+            records[0]["status"] = "approved"
+            for record in records:
+                record.pop("record_hash")
+                record.pop("prev_hash")
+
+            self.assertTrue(_check_append_chain({"decision": records}))
+
+    def test_every_append_only_artifact_is_chain_verified_somewhere(self) -> None:
+        """Coverage is measured against all of APPEND_ONLY_FILES, not a subset.
+
+        The previous version intersected the expectation with the same table it
+        derived the actual coverage from, so a file no module verified could
+        never fail it. `integration-references.jsonl` was exactly that: chained
+        on write, recomputed by nobody.
+        """
+        verified = (
+            {ARTIFACT_KIND_FILES[kind] for kind in CHAINED_KINDS}
+            | set(_CHAINED_CONNECTOR_FILES)
+            | set(CHAINED_INTEGRATION_FILES)
+        )
+        self.assertEqual(set(APPEND_ONLY_FILES), verified)
 
     def test_connector_ledgers_are_chained_too(self) -> None:
         for filename in ("cs-events.jsonl", "reply-drafts.jsonl", "delivery-events.jsonl"):

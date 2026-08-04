@@ -10,7 +10,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from signal_growth import integrations  # noqa: E402
+from signal_growth.append_only import verify_append_chain  # noqa: E402
 from signal_growth.integrations import (  # noqa: E402
+    CHAINED_INTEGRATION_FILES,
     IntegrationContractError,
     build_hplan_intake,
     import_pmf_radar,
@@ -84,6 +87,48 @@ class IntegrationTests(unittest.TestCase):
             )
             with self.assertRaises(IntegrationContractError):
                 import_pmf_radar(path)
+
+    def test_emitted_ledgers_carry_a_verifiable_chain(self) -> None:
+        """This module is the only writer of `integration-references.jsonl`.
+
+        If it does not recompute the chain, nothing in the repository ever does
+        and the hashes it emits are decoration rather than tamper evidence.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            import_pmf_radar(PMF_EXPORT, output_directory=output, write=True)
+
+            for filename in CHAINED_INTEGRATION_FILES:
+                with self.subTest(filename=filename):
+                    records = [
+                        json.loads(line)
+                        for line in (output / filename)
+                        .read_text(encoding="utf-8")
+                        .splitlines()
+                        if line.strip()
+                    ]
+                    self.assertTrue(records)
+                    self.assertEqual([], verify_append_chain(records, filename))
+
+    def test_an_unchained_render_is_refused_instead_of_written(self) -> None:
+        """Prove the chain check can fail, so it is not a decorative call.
+
+        Simulating a defect in the chaining writer is the only way to reach it:
+        with `chain_records` working, the check passes by construction and a
+        broken one would otherwise ship silently.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            original = integrations.chain_records
+            integrations.chain_records = lambda records: list(records)
+            try:
+                with self.assertRaises(IntegrationContractError) as caught:
+                    import_pmf_radar(PMF_EXPORT, output_directory=output, write=True)
+            finally:
+                integrations.chain_records = original
+
+            self.assertIn("record_hash is missing", str(caught.exception))
+            self.assertEqual([], list(output.iterdir()))
 
     def test_hplan_intake_keeps_unknowns_and_never_claims_gate_decision(self) -> None:
         brief = build_hplan_intake(

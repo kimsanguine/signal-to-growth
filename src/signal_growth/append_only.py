@@ -77,11 +77,14 @@ def verify_append_chain(
 ) -> list[tuple[str, str]]:
     """Recompute one artifact's append chain. Return (location, message) pairs.
 
-    Chain fields stay optional for a whole file so artifacts written before the
-    chain existed remain valid. That exemption is deliberately all-or-nothing:
-    once *any* record in the file is chained, every record must be, otherwise
-    stripping the two fields from a single edited line would be enough to hide
-    the edit.
+    Every record must carry the chain fields. An earlier version exempted a file
+    in which *no* record was chained, so that artifacts written before the chain
+    existed stayed valid. That exemption could not tell a genuinely pre-chain
+    file apart from one whose hashes had all been deleted, which made deleting
+    every hash the cheapest way to launder an edit — strictly easier than the
+    partial strip the same function already rejected. No artifact in this
+    repository depends on the exemption, so it is gone rather than replaced with
+    an opt-out marker that would become the next bypass.
 
     This is tamper *evidence*, not tamper proofing. The hash uses no secret, so
     anyone who can rewrite the file can also recompute a consistent chain. It
@@ -89,9 +92,6 @@ def verify_append_chain(
     rest.
     """
     issues: list[tuple[str, str]] = []
-    if not any(record.get(RECORD_HASH_FIELD) is not None for record in records):
-        return issues
-
     previous_hash: object = None
     for index, record in enumerate(records, 1):
         location = f"{filename}[{index}]"
@@ -100,9 +100,9 @@ def verify_append_chain(
             issues.append(
                 (
                     location,
-                    f"{RECORD_HASH_FIELD} is missing while other records in this "
-                    "artifact are chained — a partially chained artifact cannot "
-                    "be verified",
+                    f"{RECORD_HASH_FIELD} is missing — every record in an "
+                    "append-only artifact must be chained, so an unchained "
+                    "record cannot be verified",
                 )
             )
             previous_hash = _UNVERIFIABLE
