@@ -182,3 +182,103 @@ hash chain is genuine, the pre-migration file stays in git history, and
 `CLM-20260804-020` states in the ledger itself what was renamed and why
 `public` became `false`. A later correction to either ledger appends a
 superseding record instead, as `CLM-20260804-018` and `VIS-20260804-013` do.
+
+## 4. Classifying a decision event: `event_type`
+
+- Recorded: 2026-08-04
+- Question: `contracts/decision.schema.json` records *which* decision an event
+  replaces. Should it also record *what kind* of change the event is?
+- Judgement: **yes, as an optional `event_type` enum on the existing contract**,
+  not as a new `decision-trace.schema.json`.
+
+### The gap
+
+`supersedes` carries lineage and nothing else. Three very different events —
+narrowing what will be built, redefining a success condition, and stopping a
+decision after mature outcomes arrived — produce records that are structurally
+identical: same fields, same `supersedes` link, different prose. A reviewer
+reading the log has to reconstruct the kind of change from `decision_question`
+and `selected_option`, which is exactly the reconstruction an audited contract
+exists to prevent.
+
+`event_type` names the change: `initial_decision`, `scope_change`,
+`success_metric_review`, `outcome_review`, `reversal`.
+
+The five values are derived from this repository's own loop
+(evidence → decision → action → outcome → review), not copied from a source
+project. Notably absent is a spec-revision kind: this contract records growth
+decisions, and a document edit is not a decision event here.
+
+### Why extend the existing contract instead of adding a trace contract
+
+A separate `decision-trace.schema.json` would create a second place where a
+decision's history lives, and `contracts.py`, `workflow.py`,
+`hooks/guard_append_only.py`, and the `record-growth-decision` output contract
+would each have to agree on which of the two to read. `decisions.jsonl` is
+already an append-only, hash-chained, one-event-per-line log — it *is* the
+trace. The missing part was a classification field, so that is what was added.
+
+This does not merge the growth-decision and gate-decision contracts. They stay
+separate for the reason stated in section 3: a per-run product decision and a
+repository gate verdict answer different questions.
+
+### Backward compatibility
+
+Three properties, each verified in `tests/test_decision_event_type.py`:
+
+1. **The field is optional.** It is absent from `required` in the schema and
+   from `REQUIRED_FIELDS["decision"]` in `contracts.py`, so every decision
+   written before it existed still validates. `test_event_type_is_not_required`
+   asserts this against the public fixture, unmodified.
+2. **Absence means unclassified, not `initial_decision`.** Defaulting would
+   assert something about historical records that nobody recorded. This is why
+   `event_type` is deliberately **not** in `ENUM_FIELDS`: that table reports a
+   missing value as a violation, which is right for a required enum and wrong
+   for an optional one. The check lives in `_decision_event_type_issues`.
+3. **No fixture or artifact was rewritten.** The hash chain in
+   `fixtures/public-dummy/artifacts/decisions.jsonl` is untouched, so no
+   migration is needed. Adopting the field is opt-in per record.
+
+There is no migration path to write because nothing is required to migrate. A
+record that wants the classification adds one field through `append-record`; a
+record that does not stays valid indefinitely.
+
+### The consistency rule, and why it is enforced twice
+
+A present `event_type` must agree with the lineage the record carries: the four
+change kinds require a non-null `supersedes`, and `initial_decision` requires
+`supersedes` to be null. Without that rule the field is decoration — a label
+that can contradict the record it labels.
+
+It is enforced in both `contracts/decision.schema.json` (`allOf`/`if`-`then`)
+and `contracts.py`, matching how `status: approved` → `approved_by` is already
+handled. `test_schema_and_deterministic_check_share_one_enum` fails if the two
+layers' enums drift apart.
+
+## 5. Publishing the repository's own gate log
+
+- Recorded: 2026-08-04
+- Question: `harness/decisions.jsonl` holds this repository's real gate verdicts,
+  but it is machine-shaped and unreferenced from the README. Publish it?
+- Judgement: **render it to `docs/decision-log.md`, generated, never authored.**
+
+The repository asks users to record decisions with reasons, review triggers, and
+an unobserved-outcome state, while its own two such records sat in a JSONL file
+no reader would open. Rendering them is the cheapest way to stop asking for a
+discipline the project does not visibly practice.
+
+`src/signal_growth/decision_log.py` holds the projection,
+`scripts/render_decision_log.py` writes it, and `--check` compares without
+writing. Three constraints shaped it:
+
+- **The ledger stays the source.** The script refuses to render a gate log that
+  fails `validate_gate_decision_log`, so an invalid record cannot be laundered
+  into readable prose.
+- **The page cannot drift.** `tests/test_decision_log.py` re-renders and
+  compares, so a hand-edit to `docs/decision-log.md` fails the suite rather than
+  quietly becoming a second, divergent account.
+- **`outcome: null` renders as "아직 관측되지 않음", never as a result.** A
+  recorded verdict is not a verified one, and the rendering must not blur that.
+
+Static-site publication is out of scope. A Markdown file in the repository is
+already readable by everyone the log is for.

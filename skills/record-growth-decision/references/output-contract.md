@@ -11,6 +11,12 @@ stop condition, causal confidence, approval, and optional supersedes link.
 When status is `approved`, `approved_by` is an `APR-` reference that exists in
 `approvals.jsonl` and covers the exact decision ID.
 
+`event_type` is optional and classifies the kind of change: `initial_decision`,
+`scope_change`, `success_metric_review`, `outcome_review`, or `reversal`. The
+four change kinds require a non-null `supersedes`, and `initial_decision`
+requires `supersedes` to be null. Omit the field when the kind is unclear —
+omission means unclassified, never `initial_decision`.
+
 ## `approvals.jsonl`
 
 Follow `contracts/approval.schema.json`. Append only after a person approves in

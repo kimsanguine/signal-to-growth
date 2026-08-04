@@ -666,6 +666,11 @@ human approval, Bash overwrite guard를 추가한 release candidate입니다.
 [Evaluation summary](eval/summary.md), 판정 기준은
 [Skill evaluation plan](docs/skill-evaluation-plan.md)에 있습니다.
 
+이 저장소가 스스로 내린 gate 판정의 전체 기록은
+[**Decision log**](docs/decision-log.md)에 있습니다. append-only 원장인
+`harness/decisions.jsonl`을 렌더링한 문서이며, 각 판정의 근거·재검토 조건과
+아직 관측되지 않은 결과를 분리해 보여줍니다.
+
 ### 평가 점수를 두 개 공개하는 이유
 
 두 점수는 개선 전후 쌍이 아니고, 어느 쪽도 다른 쪽을 대체하지 않습니다.

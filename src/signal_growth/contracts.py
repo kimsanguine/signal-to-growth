@@ -206,6 +206,23 @@ ENUM_FIELDS = {
     ("visibility_observation", "claim_state"): CLAIM_STATES,
 }
 
+# Decision event kinds. Deliberately NOT in ENUM_FIELDS: that table treats a
+# missing value as a violation, and `event_type` is optional so decisions
+# recorded before the field existed stay valid.
+DECISION_EVENT_TYPES = frozenset(
+    {
+        "initial_decision",
+        "scope_change",
+        "success_metric_review",
+        "outcome_review",
+        "reversal",
+    }
+)
+# Kinds that describe a change to an earlier decision, so they must name it.
+DECISION_CHANGE_EVENT_TYPES = frozenset(
+    {"scope_change", "success_metric_review", "outcome_review", "reversal"}
+)
+
 ARTIFACT_FILES = {
     "evidence.jsonl": "evidence",
     "signals.jsonl": "signal",
@@ -280,6 +297,47 @@ def load_records(path: Path) -> list[dict[str, Any]]:
     raise ValueError(f"{path}: JSON must be an object or a list of objects")
 
 
+def _decision_event_type_issues(
+    record: dict[str, Any],
+    location: str,
+) -> list[ValidationIssue]:
+    """Check the optional `event_type` classification on a growth decision.
+
+    Absence is valid and means unclassified, not `initial_decision`; a decision
+    written before this field existed must keep validating. When the field is
+    present it has to agree with `supersedes`, otherwise the classification
+    would claim a lineage the record does not carry.
+    """
+    event_type = record.get("event_type")
+    if event_type is None:
+        return []
+    if event_type not in DECISION_EVENT_TYPES:
+        return [
+            ValidationIssue(
+                location,
+                "event_type must be one of: "
+                + ", ".join(sorted(DECISION_EVENT_TYPES)),
+            )
+        ]
+    supersedes = record.get("supersedes")
+    if event_type in DECISION_CHANGE_EVENT_TYPES and not isinstance(supersedes, str):
+        return [
+            ValidationIssue(
+                location,
+                f"event_type {event_type} changes an earlier decision, so "
+                "supersedes must name that decision ID",
+            )
+        ]
+    if event_type == "initial_decision" and supersedes is not None:
+        return [
+            ValidationIssue(
+                location,
+                "event_type initial_decision must not supersede an earlier decision",
+            )
+        ]
+    return []
+
+
 def validate_record(kind: str, record: dict[str, Any], location: str) -> list[ValidationIssue]:
     """Validate required fields, identifiers, enums, and approval invariants."""
     issues = [
@@ -327,6 +385,7 @@ def validate_record(kind: str, record: dict[str, Any], location: str) -> list[Va
             issues.append(
                 ValidationIssue(location, "approved decisions require approved_by")
             )
+        issues.extend(_decision_event_type_issues(record, location))
 
     if kind == "action":
         if not isinstance(record.get("external_write"), bool):
