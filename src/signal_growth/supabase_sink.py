@@ -14,6 +14,22 @@ A write can fail two ways, and conflating them loses events:
 
 `SupabaseWriteRejected` deliberately does **not** subclass `TransportError`;
 transport succeeded and the server answered. Both share `ConnectorError`.
+
+Timeout budget
+--------------
+Kakao Open Builder resolves a skill call synchronously: a response that arrives
+after five seconds is discarded and the customer sees a failure. One request can
+make *two* writes — the primary insert, then a dead-letter insert when the
+primary is permanently rejected — so the two socket timeouts have to **sum** to
+less than that deadline rather than each fit inside it. The timeouts here are
+therefore derived from the deadline instead of chosen independently.
+
+The margin is not decoration. It covers the work this module does not measure:
+the Kakao-to-endpoint round trip, TLS setup, and the WSGI handler's own body
+read, HMAC verification, and JSON encoding. Note also that `urlopen`'s `timeout`
+bounds each blocking socket operation, not the call as a whole, so a server that
+dribbles bytes can overrun the nominal value. Treat the numbers below as a
+budget that keeps the common worst case safe, not as an enforced ceiling.
 """
 
 from __future__ import annotations
@@ -38,6 +54,24 @@ _RETRYABLE_CLIENT_STATUS = frozenset({408, 425, 429})
 _SUCCESS_STATUS = frozenset({200, 201, 204})
 _USER_AGENT = "signal-to-growth/0.4"
 
+# Kakao discards a skill response that arrives after this many seconds.
+KAKAO_RESPONSE_DEADLINE_SECONDS = 5.0
+# Reserved for the provider round trip, TLS, and in-process handler work.
+KAKAO_RESPONSE_SAFETY_MARGIN_SECONDS = 2.0
+# What is left for storage across *both* writes in a single request.
+PERSISTENCE_BUDGET_SECONDS = round(
+    KAKAO_RESPONSE_DEADLINE_SECONDS - KAKAO_RESPONSE_SAFETY_MARGIN_SECONDS, 3
+)
+# The primary write is the one that normally has to succeed, so it takes the
+# larger share; the dead-letter write only runs after the primary answered.
+DEFAULT_EVENT_TIMEOUT_SECONDS = round(PERSISTENCE_BUDGET_SECONDS * 0.6, 3)
+DEFAULT_DEAD_LETTER_TIMEOUT_SECONDS = round(
+    PERSISTENCE_BUDGET_SECONDS - DEFAULT_EVENT_TIMEOUT_SECONDS, 3
+)
+# The probe is not on the ingest path; it only has to stay well under a single
+# health-check request, so it keeps its own small bound.
+DEFAULT_HEALTH_PROBE_TIMEOUT_SECONDS = 1.0
+
 
 class SupabaseWriteRejected(ConnectorError):
     """Supabase permanently rejected the write; retrying it cannot help."""
@@ -61,7 +95,7 @@ def _validate_connection(
         raise ValueError("Supabase secret key is required")
     if not _TABLE_NAME.fullmatch(table):
         raise ValueError("Supabase table name is invalid")
-    if timeout_seconds <= 0 or timeout_seconds >= 5:
+    if timeout_seconds <= 0 or timeout_seconds >= KAKAO_RESPONSE_DEADLINE_SECONDS:
         raise ValueError("Supabase timeout must be between 0 and 5 seconds")
     if not callable(opener):
         raise TypeError("opener must be callable")
@@ -131,7 +165,7 @@ class SupabaseEventSink:
         secret_key: str,
         *,
         table: str = "kakao_cs_events_test",
-        timeout_seconds: float = 2.0,
+        timeout_seconds: float = DEFAULT_EVENT_TIMEOUT_SECONDS,
         opener: UrlOpener = urlopen,
     ) -> None:
         _validate_connection(project_url, secret_key, table, timeout_seconds, opener)
@@ -195,7 +229,7 @@ class SupabaseDeadLetterSink:
         secret_key: str,
         *,
         table: str = "kakao_cs_dead_letters_test",
-        timeout_seconds: float = 2.0,
+        timeout_seconds: float = DEFAULT_DEAD_LETTER_TIMEOUT_SECONDS,
         opener: UrlOpener = urlopen,
     ) -> None:
         _validate_connection(project_url, secret_key, table, timeout_seconds, opener)
@@ -275,7 +309,7 @@ class SupabaseHealthProbe:
         secret_key: str,
         *,
         table: str = "kakao_cs_events_test",
-        timeout_seconds: float = 1.0,
+        timeout_seconds: float = DEFAULT_HEALTH_PROBE_TIMEOUT_SECONDS,
         ttl_seconds: float = 15.0,
         opener: UrlOpener = urlopen,
         clock: Callable[[], float] = time.monotonic,

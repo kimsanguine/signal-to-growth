@@ -4,6 +4,7 @@ import logging
 import sys
 import unittest
 from pathlib import Path
+from urllib.error import HTTPError
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,7 +14,14 @@ from signal_growth.adapters import KakaoOpenBuilderAdapter  # noqa: E402
 from signal_growth.channel_contracts import TransportError  # noqa: E402
 from signal_growth.kakao_skill_server import KakaoSkillApplication  # noqa: E402
 from signal_growth.observability import StructuredLogger  # noqa: E402
-from signal_growth.supabase_sink import SupabaseWriteRejected  # noqa: E402
+from signal_growth.supabase_sink import (  # noqa: E402
+    KAKAO_RESPONSE_DEADLINE_SECONDS,
+    KAKAO_RESPONSE_SAFETY_MARGIN_SECONDS,
+    PERSISTENCE_BUDGET_SECONDS,
+    SupabaseDeadLetterSink,
+    SupabaseEventSink,
+    SupabaseWriteRejected,
+)
 
 
 UTTERANCE = "초기 설정 중 연결 단계에서 계속 멈춰요."
@@ -331,6 +339,144 @@ class IngestOutcomeLoggingTests(unittest.TestCase):
         self.assertNotIn("hmac:", joined)
         # The identifiers an operator actually needs are still present.
         self.assertIn("request-001", joined)
+
+
+class _FakeResponse:
+    def __init__(self, status=201):
+        self.status = status
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
+
+    def getcode(self):
+        return self.status
+
+
+class KakaoResponseDeadlineTests(unittest.TestCase):
+    """One request can make two writes, and they share a single 5s deadline.
+
+    Kakao resolves a skill call synchronously and discards a response that
+    arrives late, so the case worth measuring is the worst one: the primary
+    write burns its entire timeout before Supabase permanently rejects it, and
+    the dead-letter write then burns its own. The two timeouts have to fit
+    inside the deadline *together*, with room left over for the provider round
+    trip and the handler's own work.
+
+    The delay is simulated rather than slept. A test that really waited three
+    seconds would measure the machine instead of the configuration, and would
+    be the first one someone skips.
+    """
+
+    def setUp(self):
+        self.spent_seconds = 0.0
+
+    def _exhausting_opener(self, outcome):
+        """An opener that consumes the whole socket timeout it was handed."""
+
+        def opener(request, *, timeout):
+            del request
+            self.spent_seconds += timeout
+            if isinstance(outcome, Exception):
+                raise outcome
+            return outcome
+
+        return opener
+
+    def _post_fixture(self, app):
+        raw = FIXTURE.read_bytes()
+        environ = {
+            "REQUEST_METHOD": "POST",
+            "PATH_INFO": "/api/kakao/skill",
+            "CONTENT_LENGTH": str(len(raw)),
+            "CONTENT_TYPE": "application/json",
+            "HTTP_X_API_KEY": "expected-fixture-key",
+            "HTTP_X_REQUEST_ID": "request-001",
+            "wsgi.input": io.BytesIO(raw),
+        }
+        captured = {}
+
+        def start_response(status, headers):
+            captured["status"] = status
+
+        body = b"".join(app(environ, start_response))
+        return captured, json.loads(body)
+
+    def test_worst_case_double_write_stays_inside_the_response_deadline(self):
+        # 422 is a contract failure, which is the only path that makes a second
+        # write. Both sinks are built with their production defaults, so this
+        # measures the shipped configuration, not test-local numbers.
+        rejected = HTTPError(
+            "https://project-ref.supabase.co/rest/v1/kakao_cs_events_test",
+            422,
+            "unprocessable",
+            {},
+            None,
+        )
+        sink = SupabaseEventSink(
+            "https://project-ref.supabase.co",
+            "sb_secret_public_dummy",
+            opener=self._exhausting_opener(rejected),
+        )
+        dead_letter_sink = SupabaseDeadLetterSink(
+            "https://project-ref.supabase.co",
+            "sb_secret_public_dummy",
+            opener=self._exhausting_opener(_FakeResponse(201)),
+        )
+        app = KakaoSkillApplication(
+            KakaoOpenBuilderAdapter(
+                b"public-dummy-hmac",
+                expected_api_key="expected-fixture-key",
+            ),
+            sink,
+            approval_ref="APR-KAKAO-TEST-001",
+            dead_letter_sink=dead_letter_sink,
+            logger=_quiet_logger(),
+        )
+
+        captured, response = self._post_fixture(app)
+
+        # Both writes ran: the event reached the dead-letter table, so the
+        # acknowledgement is honest and the deadline still has to hold.
+        self.assertEqual("200 OK", captured["status"])
+        self.assertEqual("2.0", response["version"])
+        self.assertEqual(PERSISTENCE_BUDGET_SECONDS, round(self.spent_seconds, 3))
+        # Asserted against Kakao's deadline directly, not against the margin
+        # constant. `budget + margin == deadline` is true by construction and
+        # would still hold if someone shrank the margin to nothing; this
+        # catches that, because storage may never claim more than 60% of the
+        # deadline no matter how the constants are split.
+        self.assertLessEqual(
+            round(self.spent_seconds, 3),
+            0.6 * KAKAO_RESPONSE_DEADLINE_SECONDS,
+        )
+        self.assertGreaterEqual(KAKAO_RESPONSE_SAFETY_MARGIN_SECONDS, 2.0)
+
+    def test_availability_failure_answers_well_inside_the_deadline(self):
+        # A timing-out primary write fails closed with one write, not two, so
+        # it must leave even more headroom than the dead-letter path.
+        sink = SupabaseEventSink(
+            "https://project-ref.supabase.co",
+            "sb_secret_public_dummy",
+            opener=self._exhausting_opener(TimeoutError("socket timed out")),
+        )
+        app = KakaoSkillApplication(
+            KakaoOpenBuilderAdapter(
+                b"public-dummy-hmac",
+                expected_api_key="expected-fixture-key",
+            ),
+            sink,
+            approval_ref="APR-KAKAO-TEST-001",
+            logger=_quiet_logger(),
+        )
+
+        captured, response = self._post_fixture(app)
+
+        self.assertEqual("503 Service Unavailable", captured["status"])
+        self.assertEqual({"error": "event_persistence_unavailable"}, response)
+        self.assertLess(self.spent_seconds, PERSISTENCE_BUDGET_SECONDS)
 
 
 if __name__ == "__main__":

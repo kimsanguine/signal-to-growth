@@ -124,7 +124,9 @@ Confirmed locally:
 - Channel Talk read-only webhook/backfill identity reconciliation;
 - Kakao Open Builder skill-request normalization and simple-text response construction;
 - Vercel-recognized WSGI entry point and fail-closed route behavior;
-- Supabase REST insert contract, two-second timeout, and idempotent conflict handling;
+- Supabase REST insert contract, idempotent conflict handling, and a persistence
+  timeout budget (1.8s primary + 1.2s dead-letter) that keeps the worst-case
+  double write inside Kakao's five-second synchronous response deadline;
 - RLS-enabled migration with `anon` and `authenticated` access revoked;
 - explicit deny policy for `anon` and `authenticated`;
 - explicit `service_role` Data API grant for the restricted event table;
