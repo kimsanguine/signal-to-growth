@@ -11,6 +11,10 @@ from typing import Any, Iterable
 from .schema_validation import validate_schema_record
 
 
+CLAIM_STATES = frozenset(
+    {"observed", "reported", "inferred", "recommended", "unknown"}
+)
+
 ID_PATTERNS = {
     "evidence": re.compile(r"^EV-\d{8}-\d{3,}$"),
     "signal": re.compile(r"^SIG-\d{8}-\d{3,}$"),
@@ -20,6 +24,8 @@ ID_PATTERNS = {
     "outcome": re.compile(r"^OUT-\d{8}-\d{3,}$"),
     "run_state": re.compile(r"^RUN-\d{8}-\d{3,}$"),
     "approval": re.compile(r"^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"),
+    "claim": re.compile(r"^CLM-\d{8}-\d{3,}$"),
+    "visibility_observation": re.compile(r"^VIS-\d{8}-\d{3,}$"),
 }
 
 ID_FIELDS = {
@@ -31,6 +37,8 @@ ID_FIELDS = {
     "outcome": "outcome_id",
     "run_state": "run_id",
     "approval": "approval_id",
+    "claim": "claim_id",
+    "visibility_observation": "observation_id",
 }
 
 REQUIRED_FIELDS = {
@@ -147,6 +155,20 @@ REQUIRED_FIELDS = {
         "status",
         "scope",
     },
+    "claim": {
+        "claim_id",
+        "claim",
+        "evidence_ids",
+        "state",
+        "public",
+    },
+    "visibility_observation": {
+        "observation_id",
+        "observed_at",
+        "surface",
+        "status",
+        "claim_state",
+    },
 }
 
 ENUM_FIELDS = {
@@ -179,6 +201,8 @@ ENUM_FIELDS = {
         "complete",
     },
     ("approval", "status"): {"approved", "revoked"},
+    ("claim", "state"): CLAIM_STATES,
+    ("visibility_observation", "claim_state"): CLAIM_STATES,
 }
 
 ARTIFACT_FILES = {
@@ -190,6 +214,8 @@ ARTIFACT_FILES = {
     "outcomes.jsonl": "outcome",
     "run-state.json": "run_state",
     "approvals.jsonl": "approval",
+    "claim-ledger.jsonl": "claim",
+    "visibility-observations.jsonl": "visibility_observation",
 }
 REQUIRED_COMPLETE_FILES = frozenset(
     {
@@ -213,7 +239,11 @@ SCHEMA_FILES = {
     "outcome": "outcome.schema.json",
     "run_state": "run-state.schema.json",
     "approval": "approval.schema.json",
+    "claim": "claim-ledger.schema.json",
+    "visibility_observation": "visibility-observation.schema.json",
 }
+
+GATE_DECISION_SCHEMA_FILE = "gate-decision.schema.json"
 
 
 @dataclass(frozen=True)
@@ -448,6 +478,7 @@ def _check_references(
 
     check_many("signal", "source_evidence_ids", "evidence")
     check_many("decision", "evidence_ids", "evidence")
+    check_many("claim", "evidence_ids", "evidence")
     check_many("action", "metric_ids", "metric")
     check_many("outcome", "evidence_ids", "evidence")
     check_one("action", "decision_id", "decision")
@@ -480,6 +511,7 @@ def _check_references(
     check_approved_evidence("signal", "source_evidence_ids")
     check_approved_evidence("decision", "evidence_ids")
     check_approved_evidence("outcome", "evidence_ids")
+    check_approved_evidence("claim", "evidence_ids")
 
     approvals_by_id = {
         approval.get("approval_id"): approval
@@ -569,6 +601,49 @@ def validate_artifact_directory(
             _check_evidence_sources(directory, records.get("evidence", []))
         )
         issues.extend(_check_references(records, _collect_ids(records)))
+    return issues
+
+
+def validate_gate_decision_log(path: Path) -> list[ValidationIssue]:
+    """Validate the repository gate log against contracts/gate-decision.schema.json.
+
+    ``harness/decisions.jsonl`` records build and release gate verdicts for this
+    repository. It is a different artifact from a run's ``decisions.jsonl``,
+    which holds evidence-traced growth decisions. Validating the gate log
+    against the growth-decision contract would report a false violation on every
+    line, so the two contracts are kept separate and this log is never rewritten
+    to fit the other shape.
+    """
+    issues: list[ValidationIssue] = []
+    try:
+        records = load_records(path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return [ValidationIssue(str(path), str(exc))]
+    if not records:
+        return [ValidationIssue(str(path), "gate decision log must contain at least one record")]
+
+    seen_ids: set[str] = set()
+    for index, record in enumerate(records, 1):
+        location = f"{path.name}[{index}]"
+        issues.extend(
+            ValidationIssue(location, message)
+            for message in validate_schema_record(GATE_DECISION_SCHEMA_FILE, record)
+        )
+        identifier = record.get("decision_id")
+        if isinstance(identifier, str):
+            if identifier in seen_ids:
+                issues.append(
+                    ValidationIssue(location, "decision_id is not unique in the gate log")
+                )
+            seen_ids.add(identifier)
+        supersedes = record.get("supersedes")
+        if isinstance(supersedes, str) and supersedes not in seen_ids:
+            issues.append(
+                ValidationIssue(
+                    location,
+                    "supersedes must reference a decision_id recorded earlier in the log",
+                )
+            )
     return issues
 
 

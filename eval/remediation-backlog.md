@@ -1,5 +1,10 @@
 # Evaluation remediation backlog
 
+The ordered backlog of remaining work lives in one place:
+[`../docs/HANDOFF.md`](../docs/HANDOFF.md) — "Resume sequence". This file keeps
+only the record of what the post-baseline hardening actually changed, because
+that record is evidence rather than a plan.
+
 ## Implemented after the baseline
 
 - Enforce full Draft 2020-12 JSON Schema validation in the runtime.
@@ -17,11 +22,5 @@
 
 ## Pending release gates
 
-1. Complete Claude's 30 canonical cases after the monthly spend limit is lifted;
-   Codex capture is complete but does not establish parity.
-2. Repeat the five nondeterministic anchors three times in Claude after that
-   runtime becomes available; Codex repetition is complete.
-3. Verify real installation, discovery, and explicit invocation in both Claude
-   Code and Codex.
-4. Re-score with five fresh evaluator contexts after deterministic tests pass.
-5. Keep release `NO-GO` until hard-gate failures are zero.
+Moved. See [`../docs/HANDOFF.md`](../docs/HANDOFF.md) steps 2 to 6. Release stays
+`NO-GO` until hard-gate failures are zero.

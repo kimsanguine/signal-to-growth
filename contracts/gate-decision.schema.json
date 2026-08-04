@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/gate-decision.schema.json",
+  "title": "Gate Decision",
+  "description": "A repository-level gate verdict recorded in harness/decisions.jsonl. This is a different artifact from contracts/decision.schema.json: a Growth Decision (DEC-) is a per-run product decision traced to evidence IDs, while a Gate Decision (dec-) records whether this repository may proceed through a build or release gate. The two contracts are intentionally separate so the append-only gate log is never rewritten to satisfy the growth-decision shape.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_id",
+    "recorded_at",
+    "project",
+    "gate",
+    "decision",
+    "reasons",
+    "review_trigger",
+    "supersedes"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "pattern": "^dec-[a-z0-9-]+-[0-9]{8}-[0-9]{3,}$",
+      "description": "Lowercase gate-decision identifier. Deliberately distinct from the DEC- growth-decision pattern."
+    },
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "project": {"type": "string", "minLength": 1},
+    "gate": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Which gate this verdict governs, for example build."
+    },
+    "decision": {
+      "enum": ["build", "hold", "pivot"]
+    },
+    "score": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Optional rubric score. null records that no rubric score applies, and omission records the same absence."
+    },
+    "reasons": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "minItems": 1,
+      "description": "At least one stated reason. A verdict without a reason is not auditable."
+    },
+    "review_trigger": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The condition that reopens this verdict. Required so no gate decision reads as permanent."
+    },
+    "outcome": {
+      "type": ["string", "null"],
+      "description": "What actually happened after the gate. null until observed."
+    },
+    "supersedes": {
+      "type": ["string", "null"],
+      "description": "The decision_id this record replaces, or null. Required so append-only history states its lineage explicitly instead of leaving it unstated."
+    },
+    "scope_note": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional boundary note stating what this decision does and does not approve."
+    }
+  }
+}

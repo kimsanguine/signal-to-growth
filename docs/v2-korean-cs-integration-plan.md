@@ -646,6 +646,13 @@ webhook과 polling을 경쟁 구현으로 보지 않는다. callback 누락·차
 
 ## 9. 병렬 작업계획
 
+> **순서의 출처는 이 문서가 아니다.** 남은 작업의 단일 순서 백로그는
+> [`HANDOFF.md`](HANDOFF.md) "Resume sequence"에 있다. 아래 Gate 0~7은 v0.2.0
+> connector 작업의 **설계 상세와 통과 조건**만 보존한다. Gate 0~3과 Gate 7은
+> 이미 반영됐고(현재 11개 skill, version `0.4.0`), Gate 4~6의 실제 provider
+> 검증은 `HANDOFF.md` 7단계에 남아 있다. 진행 상태를 판단할 때는 이 절이 아니라
+> `HANDOFF.md`를 읽는다.
+
 각 track은 독립적으로 진행하되 Gate에서 합친다.
 
 | Track | 책임 | 주요 산출물 | 선행조건 |
@@ -1009,6 +1016,10 @@ release에서 하지 않을 것:
 ---
 
 ## 15. 완료 기준
+
+> 이 절은 v0.2.0 connector 범위의 **완료 정의**다. 아직 남은 항목의 실행 순서는
+> [`HANDOFF.md`](HANDOFF.md) "Resume sequence"가 단일 출처이며, release 판정
+> 기준 자체는 [`skill-evaluation-plan.md`](skill-evaluation-plan.md) §7에 있다.
 
 ### v0.2.0 release minimum
 
