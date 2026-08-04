@@ -38,7 +38,7 @@ connector, integration contract, or deployment.
 
 | Surface | Evidence |
 |---|---|
-| Local suite | `make check`: 70 tests passed |
+| Local suite | `make check`: 164 tests passed (2026-08-04, post Wave 1 merge) |
 | Skill packaging | 11/11 `quick_validate.py` passed |
 | Plugin packaging | Codex and Claude manifest validation passed |
 | GitHub CI | Python 3.11 and 3.12 passed on Draft PR #1 |

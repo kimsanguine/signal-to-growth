@@ -9,69 +9,33 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A5CF5)](https://code.claude.com/docs/en/plugins)
 [![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-plugin-111111)](https://github.com/openai/plugins)
 
-Signal to Growth는 고객 인터뷰·CS·행동 지표에서 얻은 신호를 출처와 함께 정리하고, 사람이 성장 판단을 승인한 뒤, 콘텐츠·첫 사용자 루프·측정으로 연결하는 Agent Skills 제품입니다.
+**성장 프롬프트 모음이 아닙니다.** 고객 인용문에서 결과까지의 참조 무결성과
+사람 승인 경계를 파일로 강제하는 작은 운영 체계입니다.
+고객 인터뷰·CS·행동 지표에서 얻은 신호가 입력이고, 사람이 승인한 성장 결정과
+콘텐츠·첫 사용자 루프·측정이 출력입니다.
 
-하나의 `skills/` 소스를 Claude Code와 OpenAI Codex에서 함께 사용합니다.
-[변경 이력](CHANGELOG.md)에서 release 단위의 차이를 확인할 수 있습니다.
+- 하나의 `skills/` 소스에 **11개 스킬**이 있고, Claude Code와 OpenAI Codex가
+  각자의 manifest로 같은 소스를 참조합니다. 다만 런타임이 제공하는 강제 수준은
+  아직 동일하지 않습니다[^runtime-parity].
+- 산출물은 대화 기억이 아니라 **20개 JSON Schema 계약**(`contracts/`)으로
+  다음 단계에 연결됩니다.
+- 발송·게시·배포·환불·삭제는 기본 정책에서 꺼져 있습니다
+  (`policies/default-policy.json`의 `external_write_default: false`).
+- 인용문에는 파일·줄 locator가 필요하고, 합성 quote는 허용하지 않습니다
+  (`allow_synthetic_quotes: false`).
 
-## 왜 만들었나
-
-초기 SaaS 팀은 고객 신호가 부족해서만 실패하지 않습니다.
-
-- 인터뷰 원문과 요약이 분리됩니다.
-- CS 태그와 실제 고객 맥락이 달라집니다.
-- 지표 이름은 있지만 분모·cohort·value event가 없습니다.
-- 결정 당시 근거와 실행 후 결과가 연결되지 않습니다.
-- AI가 만든 초안과 사람이 승인한 실행의 경계가 흐려집니다.
-
-Signal to Growth는 이 연결을 하나의 artifact lineage로 관리합니다.
+**먼저 할 일 하나** — 파일을 바꾸지 않는 preview를 한 번 돌려보세요.
+설치는 [아래 「설치」](#설치), 첫 실행은
+[「첫 실행: Python 없이 preview부터」](#첫-실행-python-없이-preview부터)에 있습니다.
 
 ```text
-quote
-  → evidence
-  → channel event (when a connector is configured)
-  → signal / theme
-  → decision
-  → action
-  → metric
-  → outcome
-  → learning
+/run-growth-loop
+fixtures/public-dummy/artifacts를 학습 모드로 점검해줘. 파일은 바꾸지 마.
 ```
 
-이 저장소는 “성장 prompt를 많이 제공하는 catalog”가 아닙니다. 증거 계보, 승인 상태, 설정 가능한 지표 정책, 실패 시 중단 조건을 제공하는 작은 운영 체계입니다.
-
-## 핵심 원칙
-
-1. **Evidence before advice** — 권고보다 원문·출처·관찰 시점을 먼저 남깁니다.
-2. **AI proposes, human decides** — AI는 추출·분류·초안을 담당하고 중요한 판단과 외부 실행은 사람이 승인합니다.
-3. **Policy over universal thresholds** — 인터뷰 수, retention target, 위험 기준을 보편값으로 고정하지 않습니다.
-4. **Draft is not execution** — 메시지·콘텐츠 초안과 발송·게시를 분리합니다.
-5. **One source, two adapters** — 공통 스킬을 유지하고 플랫폼별 manifest만 분리합니다.
-6. **Artifacts connect skills** — 대화 기억보다 JSON·JSONL·Markdown 산출물로 다음 단계를 연결합니다.
-7. **Fail loud** — 근거·동의·schema·승인이 부족하면 이유를 남기고 멈춥니다.
-
-## 11개 스킬
-
-| 순서 | 스킬 | 하는 일 | 핵심 산출물 |
-|---:|---|---|---|
-| 1 | `plan-customer-reach` | 조사 대상·채널·동의·draft-only 접촉 계획 | `reach-plan.json` |
-| 2 | `run-switch-interview` | 실제 과거 행동 중심 Switch Interview 설계 | `interview-guide.md` |
-| 3 | `synthesize-interviews` | quote·theme·반증을 evidence ID로 연결 | `evidence.jsonl` |
-| 4 | `connect-customer-channels` | 한국형 CS event 검증·정규화·중복 제거·상태 대사 | `cs-events.jsonl` |
-| 5 | `triage-customer-signals` | CS·review·survey 신호 정규화와 위험 분기 | `signals.jsonl` |
-| 6 | `define-growth-metrics` | 분모·cohort·value event가 있는 지표 계약 | `metrics.jsonl` |
-| 7 | `record-growth-decision` | 근거·대안·중단 조건·결과의 append-only 기록 | `decisions.jsonl` |
-| 8 | `audit-answer-visibility` | SEO·GEO·AEO 표면의 날짜가 있는 관찰 감사 | `visibility-observations.jsonl` |
-| 9 | `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
-| 10 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
-| 11 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
-
-각 스킬은 독립적으로 사용할 수 있습니다. connector를 설정하지 않으면 기존 manual signal flow를 그대로 사용합니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
-
-> **연동 문서를 쓰기 전에**: `verify_event`·`normalize_event`의 실제 시그니처는 항상
-> [`src/signal_growth/adapters/base.py`](src/signal_growth/adapters/base.py)의
-> `ChannelAdapter` Protocol이 유일한 정답입니다. 교안·튜토리얼·타 문서에 의사코드를 적을 때
-> 이 파일과 대조하지 않으면 시그니처 드리프트가 생깁니다(실제로 한 번 발생해 발견·수정함).
+이 저장소는 아직 **릴리스 게이트를 통과하지 않았습니다.** 공개된 평가 점수와
+남은 검증 범위는 [「프로젝트 상태」](#프로젝트-상태)에 그대로 적어 두었습니다.
+[변경 이력](CHANGELOG.md)에서 release 단위의 차이를 확인할 수 있습니다.
 
 ## 설치
 
@@ -94,8 +58,9 @@ Claude Code 안에서 marketplace를 추가합니다.
 
 설치 뒤에는 새 Claude Code 세션에서 `/run-growth-loop` preview를 한 번 실행합니다.
 repository의 release 버전과 이미 설치된 plugin cache 버전은 별개일 수 있으므로,
-preview 안내가 이 README의 six-part preview 목록(아래 「수강생 권장 경로」)과
-다르면 `/plugin` 화면에서 설치된
+preview 안내가 이 README의 six-part preview 목록
+([「첫 실행: Python 없이 preview부터」](#첫-실행-python-없이-preview부터))과 다르면
+`/plugin` 화면에서 설치된
 `signal-to-growth` 버전을 확인하고 위 install/reload 순서를 다시 실행하세요.
 이 확인은 Python 설치를 요구하지 않습니다. 자세한 첫 실행·복구 절차는
 [학습자 시작 안내](docs/learner-start.md)를 봅니다.
@@ -125,7 +90,7 @@ npx skills add kimsanguine/signal-to-growth -a claude-code -a codex
 
 플랫폼의 공식 plugin 설치가 1순위이며 범용 installer는 보조 경로입니다.
 
-### 수강생 권장 경로: Python 없이 preview부터
+## 첫 실행: Python 없이 preview부터
 
 Claude Code에서 skill을 설치하고 학습·preview 모드로 읽는 데 Python 3.11
 설치를 선행할 필요는 없습니다. 첫 호출은 파일을 바꾸지 않고 AI 판단,
@@ -184,6 +149,193 @@ signal-to-growth validate-artifacts \
   fixtures/public-dummy/artifacts \
   --require-complete
 ```
+
+## 11개 스킬
+
+| 순서 | 스킬 | 하는 일 | 핵심 산출물 |
+|---:|---|---|---|
+| 1 | `plan-customer-reach` | 조사 대상·채널·동의·draft-only 접촉 계획 | `reach-plan.json` |
+| 2 | `run-switch-interview` | 실제 과거 행동 중심 Switch Interview 설계 | `interview-guide.md` |
+| 3 | `synthesize-interviews` | quote·theme·반증을 evidence ID로 연결 | `evidence.jsonl` |
+| 4 | `connect-customer-channels` | 한국형 CS event 검증·정규화·중복 제거·상태 대사 | `cs-events.jsonl` |
+| 5 | `triage-customer-signals` | CS·review·survey 신호 정규화와 위험 분기 | `signals.jsonl` |
+| 6 | `define-growth-metrics` | 분모·cohort·value event가 있는 지표 계약 | `metrics.jsonl` |
+| 7 | `record-growth-decision` | 근거·대안·중단 조건·결과의 append-only 기록 | `decisions.jsonl` |
+| 8 | `audit-answer-visibility` | SEO·GEO·AEO 표면의 날짜가 있는 관찰 감사 | `visibility-observations.jsonl` |
+| 9 | `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
+| 10 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
+| 11 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
+
+각 스킬은 독립적으로 사용할 수 있습니다. connector를 설정하지 않으면 기존 manual signal flow를 그대로 사용합니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
+
+### 강의 커리큘럼 × 스킬 × 산출물
+
+강의를 따라오는 경우 아래 매핑으로 "지금 어느 스킬을 쓰는가"를 확인할 수 있습니다.
+
+| 커리큘럼 | 스킬 | 산출물 |
+|---|---|---|
+| 01-01 고객 접촉 계획 | `plan-customer-reach` | `reach-plan.json`, `contact-drafts.md`, `recruitment-log.csv` |
+| 01-02 인터뷰 설계와 증거화 | `run-switch-interview` → `synthesize-interviews` | `interview-guide.md` → `evidence.jsonl`, `counterevidence.md` |
+| 02-01 신호 분류와 고위험 처리 | `triage-customer-signals` | `signals.jsonl`, `risk-queue.jsonl`, `dead-letter.jsonl` |
+| 02-02 한국형 CS 채널 연결 | `connect-customer-channels` | `channel-connection.json`, `cs-events.jsonl`, `connector-state.json` |
+| 03-01 지표 계약 | `define-growth-metrics` | `metrics.jsonl`, `measurement-plan.md` |
+| 03-02 성장 결정 기록 | `record-growth-decision` | `decisions.jsonl`, `decision-summary.md` |
+| 04-01 답변 가시성 감사 | `audit-answer-visibility` | `visibility-observations.jsonl`, `citation-gaps.md`, `technical-findings.md` |
+| 04-02 근거 기반 콘텐츠 초안 | `draft-evidence-content` | `claim-ledger.jsonl`, `draft.md`, `review-checklist.md` |
+| 05-01 첫 사용자 루프 설계 | `design-first-user-loop` | `first-user-loop.json`, `experiment-cards.md` |
+| 05-02 승인 경계 아래의 실행 | `design-first-user-loop` + `draft-evidence-content` 조합 | `first-user-loop.json` → `claim-ledger.jsonl`, `approvals.jsonl` |
+| 전 구간 (오케스트레이션) | `run-growth-loop` | `run-state.json`, `next-action.md`, `blocked-items.md` |
+
+두 가지를 분명히 해 둡니다.
+
+- **05-02는 새 스킬이 아닙니다.** 12번째 스킬을 만들지 않고
+  `design-first-user-loop` → `draft-evidence-content` 라우팅 간선만 추가했습니다.
+  이 간선은 구현돼 있으며, 검증된 first-user loop가 완료된 뒤에만 콘텐츠 분기가
+  열립니다(`src/signal_growth/workflow.py`의 `CONTENT_PREREQUISITE`).
+- `approvals.jsonl`은 **사람이 승인한 뒤에만** 생성됩니다. 스킬이 스스로
+  만들지 않습니다.
+- 클립 번호 중 01-01, 04-01, 04-02, 05-01, 전 구간 행은 저장소 문서에 번호 기록이
+  없어 스킬 순서와 산출물 의존 관계로 배치한 **제안**입니다. 나머지 행은
+  [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 근거가 있습니다.
+  산출물 이름의 정본은 각 `skills/<name>/references/output-contract.md`입니다.
+
+> **연동 문서를 쓰기 전에**: `verify_event`·`normalize_event`의 실제 시그니처는 항상
+> [`src/signal_growth/adapters/base.py`](src/signal_growth/adapters/base.py)의
+> `ChannelAdapter` Protocol이 유일한 정답입니다. 교안·튜토리얼·타 문서에 의사코드를 적을 때
+> 이 파일과 대조하지 않으면 시그니처 드리프트가 생깁니다(실제로 한 번 발생해 발견·수정함).
+
+## 실제 사용 예
+
+### 1. 인터뷰 합성
+
+```text
+$synthesize-interviews
+
+fixtures/public-dummy/interviews/에 있는 합성 인터뷰를 읽고
+quote와 해석을 분리한 evidence.jsonl을 만들어줘.
+반증과 distinct participant 수도 별도로 보여줘.
+```
+
+완료 전에 확인할 것:
+
+- quote가 원문과 일치하는가;
+- file·line locator가 있는가;
+- 여러 quote를 여러 사람으로 잘못 계산하지 않았는가;
+- strength가 사람 승인 전 `awaiting_human_tag`인가;
+- observed와 inferred가 구분되는가.
+
+### 2. 지표 계약
+
+```text
+$define-growth-metrics
+
+첫 evidence-backed decision을 activation 후보로 검토해줘.
+entity, population, numerator, denominator, cohort maturity,
+counter-metric을 포함하고 baseline은 모르면 null로 남겨줘.
+```
+
+### 3. 첫 사용자 루프
+
+```text
+$design-first-user-loop
+
+승인된 evidence와 metric을 바탕으로 5팀 규모의 첫 사용자 실험을 설계해줘.
+메시지는 초안까지만 만들고 실제 발송은 하지 마.
+```
+
+## 안전과 승인 경계
+
+기본 정책은 [`policies/default-policy.json`](policies/default-policy.json)에 있습니다.
+
+다음 작업은 어떤 스킬도 자동 승인하지 않습니다.
+
+- email 또는 direct message 발송
+- 외부 게시
+- 광고비·incentive·환불 등 비용 발생
+- 고객 약속
+- 데이터 삭제
+- 배포
+- 계정·billing 변경
+
+외부 실행에는 최소한 다음 항목이 필요합니다.
+
+1. 명시적 사람 승인
+2. 구체적인 대상과 owner
+3. 검증된 action artifact
+4. audit record
+
+보안·데이터 신고는 [SECURITY.md](SECURITY.md)를 확인하세요.
+
+## Artifact contract
+
+Core JSON Schema:
+
+| 객체 | Schema | ID |
+|---|---|---|
+| Evidence | [`evidence.schema.json`](contracts/evidence.schema.json) | `EV-YYYYMMDD-NNN` |
+| Signal | [`signal.schema.json`](contracts/signal.schema.json) | `SIG-YYYYMMDD-NNN` |
+| Metric | [`metric.schema.json`](contracts/metric.schema.json) | `MET-YYYYMMDD-NNN` |
+| Decision | [`decision.schema.json`](contracts/decision.schema.json) | `DEC-YYYYMMDD-NNN` |
+| Action | [`action.schema.json`](contracts/action.schema.json) | `ACT-YYYYMMDD-NNN` |
+| Outcome | [`outcome.schema.json`](contracts/outcome.schema.json) | `OUT-YYYYMMDD-NNN` |
+| Run state | [`run-state.schema.json`](contracts/run-state.schema.json) | `RUN-YYYYMMDD-NNN` |
+
+Connector JSON Schema:
+
+| 객체 | Schema |
+|---|---|
+| Channel connection | [`channel-connection.schema.json`](contracts/channel-connection.schema.json) |
+| Canonical CS event | [`cs-event.schema.json`](contracts/cs-event.schema.json) |
+| Reply draft | [`reply-draft.schema.json`](contracts/reply-draft.schema.json) |
+| Delivery event | [`delivery-event.schema.json`](contracts/delivery-event.schema.json) |
+| Connector state | [`connector-state.schema.json`](contracts/connector-state.schema.json) |
+
+상세 연결 규칙은 [Artifact contracts](docs/artifact-contracts.md)를 확인하세요.
+
+## 왜 만들었나
+
+초기 SaaS 팀은 고객 신호가 부족해서만 실패하지 않습니다.
+
+- 인터뷰 원문과 요약이 분리됩니다.
+- CS 태그와 실제 고객 맥락이 달라집니다.
+- 지표 이름은 있지만 분모·cohort·value event가 없습니다.
+- 결정 당시 근거와 실행 후 결과가 연결되지 않습니다.
+- AI가 만든 초안과 사람이 승인한 실행의 경계가 흐려집니다.
+
+Signal to Growth는 이 연결을 하나의 artifact lineage로 관리합니다.
+
+```text
+quote
+  → evidence
+  → channel event (when a connector is configured)
+  → signal / theme
+  → decision
+  → action
+  → metric
+  → outcome
+  → learning
+```
+
+이 저장소는 “성장 prompt를 많이 제공하는 catalog”가 아닙니다. 증거 계보, 승인 상태, 설정 가능한 지표 정책, 실패 시 중단 조건을 제공하는 작은 운영 체계입니다.
+
+## 핵심 원칙
+
+1. **Evidence before advice** — 권고보다 원문·출처·관찰 시점을 먼저 남깁니다.
+2. **AI proposes, human decides** — AI는 추출·분류·초안을 담당하고 중요한 판단과 외부 실행은 사람이 승인합니다.
+3. **Policy over universal thresholds** — 인터뷰 수, retention target, 위험 기준을 보편값으로 고정하지 않습니다.
+4. **Draft is not execution** — 메시지·콘텐츠 초안과 발송·게시를 분리합니다.
+5. **One source, two adapters** — 공통 스킬을 유지하고 플랫폼별 manifest만
+   분리합니다. 다만 런타임이 제공하는 안전장치는 아직 동일하지 않습니다[^runtime-parity].
+6. **Artifacts connect skills** — 대화 기억보다 JSON·JSONL·Markdown 산출물로 다음 단계를 연결합니다.
+7. **Fail loud** — 근거·동의·schema·승인이 부족하면 이유를 남기고 멈춥니다.
+
+[^runtime-parity]: append-only 산출물의 덮어쓰기를 차단하는 PreToolUse 훅은
+현재 Claude Code에만 구현돼 있습니다(`hooks/hooks.json`). Codex에서는 같은
+규칙이 `SKILL.md`의 지시와 `append-record` CLI로만 유지되며, 도구 수준의
+강제는 아직 없습니다(`.codex-plugin/plugin.json`에 hooks 키 없음). Codex 대응은
+진행 중입니다. 두 런타임의 30-case 호출 parity 역시 미검증 상태입니다
+([Evaluation summary](eval/summary.md)). 승인 경계·정책·schema 검증은 두 런타임
+공통이며, 차이는 훅이라는 한 층입니다.
 
 ## CLI
 
@@ -382,94 +534,6 @@ signal-to-growth next-step artifacts/
 
 artifact가 준비된 순서를 기준으로 첫 누락 스킬과 완료된 스킬을 JSON으로 반환합니다. `reason` 필드에 왜 그 스킬이 다음인지 사람이 읽는 한 문장이 함께 나옵니다.
 
-## 실제 사용 예
-
-### 1. 인터뷰 합성
-
-```text
-$synthesize-interviews
-
-fixtures/public-dummy/interviews/에 있는 합성 인터뷰를 읽고
-quote와 해석을 분리한 evidence.jsonl을 만들어줘.
-반증과 distinct participant 수도 별도로 보여줘.
-```
-
-완료 전에 확인할 것:
-
-- quote가 원문과 일치하는가;
-- file·line locator가 있는가;
-- 여러 quote를 여러 사람으로 잘못 계산하지 않았는가;
-- strength가 사람 승인 전 `awaiting_human_tag`인가;
-- observed와 inferred가 구분되는가.
-
-### 2. 지표 계약
-
-```text
-$define-growth-metrics
-
-첫 evidence-backed decision을 activation 후보로 검토해줘.
-entity, population, numerator, denominator, cohort maturity,
-counter-metric을 포함하고 baseline은 모르면 null로 남겨줘.
-```
-
-### 3. 첫 사용자 루프
-
-```text
-$design-first-user-loop
-
-승인된 evidence와 metric을 바탕으로 5팀 규모의 첫 사용자 실험을 설계해줘.
-메시지는 초안까지만 만들고 실제 발송은 하지 마.
-```
-
-## 안전과 승인 경계
-
-기본 정책은 [`policies/default-policy.json`](policies/default-policy.json)에 있습니다.
-
-다음 작업은 어떤 스킬도 자동 승인하지 않습니다.
-
-- email 또는 direct message 발송
-- 외부 게시
-- 광고비·incentive·환불 등 비용 발생
-- 고객 약속
-- 데이터 삭제
-- 배포
-- 계정·billing 변경
-
-외부 실행에는 최소한 다음 항목이 필요합니다.
-
-1. 명시적 사람 승인
-2. 구체적인 대상과 owner
-3. 검증된 action artifact
-4. audit record
-
-보안·데이터 신고는 [SECURITY.md](SECURITY.md)를 확인하세요.
-
-## Artifact contract
-
-Core JSON Schema:
-
-| 객체 | Schema | ID |
-|---|---|---|
-| Evidence | [`evidence.schema.json`](contracts/evidence.schema.json) | `EV-YYYYMMDD-NNN` |
-| Signal | [`signal.schema.json`](contracts/signal.schema.json) | `SIG-YYYYMMDD-NNN` |
-| Metric | [`metric.schema.json`](contracts/metric.schema.json) | `MET-YYYYMMDD-NNN` |
-| Decision | [`decision.schema.json`](contracts/decision.schema.json) | `DEC-YYYYMMDD-NNN` |
-| Action | [`action.schema.json`](contracts/action.schema.json) | `ACT-YYYYMMDD-NNN` |
-| Outcome | [`outcome.schema.json`](contracts/outcome.schema.json) | `OUT-YYYYMMDD-NNN` |
-| Run state | [`run-state.schema.json`](contracts/run-state.schema.json) | `RUN-YYYYMMDD-NNN` |
-
-Connector JSON Schema:
-
-| 객체 | Schema |
-|---|---|
-| Channel connection | [`channel-connection.schema.json`](contracts/channel-connection.schema.json) |
-| Canonical CS event | [`cs-event.schema.json`](contracts/cs-event.schema.json) |
-| Reply draft | [`reply-draft.schema.json`](contracts/reply-draft.schema.json) |
-| Delivery event | [`delivery-event.schema.json`](contracts/delivery-event.schema.json) |
-| Connector state | [`connector-state.schema.json`](contracts/connector-state.schema.json) |
-
-상세 연결 규칙은 [Artifact contracts](docs/artifact-contracts.md)를 확인하세요.
-
 ## Claude Code와 Codex를 함께 지원하는 방식
 
 ```text
@@ -538,9 +602,8 @@ python3 /path/to/skill-creator/scripts/quick_validate.py \
 6. **Cross-runtime** — Claude Code와 Codex의 핵심 artifact 비교
 
 현재 release에서 자동화한 범위와 남은 runtime 검증은 [Verification](docs/verification.md)에 기록합니다.
-5개 독립 evaluator agent의 정적·적대적 기준선은 평균 67점,
-`NO-GO`였습니다. 확인된 취약점은 이번 버전에서 보강했지만, 30개 case의
-정식 runtime 재평가와 Claude Code·Codex 실제 호출 parity는 남아 있습니다.
+평가 점수와 릴리스 판정은 한곳에만 두었습니다 — [「프로젝트 상태」](#프로젝트-상태)를 보세요.
+점수 하나만 보고 준비도를 과대평가하지 않도록, 그 섹션에 공개된 두 점수를 함께 적어 두었습니다.
 평가 범위와 원점수는 [Skill evaluation plan](docs/skill-evaluation-plan.md)과
 [Evaluation summary](eval/summary.md)에 기록합니다.
 현재 branch 상태, 재개 명령, 승인 필요 항목은
@@ -556,7 +619,8 @@ Signal to Growth가 집중하는 공백:
 - AI 제안과 사람 승인의 분리
 - fixed benchmark 대신 project policy
 - 초안과 실제 external write의 분리
-- 한 source에서 Claude Code·Codex로 배포
+- 한 source에서 Claude Code·Codex로 배포 (런타임별 강제 수준은 아직
+  다릅니다[^runtime-parity])
 - positive·negative·integration fixture를 함께 제공
 
 ## 프로젝트 상태
@@ -564,11 +628,47 @@ Signal to Growth가 집중하는 공백:
 `v0.4.0`은 수강생용 preview/apply 경계, outcome-aware routing, scoped
 human approval, Bash overwrite guard를 추가한 release candidate입니다.
 
+**릴리스 게이트: `HOLD / NO-GO`.** 판정 근거와 원점수는
+[Evaluation summary](eval/summary.md), 판정 기준은
+[Skill evaluation plan](docs/skill-evaluation-plan.md)에 있습니다.
+
+### 평가 점수를 두 개 공개하는 이유
+
+두 점수는 개선 전후 쌍이 아니고, 어느 쪽도 다른 쪽을 대체하지 않습니다.
+**서로 다른 대상을, 서로 다른 근거 기준으로** 채점했습니다.
+
+| | 67 / 100 | 49.2 / 100 |
+|---|---|---|
+| snapshot | `fe3dfc4` | `8aef638` |
+| 채점 대상 | 저장소에 쓰인 것 | 그 시점에 실제로 증명 가능한 근거 |
+| 평가자 | 5개 독립 관점 | 5개 새 Codex 컨텍스트 |
+| 개별 점수 분포 | 46–79 | 30–81 |
+| 판정 | `NO-GO` | `HOLD / NO-GO` |
+
+deterministic hardening이 반영되고 회귀 테스트를 통과한 뒤에 점수가 **내려간**
+것은 이상한 결과가 아닙니다. 두 번째 평가는 쓰인 것이 아니라 증명 가능한 것을
+채점했고, 그 사이에 평가자가 요구한 근거 기준이 올라갔기 때문입니다. 생성
+artifact E2E, 실제 plugin 설치, provider 운영, Claude Code·Codex parity가 모두
+미검증이라 해당 항목은 "없음"이 아니라 **"입증되지 않음"**으로 채점됐습니다.
+
+두 점수 모두 runtime 결과가 아닙니다. 정식 30-case 교차 런타임 평가는 아직
+완료되지 않았습니다 — Codex batch는 끝났지만 Claude Code batch가 계정 지출
+한도(HTTP 429)로 중단됐습니다. hardening 작업, 통과한 테스트 스위트, 머지된
+기본 브랜치를 더 높은 점수로 읽지 마세요. release tag, Production 승격,
+provider 운영, 외부 write는 모두 미승인 상태입니다.
+
+`GO` 판정은 [판정 기준](docs/skill-evaluation-plan.md) 6개 조건이 **전부**
+충족될 때만 나옵니다(hard-gate 실패 0건, deterministic artifact 검증 100%,
+전체 task 성공률 85% 이상, 핵심 스킬 각 80점 이상, cross-runtime semantic
+parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인터뷰가 사람 승인
+대기 상태이므로, 점수와 무관하게 현재 `GO`는 도달 불가입니다.
+
 포함:
 
 - 11개 portable skill
 - Claude Code·Codex plugin manifest
-- 7개 core artifact schema, scoped approval schema, first-user-loop schema, 5개 connector schema
+- `contracts/`의 20개 JSON Schema 계약 — core artifact, scoped approval,
+  first-user-loop, connector, claim ledger, visibility observation, gate decision
 - 전체 Draft 2020-12 schema와 exact evidence locator를 검증하는 CLI
 - 합성 한국어 fixture
 - unit·integration·negative tests

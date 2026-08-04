@@ -44,6 +44,19 @@ versioning once a version is tagged.
 ### Changed
 
 - The skill suite now contains 11 skills and reports version `0.4.0`.
+- `README.md` is reordered so a reader reaches installation, the Python-free
+  preview, and the optional five-minute local run before the philosophy
+  sections; the CLI reference and the Kakao deployment procedure moved to the
+  second half.
+- `README.md` now carries a curriculum × skill × artifact mapping table, and
+  records 05-02 as a routing edge between `design-first-user-loop` and
+  `draft-evidence-content` rather than a twelfth skill.
+- The release-status section now publishes both evaluation scores — 67/100 at
+  `fe3dfc4` and 49.2/100 at `8aef638` — with the scoring-scope difference that
+  explains why the later number is lower. The verdict stays `HOLD / NO-GO`.
+- Cross-runtime claims in `README.md` now carry a footnote stating that the
+  append-only PreToolUse hook exists only on the Claude Code adapter and that
+  30-case runtime parity is unverified.
 - `run-growth-loop` now defaults to a read-only six-part learning/preview
   response and waits for explicit confirmation in a later turn before apply.
 - `next-step` now reads outcome-review state and routes an immature or held
