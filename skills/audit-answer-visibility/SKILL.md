@@ -30,6 +30,24 @@ Use current authoritative sources when platform behavior may have changed.
 7. Record inaccessible or unverified surfaces as unknown.
 8. If using a diagnostic score, expose weights and label the score as a heuristic.
 
+An optional third-party citability scorer covers step 8 without hand-weighting.
+It is not required and never changes the rest of the audit:
+
+```bash
+pip install -e ".[geo]"   # optional
+```
+
+```python
+from signal_growth.geo_visibility import score_citability
+result = score_citability(markup_you_already_fetched, surface_url)
+```
+
+Installed, it returns a heuristic score with every method weight, and the
+finding is `reported` — a third-party tool said it, nobody observed a citation.
+Not installed, the same call returns `unknown` with no number. Do not fill the
+gap with an estimate, and do not fetch a page just to score it; score only
+markup the user already authorized you to read.
+
 ## Boundaries
 
 - Let the model organize questions, gaps, and recommendations.

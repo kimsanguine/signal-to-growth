@@ -11,6 +11,12 @@
 
 **성장 프롬프트 모음이 아닙니다.** 고객 인용문에서 결과까지의 참조 무결성과
 사람 승인 경계를 파일로 강제하는 작은 운영 체계입니다.
+
+**그럼 무엇인가.** 11개 스킬이 주고받는 산출물을 20개 JSON Schema로 고정한
+운영 체계입니다. 인용문에는 원문 파일·줄 위치를, 지표에는 baseline과
+counter-metric을 필수 필드로 요구하고, 원장은 고쳐 쓰면 드러나는 해시 체인으로
+잇습니다. 발송·게시·배포·삭제·환불은 `policies/default-policy.json`이 기본으로
+막습니다. 근거가 없으면 그럴듯한 값으로 채우지 않고 그 자리에서 멈춥니다.
 고객 인터뷰·CS·행동 지표에서 얻은 신호가 입력이고, 사람이 승인한 성장 결정과
 콘텐츠·첫 사용자 루프·측정이 출력입니다.
 
@@ -51,8 +57,8 @@ fixtures/public-dummy/artifacts를 학습 모드로 점검해줘. 파일은 바�
 
 **무엇을 하는가**
 
-- [11개 스킬](#11개-스킬)
-- [실제 사용 예](#실제-사용-예)
+- [11개 스킬](#11개-스킬) · [목표 → 스킬 → 산출물](#목표--스킬--산출물)
+- [실제 사용 예](#실제-사용-예) · [우리 저장소에 직접 적용해본 결과](#우리-저장소에-직접-적용해본-결과)
 - [안전과 승인 경계](#안전과-승인-경계)
 - [Artifact contract](#artifact-contract)
 
@@ -202,6 +208,43 @@ signal-to-growth validate-artifacts \
 
 각 스킬은 독립적으로 사용할 수 있습니다. connector를 설정하지 않으면 기존 manual signal flow를 그대로 사용합니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
 
+### 목표 → 스킬 → 산출물 → 그 산출물을 붙잡아 두는 것
+
+스킬 이름을 모르는 상태로 들어왔다면 이 표부터 보세요. 왼쪽에서 지금 하려는
+일을 찾으면 어떤 스킬을 어떤 순서로 부를지가 정해집니다.
+
+네 번째 열이 이 표의 핵심입니다. 앞선 세 열만 있으면 이 저장소는 "스킬이
+파일을 만들어 준다"는 흔한 약속과 구분되지 않습니다. 네 번째 열은 각 산출물이
+**무엇으로 검증되고 무엇이 없으면 진행이 멈추는지**를 적습니다. 모두 파일에서
+직접 확인할 수 있고, 셀마다 근거 파일을 함께 적어 두었습니다.
+
+한 가지를 구분해 적었습니다. **코드·schema가 실행 중에 막는 것**과 **정책
+문서가 선언만 한 것**은 강제력이 다릅니다. 후자에 해당하는 항목은 그렇다고
+표시했습니다. 이 구분을 흐리면 이 표 자체가 이 저장소가 하지 말라고 하는
+"검증된 것과 안 된 것 섞어 적기"가 됩니다.
+
+| 목표 (Goal) | 스킬 (Skills) | 산출물 (Output) | 근거 규율 (Discipline) — 무엇이 검증하나 / 무엇이 없으면 멈추나 |
+|---|---|---|---|
+| 누구를 만날지 정하고 동의를 받은 상태로 접촉하고 싶다 | `plan-customer-reach` | `reach-plan.json`, `contact-drafts.md` | 계획이 완성돼도 발송은 일어나지 않습니다. 승인 목록(`email`·`direct_message`)에 있을 뿐 아니라 **이 release에는 외부 발송 경로 자체가 없습니다** — `adapters/base.py`의 `send_approved`는 언제나 예외를 던집니다 |
+| 첫 인터뷰를 인상이 아니라 근거로 바꾸고 싶다 | `run-switch-interview` → `synthesize-interviews` | `interview-guide.md` → `evidence.jsonl`, `counterevidence.md` | quote마다 `locator.file`이 필수이고, CLI가 **그 위치에 원문이 실제로 있는지 대조**합니다. `strength`를 `awaiting_human_tag` 위로 올리려면 `approved_by`가 있어야 합니다(`src/signal_growth/contracts.py`). 합성 quote는 금지 |
+| 쌓인 CS·리뷰·설문을 분류하고 고위험 건을 따로 빼고 싶다 | `triage-customer-signals` | `signals.jsonl`, `risk-queue.jsonl` | `signal.schema.json`으로 검증하고, `signals.jsonl`은 append-only 해시 체인이라 뒤늦게 고쳐 쓰면 대사에서 드러납니다 |
+| 카카오·네이버·Channel Talk의 CS를 자동으로 정리하고 싶다 | `connect-customer-channels` → `triage-customer-signals` | `channel-connection.json`, `cs-events.jsonl` → `signals.jsonl` | 검증 수준이 `none`인 event는 정규화까지 가지 못하고 `PolicyViolation`으로 멈춥니다 — 상수가 아니라 `policies/default-policy.json`의 `blocked_verification_assurance`가 정하고, `tests/test_policy.py`가 이 연결이 끊기면 실패합니다. `fixture-validated`·`test-account verified`·`production-operational`은 **섞어 적지 않습니다** |
+| "활성 사용자"처럼 애매한 지표에 분모와 cohort를 붙이고 싶다 | `define-growth-metrics` | `metrics.jsonl`, `measurement-plan.md` | `baseline`과 `counter_metric_ids`가 `metric.schema.json`의 필수 필드라, 모르면 비워 두는 게 아니라 모른다고 적어야 합니다. "출처 없는 업계 벤치마크 금지"는 *정책 선언*이며 schema 검사로는 잡히지 않습니다 |
+| 무엇을 만들지 **않기로** 했는지를 근거와 함께 남기고 싶다 | `record-growth-decision` | `decisions.jsonl`, `decision-summary.md` | append-only 해시 체인이라 결정 당시의 근거를 나중에 결과에 맞춰 손볼 수 없습니다. Claude Code에서는 훅이 덮어쓰기를 도구 수준에서 차단합니다[^runtime-parity] |
+| AI 검색·생성형 답변에 우리 페이지가 잡히는지 확인하고 싶다 | `audit-answer-visibility` | `visibility-observations.jsonl`, `citation-gaps.md`, `technical-findings.md` | 관찰마다 날짜와 접근 상태가 필요합니다. 확인하지 못한 표면은 낮은 점수가 아니라 `unknown`으로 남고, 진단 점수를 쓸 때는 가중치를 공개하고 heuristic이라고 라벨해야 합니다 |
+| AEO 콘텐츠를 쓰되 문장마다 출처를 남기고 싶다 | `audit-answer-visibility` → `draft-evidence-content` | `citation-gaps.md` → `claim-ledger.jsonl`, `draft.md` | 주장마다 출처와 claim state를 `claim-ledger.schema.json`에 맞춰 원장에 남깁니다. 초안이 완성돼도 게시로 넘어가지 않습니다 — `publish`가 승인 목록에 있고, 이 release에는 게시 경로가 구현돼 있지 않습니다 |
+| 첫 사용자 5~10팀으로 실험하되 중단 조건을 미리 정하고 싶다 | `design-first-user-loop` | `first-user-loop.json`, `experiment-cards.md` | `capacity`와 `stop_condition`이 `first-user-loop.schema.json`의 필수 필드이고, 이 파일이 schema를 통과해야 라우터가 다음 단계를 엽니다(`src/signal_growth/workflow.py`). 중단 조건을 안 정하면 실험이 시작되지 않습니다 |
+| 지금 어디까지 왔고 다음에 뭘 해야 하는지 모르겠다 | `run-growth-loop` | `run-state.json`, `next-action.md`, `blocked-items.md` | 선행 산출물이 계약을 통과해야 다음 스킬을 제안합니다. 통과하지 못하면 건너뛰지 않고 막힌 이유를 `blocked-items.md`에 적고 멈춥니다 |
+
+표를 읽는 법 두 가지.
+
+- **네 번째 열이 비어 있는 행은 없습니다.** 어떤 목표로 들어오든 근거·승인·계약
+  중 하나가 걸립니다. 이것이 이 저장소가 프롬프트 모음과 갈리는 지점이고,
+  동시에 이 도구를 쓰는 비용이기도 합니다 — 근거가 없으면 결과물도 안 나옵니다.
+- **이 표가 정하지 않는 것.** 어떤 고객을 목표 고객(ICP)으로 확정할지, 어떤
+  기회에 투자할지는 사람이 정합니다. 표의 책임은 "그 판단에 필요한 근거를 어떤
+  파일에 어떤 검증을 걸어 남기는가"까지입니다.
+
 ### 강의 커리큘럼 × 스킬 × 산출물
 
 강의를 따라오는 경우 아래 매핑으로 "지금 어느 스킬을 쓰는가"를 확인할 수 있습니다.
@@ -276,6 +319,22 @@ $design-first-user-loop
 승인된 evidence와 metric을 바탕으로 5팀 규모의 첫 사용자 실험을 설계해줘.
 메시지는 초안까지만 만들고 실제 발송은 하지 마.
 ```
+
+### 우리 저장소에 직접 적용해본 결과
+
+이 도구를 남에게 권하기 전에 우리 자신에게 먼저 적용했습니다. `audit-answer-visibility`와
+`draft-evidence-content`로 이 저장소의 README·문서·manifest를 감사했고, 그때 나온
+산출물을 요약하지 않고 [`docs/self-marketing/`](docs/self-marketing/)에 그대로 두었습니다.
+
+- [`visibility-observations.jsonl`](docs/self-marketing/visibility-observations.jsonl) — 날짜와 접근 상태가 붙은 관찰 기록
+- [`technical-findings.md`](docs/self-marketing/technical-findings.md) — `not checked`와 `not present`를 구분한 기술 점검표
+- [`claim-ledger.jsonl`](docs/self-marketing/claim-ledger.jsonl) — 마케팅 문장마다 붙인 출처와 claim 상태
+- [`recommendations.md`](docs/self-marketing/recommendations.md) — 채택하지 **않기로** 권고한 항목 포함
+
+읽는 사람에게 유리한 부분만 남기지 않았습니다. 감사 결과 `llms.txt`가 없었고, 질문형
+헤딩이 31개 중 1개였고, 구조화 데이터가 0건이었다는 사실이 그대로 적혀 있습니다.
+라이브 관찰이 0건이라 점수를 매기지 않은 이유도 함께 적었습니다. 이 산출물들이
+실제 계약을 지키는지는 [`tests/test_self_marketing_artifacts.py`](tests/test_self_marketing_artifacts.py)가 검사합니다.
 
 ## 안전과 승인 경계
 
@@ -618,6 +677,17 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 make check
 ```
+
+선택 의존성이 하나 있습니다. `audit-answer-visibility`가 진단용 citability 점수를
+쓸 때만 필요하고, 설치하지 않으면 해당 항목이 `unknown`으로 남을 뿐 나머지 감사는
+그대로 동작합니다. 연결 지점은 [`src/signal_growth/geo_visibility.py`](src/signal_growth/geo_visibility.py) 한 곳입니다.
+
+```bash
+python -m pip install -e ".[geo]"
+```
+
+점수는 그 외부 패키지가 계산한 heuristic이며 이 저장소가 재계산하거나 재척도하지
+않습니다. 인용될 확률로 읽지 마세요.
 
 개별 skill은 공식 `quick_validate.py`로도 검사합니다.
 
