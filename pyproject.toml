@@ -33,6 +33,12 @@ dependencies = [
 dev = [
   "ruff>=0.16,<0.17"
 ]
+# Optional third-party citability scorer for `audit-answer-visibility`. The
+# audit runs without it and reports `unknown` instead of a score, so this stays
+# out of the base dependencies — see `src/signal_growth/geo_visibility.py`.
+geo = [
+  "geo-optimizer-skill>=4.15,<5"
+]
 
 [project.urls]
 Homepage = "https://github.com/kimsanguine/signal-to-growth"
