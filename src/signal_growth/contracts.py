@@ -27,6 +27,7 @@ ID_PATTERNS = {
     "approval": re.compile(r"^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"),
     "claim": re.compile(r"^CLM-\d{8}-\d{3,}$"),
     "visibility_observation": re.compile(r"^VIS-\d{8}-\d{3,}$"),
+    "release_note": re.compile(r"^REL-\d{8}-\d{3,}$"),
 }
 
 ID_FIELDS = {
@@ -40,6 +41,7 @@ ID_FIELDS = {
     "approval": "approval_id",
     "claim": "claim_id",
     "visibility_observation": "observation_id",
+    "release_note": "release_id",
 }
 
 REQUIRED_FIELDS = {
@@ -170,6 +172,17 @@ REQUIRED_FIELDS = {
         "status",
         "claim_state",
     },
+    "release_note": {
+        "release_id",
+        "created_at",
+        "status",
+        "release_ref",
+        "changes",
+        "internal_summary",
+        "customer_summary",
+        "publication_action_id",
+        "supersedes",
+    },
 }
 
 ENUM_FIELDS = {
@@ -204,6 +217,12 @@ ENUM_FIELDS = {
     ("approval", "status"): {"approved", "revoked"},
     ("claim", "state"): CLAIM_STATES,
     ("visibility_observation", "claim_state"): CLAIM_STATES,
+    ("release_note", "status"): {
+        "draft",
+        "awaiting_human_review",
+        "approved",
+        "rejected",
+    },
 }
 
 # Decision event kinds. Deliberately NOT in ENUM_FIELDS: that table treats a
@@ -234,6 +253,7 @@ ARTIFACT_FILES = {
     "approvals.jsonl": "approval",
     "claim-ledger.jsonl": "claim",
     "visibility-observations.jsonl": "visibility_observation",
+    "release-notes.jsonl": "release_note",
 }
 REQUIRED_COMPLETE_FILES = frozenset(
     {
@@ -259,6 +279,7 @@ SCHEMA_FILES = {
     "approval": "approval.schema.json",
     "claim": "claim-ledger.schema.json",
     "visibility_observation": "visibility-observation.schema.json",
+    "release_note": "release-note.schema.json",
 }
 
 GATE_DECISION_SCHEMA_FILE = "gate-decision.schema.json"
@@ -483,6 +504,75 @@ def _check_evidence_sources(
     return issues
 
 
+def _check_release_note_references(
+    records: dict[str, list[dict[str, Any]]],
+    ids: dict[str, set[str]],
+) -> list[ValidationIssue]:
+    """Check the links a release note claims, which live one level down.
+
+    A change item's `signal_ids` and `decision_ids` are nested inside `changes`,
+    so the flat reference helpers cannot reach them. Left unchecked, a note could
+    claim it answers a customer signal that no run ever recorded — which is the
+    one claim this artifact exists to make, so it is the one that has to resolve.
+
+    `publication_action_id` is checked here too: it must name an action that is
+    declared as an external write, otherwise the note points at a send path that
+    the approval contract does not treat as a send.
+    """
+    issues: list[ValidationIssue] = []
+    actions_by_id = {
+        action.get("action_id"): action
+        for action in records.get("action", [])
+        if isinstance(action.get("action_id"), str)
+    }
+
+    for index, note in enumerate(records.get("release_note", []), 1):
+        location = f"{ARTIFACT_KIND_FILES['release_note']}[{index}]"
+        changes = note.get("changes")
+        if isinstance(changes, list):
+            for change_index, change in enumerate(changes, 1):
+                if not isinstance(change, dict):
+                    continue
+                change_location = f"{location}.changes[{change_index}]"
+                for field, target_kind in (
+                    ("signal_ids", "signal"),
+                    ("decision_ids", "decision"),
+                ):
+                    values = change.get(field, [])
+                    if not isinstance(values, list):
+                        continue
+                    for value in values:
+                        if value not in ids.get(target_kind, set()):
+                            issues.append(
+                                ValidationIssue(
+                                    change_location,
+                                    f"{field} references unknown {target_kind} ID",
+                                )
+                            )
+
+        action_id = note.get("publication_action_id")
+        if action_id is None:
+            continue
+        action = actions_by_id.get(action_id)
+        if action is None:
+            issues.append(
+                ValidationIssue(
+                    location,
+                    "publication_action_id references unknown action ID",
+                )
+            )
+            continue
+        if action.get("external_write") is not True:
+            issues.append(
+                ValidationIssue(
+                    location,
+                    "publication_action_id names an action that is not an external "
+                    "write, so sending this note would bypass the approval boundary",
+                )
+            )
+    return issues
+
+
 def _collect_ids(records: dict[str, list[dict[str, Any]]]) -> dict[str, set[str]]:
     ids: dict[str, set[str]] = {}
     for kind, items in records.items():
@@ -572,6 +662,8 @@ def _check_references(
     check_approved_evidence("decision", "evidence_ids")
     check_approved_evidence("outcome", "evidence_ids")
     check_approved_evidence("claim", "evidence_ids")
+
+    issues.extend(_check_release_note_references(records, ids))
 
     approvals_by_id = {
         approval.get("approval_id"): approval

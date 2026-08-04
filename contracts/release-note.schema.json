@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/release-note.schema.json",
+  "title": "Customer Release Note",
+  "description": "One customer-facing release note draft produced by announce-release-to-customers. Every change item carries a deterministic origin (change_ref plus change_source), so the list states where each entry came from rather than what a model remembered about the release. The customer wording is a translation of internal_summary, and the link to a customer signal or growth decision is typed by link_state because a model-inferred link is a hypothesis, not an observation. Publishing is not represented here: publication_action_id points at an actions.jsonl record so the existing external-write approval boundary governs the send.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "release_id",
+    "created_at",
+    "status",
+    "release_ref",
+    "changes",
+    "internal_summary",
+    "customer_summary",
+    "publication_action_id",
+    "supersedes"
+  ],
+  "properties": {
+    "release_id": {
+      "type": "string",
+      "pattern": "^REL-[0-9]{8}-[0-9]{3,}$"
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "status": {
+      "enum": ["draft", "awaiting_human_review", "approved", "rejected"],
+      "description": "Review state of the note's wording. It never means the note was sent; an external send is an approved action, not a status on this record."
+    },
+    "release_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The release this note describes, as a locator a reader can check: a tag, a version, or a commit range."
+    },
+    "changes": {
+      "type": "array",
+      "minItems": 1,
+      "description": "The change list. It is an input to this contract, not an output of one: a model may translate and link these entries but may not add one.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "change_ref",
+          "change_source",
+          "internal_summary",
+          "customer_summary",
+          "signal_ids",
+          "decision_ids",
+          "link_state"
+        ],
+        "properties": {
+          "change_ref": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Where this change came from: a commit hash, a merge request reference, or a CHANGELOG heading. Without it the entry cannot be traced back to the release."
+          },
+          "change_source": {
+            "enum": ["human_provided", "git_log", "changelog"],
+            "description": "How the entry entered the note. All three are deterministic origins; there is deliberately no value for a change a model produced from memory."
+          },
+          "internal_summary": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The change in the team's own words, kept verbatim so the customer wording can be compared against it."
+          },
+          "customer_summary": {
+            "type": ["string", "null"],
+            "description": "The same change in customer language. Null until translated."
+          },
+          "signal_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^SIG-[0-9]{8}-[0-9]{3,}$"
+            },
+            "uniqueItems": true
+          },
+          "decision_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
+            },
+            "uniqueItems": true
+          },
+          "link_state": {
+            "enum": ["human_confirmed", "model_inferred", "none"],
+            "description": "How the link to a signal or decision was established. A model matching a change to a signal is a hypothesis a reader may reject, so it is never recorded as the same thing as a person confirming it. `none` means the change answers no recorded customer signal, which is a normal and reportable result."
+          }
+        },
+        "allOf": [
+          {
+            "$comment": "An unlinked change must not carry references, or `none` would understate what the record claims.",
+            "if": {
+              "properties": {"link_state": {"const": "none"}},
+              "required": ["link_state"]
+            },
+            "then": {
+              "properties": {
+                "signal_ids": {"maxItems": 0},
+                "decision_ids": {"maxItems": 0}
+              }
+            }
+          },
+          {
+            "$comment": "A linked change must name what it is linked to, or the link state is an unsupported claim.",
+            "if": {
+              "properties": {
+                "link_state": {"enum": ["human_confirmed", "model_inferred"]}
+              },
+              "required": ["link_state"]
+            },
+            "then": {
+              "anyOf": [
+                {"properties": {"signal_ids": {"minItems": 1}}},
+                {"properties": {"decision_ids": {"minItems": 1}}}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "internal_summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The release in the team's own words. This is the source text the customer summary is translated from."
+    },
+    "customer_summary": {
+      "type": ["string", "null"],
+      "description": "The release in customer language. Null while the note is still a draft."
+    },
+    "publication_action_id": {
+      "type": ["string", "null"],
+      "pattern": "^ACT-[0-9]{8}-[0-9]{3,}$",
+      "description": "The actions.jsonl record that would send this note, or null when no send is proposed. Sending is an external write, so it is governed by the action and approval contracts rather than by a field on this record."
+    },
+    "supersedes": {
+      "type": ["string", "null"],
+      "pattern": "^REL-[0-9]{8}-[0-9]{3,}$",
+      "description": "The earlier note this one replaces. Corrections are appended and linked, never edited in place."
+    },
+    "record_hash": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "prev_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "$comment": "A note a person is asked to review, or has approved, must contain the customer wording being reviewed.",
+      "if": {
+        "properties": {
+          "status": {"enum": ["awaiting_human_review", "approved"]}
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "customer_summary": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  ]
+}

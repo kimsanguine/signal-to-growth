@@ -84,6 +84,9 @@ approved decision needing build review
 optional content branch
   → audit-answer-visibility → draft-evidence-content
   → design-first-user-loop → draft-evidence-content
+
+optional release branch
+  → record-growth-decision → announce-release-to-customers
 ```
 
 Route from the stated objective and valid available artifacts, not from a
@@ -97,6 +100,12 @@ When the objective asks for a product introduction page or other answer-first
 content, route to `draft-evidence-content` only after `design-first-user-loop`
 is complete, so the page describes a loop that was actually validated. While
 that loop is incomplete, route to `design-first-user-loop` first and say why.
+
+When the objective asks for a release note or customer-facing change
+announcement, route to `announce-release-to-customers` only after
+`record-growth-decision` is complete, so each shipped change can be described
+against the decision log rather than against a model's reading of the code.
+That skill drafts only; announcing to customers stays an external write.
 
 ## Boundaries
 

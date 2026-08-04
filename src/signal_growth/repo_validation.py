@@ -26,6 +26,7 @@ EXPECTED_SKILLS = {
     "audit-answer-visibility",
     "draft-evidence-content",
     "design-first-user-loop",
+    "announce-release-to-customers",
     "run-growth-loop",
 }
 

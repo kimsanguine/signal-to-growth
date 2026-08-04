@@ -29,7 +29,16 @@
       "delete",
       "refund",
       "deploy"
-    ]
+    ],
+    "sensitive_topics": [
+      "pricing",
+      "refund",
+      "billing_dispute",
+      "contract",
+      "data_deletion"
+    ],
+    "sensitive_topic_wording": "approved_template_only",
+    "sensitive_topic_wording_note": "Reserved, not enforced at runtime. It declares that customer-facing wording on these topics comes from a pre-approved template rather than free generation, because a fluent invented sentence about a refund or a contract is a commitment the company then owes. No code reads this field yet: enforcing it needs a template store and a topic classifier, and a classifier deciding whether a message is about refunds would be a model placed on a deterministic branch. Skills cite it as a boundary; wire it to an enforcement point before treating it as one."
   },
   "connectors": {
     "default_mode": "read_only",

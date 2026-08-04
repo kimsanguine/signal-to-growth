@@ -1,0 +1,4 @@
+interface:
+  display_name: "Announce Release to Customers"
+  short_description: "Draft a customer release note from a real change list"
+  default_prompt: "Use $announce-release-to-customers to draft a release note from this change list."
