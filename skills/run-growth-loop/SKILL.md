@@ -1,6 +1,6 @@
 ---
 name: run-growth-loop
-description: "Route an evidence-to-growth workflow by validating artifacts, approval states, blockers, and the next specialist skill. Use when coordinating the full Signal to Growth loop, resuming a paused run, checking 다음 단계, or creating a growth-operations handoff."
+description: "Route an evidence-to-growth workflow by validating artifacts, approval states, blockers, and the next specialist skill. Use when coordinating the full Signal to Growth loop, resuming a paused run, checking 다음 단계, or creating a growth-operations handoff. Do not use for doing the specialist work itself, approving decisions, or executing external writes."
 ---
 
 # Run Growth Loop
@@ -83,6 +83,7 @@ approved decision needing build review
 
 optional content branch
   → audit-answer-visibility → draft-evidence-content
+  → design-first-user-loop → draft-evidence-content
 ```
 
 Route from the stated objective and valid available artifacts, not from a
@@ -91,6 +92,11 @@ artifact exists. Route to `connect-customer-channels` when any connector
 artifact exists but the required connection, event, or state artifact is
 incomplete. Keep visibility and content work optional unless the objective asks
 for them.
+
+When the objective asks for a product introduction page or other answer-first
+content, route to `draft-evidence-content` only after `design-first-user-loop`
+is complete, so the page describes a loop that was actually validated. While
+that loop is incomplete, route to `design-first-user-loop` first and say why.
 
 ## Boundaries
 

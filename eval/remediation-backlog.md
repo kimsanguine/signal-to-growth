@@ -23,4 +23,5 @@ that record is evidence rather than a plan.
 ## Pending release gates
 
 Moved. See [`../docs/HANDOFF.md`](../docs/HANDOFF.md) steps 2 to 6. Release stays
-`NO-GO` until hard-gate failures are zero.
+`NO-GO` until hard-gate failures are zero. Step 2's 2026-08-04 status (blocked by
+account spend limit) is recorded in HANDOFF step 2 directly.

@@ -73,6 +73,12 @@ CONNECTOR_FILES = (
     "cs-events.jsonl",
     "connector-state.json",
 )
+APPROVAL_FILE = "approvals.jsonl"
+# The optional content branch is reachable once the first-user loop is complete,
+# so a product introduction page is written from a validated loop rather than
+# from an untested claim. Adding this edge is why no twelfth skill was created.
+CONTENT_SKILL = "draft-evidence-content"
+CONTENT_PREREQUISITE = "design-first-user-loop"
 OBJECTIVE_ROUTES = (
     (("연결", "connector", "webhook", "channel talk", "카카오"), CONNECTOR_SKILL),
     (("신호", "triage", "signal", "cs 분류"), "triage-customer-signals"),
@@ -82,6 +88,10 @@ OBJECTIVE_ROUTES = (
     (("인터뷰 합성", "synthesis", "quote"), "synthesize-interviews"),
     (("인터뷰 질문", "switch interview"), "run-switch-interview"),
     (("인터뷰 모집", "research participant"), "plan-customer-reach"),
+    (
+        ("소개 페이지", "소개페이지", "landing page", "답변형 콘텐츠", "content draft"),
+        CONTENT_SKILL,
+    ),
 )
 
 
@@ -228,11 +238,24 @@ def _incomplete_reason(
         return f"{primary} does not exist yet or fails validation."
     missing = _missing_skill_outputs(artifact_directory, skill_name)
     if missing:
-        return (
-            f"{skill_name} is missing required output-contract artifacts: "
-            + ", ".join(missing)
-            + "."
-        )
+        # A missing approvals.jsonl is a person who has not decided yet, not a
+        # file the model forgot to write. Naming it as a missing artifact invites
+        # the model to fabricate an approval.
+        pending = [filename for filename in missing if filename != APPROVAL_FILE]
+        reason = ""
+        if pending:
+            reason = (
+                f"{skill_name} is missing required output-contract artifacts: "
+                + ", ".join(pending)
+                + "."
+            )
+        if APPROVAL_FILE in missing:
+            awaiting = (
+                f"{skill_name} is awaiting human approval in a later user turn: "
+                f"{APPROVAL_FILE} has no scoped approval record yet."
+            )
+            return f"{reason} {awaiting}".strip()
+        return reason
     unreviewed = _unreviewed_evidence_ids(artifact_directory)
     if skill_name == "synthesize-interviews" and unreviewed:
         return (
@@ -267,6 +290,18 @@ def _route(
 
     valid = _valid_artifacts(artifact_directory)
     requested = _objective_route(objective)
+    if requested == CONTENT_SKILL:
+        if _skill_complete(artifact_directory, CONTENT_PREREQUISITE, valid):
+            return CONTENT_SKILL, (
+                f"The stated objective points to '{CONTENT_SKILL}' and "
+                f"'{CONTENT_PREREQUISITE}' is complete, so the optional content "
+                "branch can run on a validated first-user loop."
+            )
+        return CONTENT_PREREQUISITE, (
+            f"The stated objective points to '{CONTENT_SKILL}', which follows "
+            f"'{CONTENT_PREREQUISITE}': "
+            + _incomplete_reason(artifact_directory, CONTENT_PREREQUISITE, valid)
+        )
     if requested is not None:
         requested_file = dict(CORE_SKILL_FILES).get(requested)
         if requested == CONNECTOR_SKILL or (

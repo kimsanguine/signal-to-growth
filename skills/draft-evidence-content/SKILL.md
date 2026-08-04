@@ -1,6 +1,6 @@
 ---
 name: draft-evidence-content
-description: "Draft answer-first product content with a claim ledger that links customer evidence and authoritative sources. Use when creating evidence-based articles, FAQs, landing-page copy, comparison content, 답변형 콘텐츠, or GEO-ready drafts without publishing."
+description: "Draft answer-first product content with a claim ledger that links customer evidence and authoritative sources. Use when creating evidence-based articles, FAQs, landing-page copy, comparison content, 답변형 콘텐츠, or GEO-ready drafts without publishing. Do not use for publishing, scheduling, or distributing content, or for inventing customer quotes."
 ---
 
 # Draft Evidence Content

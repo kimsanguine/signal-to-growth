@@ -1,6 +1,6 @@
 ---
 name: audit-answer-visibility
-description: "Audit how a page or product answer is discoverable and citable using dated observations, technical checks, and source-backed findings. Use when reviewing SEO, GEO, AEO, answer visibility, citation readiness, 검색 노출, or 생성형 검색 대응."
+description: "Audit how a page or product answer is discoverable and citable using dated observations, technical checks, and source-backed findings. Use when reviewing SEO, GEO, AEO, answer visibility, citation readiness, 검색 노출, or 생성형 검색 대응. Do not use for drafting or publishing content, changing a live site, or reporting a ranking you did not observe."
 ---
 
 # Audit Answer Visibility

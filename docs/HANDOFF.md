@@ -139,6 +139,11 @@ cross-runtime release gate remains `HOLD`. When that limit is lifted, run the
 same canonical commands through `scripts/run_runtime_eval.py`. Do not use real
 customer data, credentials, provider accounts, or external writes.
 
+This step was not attempted during the 2026-08-04 upgrade round because the
+account spend limit was still in force. The plan remains to run all 30 cases
+in one `scripts/run_runtime_eval.py` batch once the limit resets, then re-score
+step 5 before any release decision.
+
 ### 3. Repeat the five nondeterministic anchors three times in Claude Code
 
 Codex repetition is complete. Codex completion does not establish parity.

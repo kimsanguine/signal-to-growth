@@ -1,6 +1,6 @@
 ---
 name: define-growth-metrics
-description: "Define SaaS growth metrics as explicit contracts with population, numerator, denominator, window, value event, baseline, target provenance, and counter-metrics. Use when designing activation, retention, revenue, PMF, 성장 지표, KPI, or cohort measurement."
+description: "Define SaaS growth metrics as explicit contracts with population, numerator, denominator, window, value event, baseline, target provenance, and counter-metrics. Use when designing activation, retention, revenue, PMF, 성장 지표, KPI, or cohort measurement. Do not use for running queries against production data, setting universal benchmark targets, or deciding what to build."
 ---
 
 # Define Growth Metrics

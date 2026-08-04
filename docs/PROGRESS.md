@@ -5,8 +5,9 @@
 ## 현재 체크포인트
 
 - **Round**: 1 / 3
-- **Phase**: Wave 0 완료 → Wave 1 착수
-- **다음 행동**: Wave 1 다섯 도메인 병렬 구현 에이전트 dispatch (worktree 격리)
+- **Phase**: Wave 1 진행 중 (5개 구현 에이전트 dispatch 완료, 응답 대기)
+- **다음 행동**: impl-automation/impl-agent-dev/impl-product/impl-content/impl-marketing 완료 보고 수합 → 각 worktree 테스트 확인 → main으로 머지 → Wave 3(콘텐츠 통합) → Round 1 평가(fresh 5페르소나)
+- **WIP 체크포인트 커밋**: `b9bf161` (main). 5개 worktree는 `.worktrees/wt-{automation,agent-dev,product,content,marketing}`, 브랜치 `upgrade/round1-*`, 전부 `b9bf161`에서 분기.
 
 ## Decision Log
 
@@ -24,9 +25,9 @@
 | 도메인 | worktree | 상태 |
 |---|---|---|
 | 자동화 | `.worktrees/wt-automation` | 대기 |
-| 에이전트개발 | `.worktrees/wt-agent-dev` | 대기 |
-| 프로덕트 | `.worktrees/wt-product` | 대기 |
-| 콘텐츠 | `.worktrees/wt-content` | 대기 |
+| 에이전트개발 | `.worktrees/wt-agent-dev` | ✅ 완료 `c007be0` |
+| 프로덕트 | `.worktrees/wt-product` | ✅ 완료 `a36c1c7` |
+| 콘텐츠 | `.worktrees/wt-content` | ✅ 완료 `b35f154` (90 tests OK). 후속: claim-ledger.jsonl 스키마 없음(검증 사각지대), validate_plugin.py 미실행 |
 | 마케팅 | `.worktrees/wt-marketing` | 대기 |
 
 ## Wave 2 — 순차 (Wave 1 완료 후)

@@ -1,6 +1,6 @@
 ---
 name: run-switch-interview
-description: "Design and guide a behavior-based Switch Interview around a real past decision, timeline, and Four Forces. Use when preparing or conducting customer discovery, JTBD interviews, 전환 인터뷰, or correcting leading and hypothetical questions."
+description: "Design and guide a behavior-based Switch Interview around a real past decision, timeline, and Four Forces. Use when preparing or conducting customer discovery, JTBD interviews, 전환 인터뷰, or correcting leading and hypothetical questions. Do not use for recruiting participants, synthesizing transcripts into evidence, or asking about hypothetical futures."
 ---
 
 # Run Switch Interview
