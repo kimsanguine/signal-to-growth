@@ -6,7 +6,9 @@
 
 - **Round**: 1 / 3
 - **Phase**: Wave 1 진행 중 (5개 구현 에이전트 dispatch 완료, 응답 대기)
-- **다음 행동**: 콘텐츠·프로덕트·에이전트개발 3개는 main에 순차 머지 완료(`60fc522`, 126/126 테스트 통과, validate-repo/demo/validate-artifacts 전부 green). 자동화·마케팅 완료 대기 중 — 완료되는 대로 같은 방식으로 머지. **주의**: 마케팅의 산출물은 전부 `docs/self-marketing/` 패치노트뿐이라 Wave 3(README 통합) 전까지는 마케팅 페르소나 재평가 점수가 개선을 반영하지 못함. 5개 전부 머지 후 Wave 3(콘텐츠가 통합) → Round 1 평가.
+- **다음 행동**: 5개 도메인 전부 main 머지 완료(`dc9a4fa`까지, 164/164 테스트 통과, validate-repo/demo green). Wave 3(README 최종 통합, 콘텐츠 담당) 착수 → 완료 후 Round 1 평가(fresh 5페르소나, 이번 구현에 관여 안 한 새 에이전트).
+- **머지 커밋 이력**: `ebb063d`(content) → `7176095`(product) → `60fc522`(agent-dev, repo_validation.py+remediation-backlog.md 충돌 해결) → `7542809`(automation) → `dc9a4fa`(60fc522 커밋 시 놓친 claim-ledger 스키마 수정 재커밋 — 아래 교훈 참조) → `d46eec8` 머지(marketing).
+- **교훈(다음 라운드 적용)**: 충돌 해결 중 파일을 추가로 Edit한 뒤 `git add`를 다시 안 하고 커밋하면, 커밋 메시지는 수정 내용을 설명하지만 실제 커밋엔 반영이 안 됨(테스트는 워킹트리를 직접 읽으므로 통과해서 못 알아챔). 다음부터는 커밋 직전 항상 `git status --porcelain`으로 unstaged 잔여가 없는지 확인.
 - **머지 중 발견한 실제 통합 결함(참고)**: 프로덕트가 만든 `claim-ledger.schema.json`과 콘텐츠가 만든 `claim-ledger.jsonl`이 서로 모르는 채 다른 필드(`draft_locator`/`note`/`refresh_by` vs 스키마)를 가정해 충돌 — 스키마를 확장해 해결(`60fc522`). 5개 worktree를 완전 블라인드 병렬로 돌리면 이런 통합 결함이 머지 시점에만 드러난다는 걸 실측 확인.
 - **WIP 체크포인트 커밋**: `b9bf161` (main). 5개 worktree는 `.worktrees/wt-{automation,agent-dev,product,content,marketing}`, 브랜치 `upgrade/round1-*`, 전부 `b9bf161`에서 분기.
 
