@@ -16,7 +16,7 @@ from .adapters import (
 from .append_only import AppendOnlyError, append_record
 from .channel_contracts import RequestContext
 from .connector_validation import validate_connector_directory
-from .contracts import render_issues, validate_artifact_directory
+from .contracts import validate_artifact_directory
 from .integrations import (
     IntegrationContractError,
     build_hplan_intake,

@@ -30,6 +30,9 @@ jobs:
       - name: Install package
         run: python -m pip install -e ".[dev]"
 
+      - name: Lint
+        run: python -m ruff check .
+
       - name: Validate repository
         run: signal-to-growth validate-repo .
 
@@ -39,9 +42,12 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests -v
 
+      # ERE has no backslash-escaped backslash here: '\\[' matched a literal
+      # backslash followed by any of T,O,D,... so no real placeholder ever
+      # matched and the guard silently passed. '\[' escapes the bracket.
       - name: Verify no unresolved placeholders
         run: |
-          if grep -R -n -E '\\[(TODO|PLACEHOLDER)[^]]*\\]' \
-            --exclude-dir=.git .; then
+          if grep -R -n -E '\[(TODO|PLACEHOLDER)[^]]*\]' \
+            --exclude-dir=.git --exclude-dir=.venv .; then
             exit 1
           fi

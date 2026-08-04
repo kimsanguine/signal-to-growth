@@ -1,4 +1,22 @@
-"""Deployment-neutral WSGI application for a Kakao chatbot skill endpoint."""
+"""Deployment-neutral WSGI application for a Kakao chatbot skill endpoint.
+
+Durability of the ingest path
+-----------------------------
+A single `except Exception` around persistence answers every failure the same
+way, which is wrong in both directions: it makes a permanently-rejected event
+look retryable (the provider re-sends forever and the event is still lost), and
+it hides which dependency broke. Persistence failures are therefore split:
+
+- **Availability** (`TransportError`): the write may succeed later. Fail closed
+  with 503 so Kakao retries. Nothing is lost, so no dead-letter row is written.
+- **Contract** (`ValueError` family, including `SupabaseWriteRejected`): an
+  identical retry can never succeed. Divert the event to the dead-letter sink
+  and acknowledge with 200 — the event *is* durably stored, just not in the
+  primary table. Without a dead-letter sink configured, fall back to 503 so the
+  event is never silently dropped.
+- **Unknown**: treat as availability and fail closed. An unrecognized error is
+  not evidence that a retry is pointless.
+"""
 
 from __future__ import annotations
 
@@ -12,10 +30,19 @@ from .channel_contracts import (
     EventIdentityError,
     EventVerificationError,
     PayloadValidationError,
+    TransportError,
+)
+from .observability import (
+    FAILURE_AVAILABILITY,
+    FAILURE_CONTRACT,
+    FAILURE_UNKNOWN,
+    StructuredLogger,
+    error_type,
 )
 
 
 EventSink = Callable[[Mapping[str, Any], str], None]
+DeadLetterSink = Callable[..., None]
 StartResponse = Callable[[str, list[tuple[str, str]]], Any]
 _APPROVAL_REF = re.compile(r"^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$")
 
@@ -32,9 +59,13 @@ class KakaoSkillApplication:
         response_text: str = "문의가 접수되었습니다. 확인 후 안내드리겠습니다.",
         path: str = "/api/kakao/skill",
         max_body_bytes: int = 1_048_576,
+        dead_letter_sink: DeadLetterSink | None = None,
+        logger: StructuredLogger | None = None,
     ) -> None:
         if not callable(event_sink):
             raise TypeError("event_sink must be callable")
+        if dead_letter_sink is not None and not callable(dead_letter_sink):
+            raise TypeError("dead_letter_sink must be callable")
         if (
             not isinstance(approval_ref, str)
             or not _APPROVAL_REF.fullmatch(approval_ref.strip())
@@ -50,6 +81,8 @@ class KakaoSkillApplication:
         self._response = adapter.build_skill_response(response_text)
         self._path = path
         self._max_body_bytes = max_body_bytes
+        self._dead_letter_sink = dead_letter_sink
+        self._logger = logger or StructuredLogger()
 
     def __call__(
         self,
@@ -89,9 +122,36 @@ class KakaoSkillApplication:
                 {"error": "invalid_skill_request"},
             )
 
+        payload = event.to_dict()
         try:
-            self._event_sink(event.to_dict(), self._approval_ref)
-        except Exception:
+            self._event_sink(payload, self._approval_ref)
+        except TransportError as exc:
+            # Availability: the same write may succeed later, so let Kakao retry.
+            self._logger.ingest_failure(
+                failure_class=FAILURE_AVAILABILITY,
+                error=exc,
+                event=payload,
+                approval_ref=self._approval_ref,
+                outcome="retry_expected",
+                dead_lettered=False,
+            )
+            return self._json_response(
+                start_response,
+                "503 Service Unavailable",
+                {"error": "event_persistence_unavailable"},
+            )
+        except ValueError as exc:
+            # Contract: retrying is pointless, so preserve the event elsewhere.
+            return self._handle_contract_failure(start_response, payload, exc)
+        except Exception as exc:  # noqa: BLE001 - unknown failures fail closed
+            self._logger.ingest_failure(
+                failure_class=FAILURE_UNKNOWN,
+                error=exc,
+                event=payload,
+                approval_ref=self._approval_ref,
+                outcome="retry_expected",
+                dead_lettered=False,
+            )
             return self._json_response(
                 start_response,
                 "503 Service Unavailable",
@@ -103,6 +163,62 @@ class KakaoSkillApplication:
             "200 OK",
             self._response,
         )
+
+    def _handle_contract_failure(
+        self,
+        start_response: StartResponse,
+        payload: Mapping[str, Any],
+        error: ValueError,
+    ) -> list[bytes]:
+        """Dead-letter a permanently-rejected event, or fail closed if it cannot."""
+        status_code = getattr(error, "status_code", None)
+        dead_lettered = self._dead_letter(payload, error, status_code)
+        self._logger.ingest_failure(
+            failure_class=FAILURE_CONTRACT,
+            error=error,
+            event=payload,
+            approval_ref=self._approval_ref,
+            outcome="dead_lettered" if dead_lettered else "dropped_without_storage",
+            dead_lettered=dead_lettered,
+            status_code=status_code if isinstance(status_code, int) else None,
+        )
+        if not dead_lettered:
+            return self._json_response(
+                start_response,
+                "503 Service Unavailable",
+                {"error": "event_persistence_failed"},
+            )
+        # The event is durably stored in the dead-letter table, so an
+        # acknowledgement is honest and stops a retry loop that cannot succeed.
+        return self._json_response(start_response, "200 OK", self._response)
+
+    def _dead_letter(
+        self,
+        payload: Mapping[str, Any],
+        error: ValueError,
+        status_code: Any,
+    ) -> bool:
+        if self._dead_letter_sink is None:
+            return False
+        try:
+            self._dead_letter_sink(
+                payload,
+                self._approval_ref,
+                failure_class=FAILURE_CONTRACT,
+                error_type=error_type(error),
+                status_code=status_code if isinstance(status_code, int) else None,
+            )
+        except Exception as exc:  # noqa: BLE001 - the caller then fails closed
+            self._logger.ingest_failure(
+                failure_class=FAILURE_AVAILABILITY,
+                error=exc,
+                event=payload,
+                approval_ref=self._approval_ref,
+                outcome="dead_letter_failed",
+                dead_lettered=False,
+            )
+            return False
+        return True
 
     def _read_body(self, environ: Mapping[str, Any]) -> bytes:
         value = environ.get("CONTENT_LENGTH", "")
