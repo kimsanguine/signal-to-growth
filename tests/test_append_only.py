@@ -10,8 +10,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from signal_growth.append_only import AppendOnlyError, append_record
-from signal_growth.contracts import _check_append_chain
+from signal_growth.append_only import (
+    APPEND_ONLY_FILES,
+    AppendOnlyError,
+    append_record,
+    compute_record_hash,
+)
+from signal_growth.connector_validation import _CHAINED_CONNECTOR_FILES
+from signal_growth.contracts import (
+    ARTIFACT_KIND_FILES,
+    CHAINED_KINDS,
+    _check_append_chain,
+)
 
 
 def _records(path: Path) -> list[dict]:
@@ -116,11 +126,64 @@ class AppendChainTests(unittest.TestCase):
 
             issues = _check_append_chain({"outcome": records})
             self.assertEqual(1, len(issues))
-            self.assertIn("missing after the append chain started", issues[0].message)
+            self.assertIn("partially chained artifact", issues[0].message)
+
+    def test_stripping_the_hash_before_the_chain_started_is_rejected(self) -> None:
+        """Opting a leading record out of the chain must not be a free pass.
+
+        Dropping both fields from an edited record used to leave the file valid
+        as long as the record sat ahead of the first hashed one, which made the
+        whole chain opt-out per record instead of per file.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "signals.jsonl"
+            append_record(path, {"signal_id": "SIG-20260728-001"})
+            append_record(path, {"signal_id": "SIG-20260728-002"})
+            records = _records(path)
+            records[0].pop("record_hash")
+            records[0].pop("prev_hash")
+            # Relink the survivor so it is internally consistent: the partial
+            # chain is then the only remaining evidence of the removal.
+            records[1]["prev_hash"] = None
+            records[1]["record_hash"] = compute_record_hash(records[1], None)
+
+            issues = _check_append_chain({"signal": records})
+            self.assertEqual(1, len(issues))
+            self.assertEqual("signals.jsonl[1]", issues[0].path)
+            self.assertIn("partially chained artifact", issues[0].message)
 
     def test_records_written_before_the_chain_existed_stay_valid(self) -> None:
         legacy = [{"approval_id": "APR-legacy-001"}, {"approval_id": "APR-legacy-002"}]
         self.assertEqual([], _check_append_chain({"approval": legacy}))
+
+    def test_every_append_only_artifact_this_module_owns_is_chained(self) -> None:
+        """Chain coverage must follow APPEND_ONLY_FILES, not a hand-kept subset."""
+        covered = {ARTIFACT_KIND_FILES[kind] for kind in CHAINED_KINDS}
+        owned = set(ARTIFACT_KIND_FILES.values()) & APPEND_ONLY_FILES
+        self.assertEqual(owned, covered)
+
+    def test_connector_ledgers_are_chained_too(self) -> None:
+        for filename in ("cs-events.jsonl", "reply-drafts.jsonl", "delivery-events.jsonl"):
+            with self.subTest(filename=filename):
+                self.assertIn(filename, _CHAINED_CONNECTOR_FILES)
+
+    def test_a_tampered_claim_is_detected(self) -> None:
+        """The published claim ledger is the artifact a reader most needs to trust."""
+        records = [
+            json.loads(line)
+            for line in (
+                ROOT / "fixtures" / "public-dummy" / "artifacts" / "claim-ledger.jsonl"
+            )
+            .read_text(encoding="utf-8")
+            .splitlines()
+            if line.strip()
+        ]
+        self.assertEqual([], _check_append_chain({"claim": records}))
+
+        records[0]["claim"] = "a claim nobody approved"
+        issues = _check_append_chain({"claim": records})
+        self.assertTrue(issues)
+        self.assertIn("does not match the record contents", issues[0].message)
 
     def test_caller_supplied_hashes_do_not_override_the_writer(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

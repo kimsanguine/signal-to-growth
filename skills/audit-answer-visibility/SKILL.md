@@ -50,6 +50,17 @@ Create:
 
 Read [references/output-contract.md](references/output-contract.md) before writing them.
 
+Add every new record to `visibility-observations.jsonl` with the `append-
+record` command, never by writing or editing the file:
+
+```bash
+python3 scripts/stg.py append-record <artifact-directory>/visibility-observations.jsonl '<json-object>'
+```
+
+It takes an exclusive lock and hash-chains each line to the one before it, so a
+later reader can tell whether history was rewritten. In a packaged runtime the
+same command is `signal-to-growth append-record`.
+
 ## Stop conditions
 
 Stop when the target cannot be accessed, observation context is missing, a requested claim needs unavailable live verification, or a source cannot be attributed.

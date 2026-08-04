@@ -10,11 +10,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from signal_growth.repo_validation import (
+    EXPECTED_SKILLS,
     _check_output_contract_alignment,
     _declared_output_files,
     _documented_output_files,
     validate_repository,
 )
+from signal_growth.workflow import SKILL_OUTPUT_FILES
 
 
 SKILL_TEMPLATE = """---
@@ -138,6 +140,36 @@ class OutputContractAlignmentTests(unittest.TestCase):
             self.assertEqual(1, len(issues), [issue.render() for issue in issues])
             self.assertIn("workflow.py", issues[0].path)
             self.assertIn("late-addition.md", issues[0].message)
+
+
+class RoutedSkillCoverageTests(unittest.TestCase):
+    """A skill absent from SKILL_OUTPUT_FILES is only checked two ways.
+
+    `_check_output_contract_alignment` compares whichever sources exist, so a
+    skill with no routing entry degrades from a three-way check to a two-way one
+    without failing anything. Naming the exemptions here makes that a decision
+    someone has to change on purpose.
+    """
+
+    # Both skills emit a different artifact set per requested operation or mode,
+    # so no fixed completion list can describe them.
+    EXEMPT = {"connect-customer-channels", "run-growth-loop"}
+
+    def test_every_skill_is_routed_unless_deliberately_exempt(self) -> None:
+        self.assertEqual(
+            EXPECTED_SKILLS - self.EXEMPT,
+            set(SKILL_OUTPUT_FILES),
+        )
+
+    def test_routed_outputs_match_each_skill_on_disk(self) -> None:
+        for skill_name, routed in SKILL_OUTPUT_FILES.items():
+            with self.subTest(skill=skill_name):
+                declared = _declared_output_files(
+                    (ROOT / "skills" / skill_name / "SKILL.md").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                self.assertEqual(set(routed), declared)
 
 
 if __name__ == "__main__":

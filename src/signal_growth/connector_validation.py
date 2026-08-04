@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from .append_only import APPEND_ONLY_FILES, verify_append_chain
 from .channel_contracts import (
     EventIdentityError,
     PayloadValidationError,
@@ -93,6 +94,11 @@ _REQUIRED_CONNECTOR_FILES = {
     "cs-events.jsonl",
     "connector-state.json",
 }
+# Connector artifacts that are append-only ledgers, so their chain is verified
+# here the same way contracts.py verifies the evidence-side ledgers.
+_CHAINED_CONNECTOR_FILES = tuple(
+    sorted(_CONNECTOR_FILES & APPEND_ONLY_FILES)
+)
 _EVENT_STATUSES = {"received", "normalized", "ignored", "dead_letter", "unknown"}
 _DELIVERY_STATUSES = {
     "draft",
@@ -825,6 +831,15 @@ def validate_connector_directory(
                 )
             else:
                 issues.extend(validators[filename](record, location))
+
+    for filename in _CHAINED_CONNECTOR_FILES:
+        issues.extend(
+            ConnectorValidationIssue(location, message)
+            for location, message in verify_append_chain(
+                loaded_records.get(filename, []),
+                filename,
+            )
+        )
 
     connections = loaded_records.get("channel-connection.json", [])
     states = loaded_records.get("connector-state.json", [])

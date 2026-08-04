@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from .append_only import chain_records
 from .connector_validation import validate_cs_event_record
 from .contracts import load_records, validate_artifact_directory
 from .schema_validation import validate_schema_record
@@ -107,9 +108,13 @@ def import_pmf_radar(
             )
         references.append(reference)
 
+    # Both files are append-only artifacts. This writer materializes them whole
+    # rather than appending line by line, so it links the chain itself; without
+    # this the import would emit unchained ledgers that no later reader can
+    # verify.
     output_files = {
-        "cs-events.jsonl": _render_jsonl(events),
-        "integration-references.jsonl": _render_jsonl(references),
+        "cs-events.jsonl": _render_jsonl(chain_records(events)),
+        "integration-references.jsonl": _render_jsonl(chain_records(references)),
     }
     if write:
         if output_directory is None:

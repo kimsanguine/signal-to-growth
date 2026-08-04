@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-from .append_only import compute_record_hash
+from .append_only import APPEND_ONLY_FILES, verify_append_chain
 from .schema_validation import validate_schema_record
 
 
@@ -568,57 +568,28 @@ def _check_references(
     return issues
 
 
-CHAINED_KINDS = ("evidence", "decision", "action", "outcome", "approval")
+# Every append-only artifact this module owns. `run_state` is absent on purpose:
+# run-state.json is a mutable state file that is rewritten in place, not an
+# append-only ledger, so it has no chain to verify.
+CHAINED_KINDS = tuple(
+    kind
+    for filename, kind in ARTIFACT_FILES.items()
+    if filename in APPEND_ONLY_FILES
+)
 
 
 def _check_append_chain(
     records: dict[str, list[dict[str, Any]]],
 ) -> list[ValidationIssue]:
-    """Recompute each artifact's append chain and report any break.
-
-    The chain fields are optional so artifacts written before they existed stay
-    valid. Once a file's first hashed record appears, however, every later
-    record must stay linked — otherwise dropping the hash would be an easy way
-    to hide an edited or deleted line.
-    """
-    issues: list[ValidationIssue] = []
-    for kind in CHAINED_KINDS:
-        items = records.get(kind, [])
-        filename = ARTIFACT_KIND_FILES[kind]
-        previous_hash: str | None = None
-        chain_started = False
-        for index, record in enumerate(items, 1):
-            location = f"{filename}[{index}]"
-            declared = record.get("record_hash")
-            if declared is None:
-                if chain_started:
-                    issues.append(
-                        ValidationIssue(
-                            location,
-                            "record_hash is missing after the append chain started",
-                        )
-                    )
-                previous_hash = None
-                continue
-            chain_started = True
-            declared_prev = record.get("prev_hash")
-            if declared_prev != previous_hash:
-                issues.append(
-                    ValidationIssue(
-                        location,
-                        "prev_hash does not match the preceding record_hash — "
-                        "a record was edited, reordered, or removed",
-                    )
-                )
-            if declared != compute_record_hash(record, declared_prev):
-                issues.append(
-                    ValidationIssue(
-                        location,
-                        "record_hash does not match the record contents",
-                    )
-                )
-            previous_hash = declared
-    return issues
+    """Recompute each append-only artifact's chain and report any break."""
+    return [
+        ValidationIssue(location, message)
+        for kind in CHAINED_KINDS
+        for location, message in verify_append_chain(
+            records.get(kind, []),
+            ARTIFACT_KIND_FILES[kind],
+        )
+    ]
 
 
 def validate_artifact_directory(

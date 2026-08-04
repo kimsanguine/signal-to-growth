@@ -57,6 +57,14 @@
     },
     "status": {
       "enum": ["new", "awaiting_human_review", "approved", "closed"]
+    },
+    "record_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "prev_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
     }
   }
 }

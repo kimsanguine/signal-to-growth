@@ -38,6 +38,14 @@
     "locale": {"type": "string", "minLength": 1},
     "question": {"type": "string", "minLength": 1},
     "result": {"type": "string", "minLength": 1},
-    "source_pointer": {"type": "string", "minLength": 1}
+    "source_pointer": {"type": "string", "minLength": 1},
+    "record_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "prev_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
   }
 }
