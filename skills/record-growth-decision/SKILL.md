@@ -34,7 +34,12 @@ Require:
 9. Append a scoped `approvals.jsonl` record covering the exact decision ID before setting status to `approved`.
 10. Append the decision event. Never modify an earlier event to make a later result look expected.
 11. At review time, compare mature outcomes with the original metric contract and record continue, change, stop, or hold.
-12. Link a superseding decision instead of rewriting the original.
+12. Link a superseding decision instead of rewriting the original, and classify
+    the new event with `event_type` — `initial_decision`, `scope_change`,
+    `success_metric_review`, `outcome_review`, or `reversal` — so the log states
+    what kind of change it is, not only which record it replaces. Leave
+    `event_type` out rather than guessing; an unclassified event is honest,
+    a wrong one is not.
 
 ## Boundaries
 

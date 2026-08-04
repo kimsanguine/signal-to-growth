@@ -29,6 +29,16 @@
       "type": "string",
       "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
     },
+    "event_type": {
+      "enum": [
+        "initial_decision",
+        "scope_change",
+        "success_metric_review",
+        "outcome_review",
+        "reversal"
+      ],
+      "description": "What kind of change this event records. Optional: records written before this field existed stay valid, and omitting it means the kind was not classified, not that it is an initial decision. supersedes says which record this replaces; event_type says why. Without it, narrowing scope, redefining a success condition, and stopping a decision after mature outcomes are indistinguishable in the log."
+    },
     "made_at": {"type": "string", "format": "date-time"},
     "status": {
       "enum": ["draft", "awaiting_human_review", "approved", "rejected", "superseded"]
@@ -89,6 +99,38 @@
             "pattern": "^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
           }
         }
+      }
+    },
+    {
+      "$comment": "A change to an earlier decision must name the decision it changes, otherwise the event_type claims a lineage the record does not carry.",
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "scope_change",
+              "success_metric_review",
+              "outcome_review",
+              "reversal"
+            ]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "supersedes": {"type": "string", "minLength": 1}
+        },
+        "required": ["supersedes"]
+      }
+    },
+    {
+      "$comment": "An initial decision has no predecessor by definition.",
+      "if": {
+        "properties": {"event_type": {"const": "initial_decision"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {"supersedes": {"type": "null"}}
       }
     }
   ]
