@@ -3,7 +3,7 @@
 This file records user-visible changes. Signal to Growth follows semantic
 versioning once a version is tagged.
 
-## Unreleased
+## 0.4.0
 
 ### Added
 
@@ -29,6 +29,17 @@ versioning once a version is tagged.
   Build Gate decision.
 - A versioned 30-case evaluation dataset and five-agent static baseline report.
 - GitHub issue and pull-request templates.
+- A complete `draft-evidence-content` golden example in the public dummy
+  fixtures — `content-brief.md`, `draft.md`, and a `claim-ledger.jsonl` that
+  carries one row per claim state (observed, reported, inferred, recommended,
+  unknown), each anchored to the exact sentence it supports in `draft.md`.
+- The missing `recommendations.md` output for `audit-answer-visibility`, with
+  every recommendation tied to an observation ID, mechanism, owner,
+  verification method, and update risk.
+- An explicit six-part preview list in `README.md` and `docs/learner-start.md`,
+  so a learner can tell a healthy install from a stale plugin cache.
+- A documented relationship between the `signal-to-growth` console script and
+  the `python3 scripts/stg.py` wrapper used by every `SKILL.md`.
 
 ### Changed
 
