@@ -1,6 +1,6 @@
 ---
 name: plan-customer-reach
-description: "Plan consent-aware customer research recruitment and draft-only outreach without sending messages. Use when defining interview segments, recruiting participants, selecting channels, or preparing 고객 인터뷰 대상자·모집·컨택 초안."
+description: "Plan consent-aware customer research recruitment and draft-only outreach without sending messages. Use when defining interview segments, recruiting participants, selecting channels, or preparing 고객 인터뷰 대상자·모집·컨택 초안. Do not use for sending the outreach, running the interview, or synthesizing completed transcripts."
 ---
 
 # Plan Customer Reach

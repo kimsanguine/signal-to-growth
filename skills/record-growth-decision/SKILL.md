@@ -1,6 +1,6 @@
 ---
 name: record-growth-decision
-description: "Record evidence-backed growth decisions with alternatives, counterevidence, approval, review dates, and append-only outcomes. Use when deciding what to build, hold, test, stop, or review, including 성장 의사결정·decision log·가설 기록."
+description: "Record evidence-backed growth decisions with alternatives, counterevidence, approval, review dates, and append-only outcomes. Use when deciding what to build, hold, test, stop, or review, including 성장 의사결정·decision log·가설 기록. Do not use for granting the approval itself, claiming an hplan gate result, or rewriting an earlier decision."
 ---
 
 # Record Growth Decision
@@ -52,6 +52,7 @@ Create or append:
 
 - `decisions.jsonl`
 - `approvals.jsonl` only after a person approves in a later turn
+- `hplan-intake.json` as a pre-gate intake, never as an hplan gate decision
 - `decision-summary.md`
 - `review-queue.md`
 

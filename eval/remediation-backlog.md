@@ -25,3 +25,5 @@
    Code and Codex.
 4. Re-score with five fresh evaluator contexts after deterministic tests pass.
 5. Keep release `NO-GO` until hard-gate failures are zero.
+
+Gate 1 was not attempted in the 2026-08-04 upgrade round because the account spend limit was still in force; the plan is to run all 30 cases in one `scripts/run_runtime_eval.py` batch once the limit resets, then re-score gate 4 before any release decision.

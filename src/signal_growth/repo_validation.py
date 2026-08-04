@@ -8,6 +8,7 @@ import tomllib
 from pathlib import Path
 
 from .contracts import ValidationIssue
+from .workflow import SKILL_OUTPUT_FILES
 
 
 EXPECTED_SKILLS = {
@@ -49,6 +50,75 @@ def _frontmatter(text: str) -> dict[str, str]:
         key, value = line.split(":", 1)
         fields[key.strip()] = value.strip().strip('"')
     return fields
+
+
+OUTPUT_FILENAME = re.compile(
+    r"`([A-Za-z0-9][A-Za-z0-9._-]*\.(?:json|jsonl|md|csv))`"
+)
+
+
+def _declared_output_files(skill_text: str) -> set[str]:
+    """Filenames listed as bullets under the SKILL.md `## Outputs` heading."""
+    names: set[str] = set()
+    in_outputs = False
+    for line in skill_text.splitlines():
+        if line.startswith("## "):
+            in_outputs = line.strip() == "## Outputs"
+            continue
+        if in_outputs and line.lstrip().startswith("- "):
+            names.update(OUTPUT_FILENAME.findall(line))
+    return names
+
+
+def _documented_output_files(contract_text: str) -> set[str]:
+    """Filenames used as `## `-level headings in an output contract."""
+    return {
+        name
+        for line in contract_text.splitlines()
+        if line.startswith("## ")
+        for name in OUTPUT_FILENAME.findall(line)
+    }
+
+
+def _check_output_contract_alignment(skill_root: Path) -> list[ValidationIssue]:
+    """Fail when a skill's three output declarations disagree.
+
+    SKILL.md tells the model what to write, output-contract.md tells it how, and
+    workflow.SKILL_OUTPUT_FILES decides when the skill counts as complete. If
+    they drift apart, the router can call a skill done while a documented
+    artifact was never produced.
+    """
+    issues: list[ValidationIssue] = []
+    for skill_name in sorted(EXPECTED_SKILLS):
+        skill_file = skill_root / skill_name / "SKILL.md"
+        contract_file = skill_root / skill_name / "references" / "output-contract.md"
+        if not skill_file.exists() or not contract_file.exists():
+            continue
+
+        sources: dict[str, set[str]] = {
+            str(skill_file): _declared_output_files(
+                skill_file.read_text(encoding="utf-8")
+            ),
+            str(contract_file): _documented_output_files(
+                contract_file.read_text(encoding="utf-8")
+            ),
+        }
+        routed = SKILL_OUTPUT_FILES.get(skill_name)
+        if routed is not None:
+            sources["src/signal_growth/workflow.py"] = set(routed)
+
+        expected: set[str] = set().union(*sources.values())
+        for location, declared in sources.items():
+            missing = sorted(expected - declared)
+            if missing:
+                issues.append(
+                    ValidationIssue(
+                        location,
+                        f"{skill_name} output drift — declared elsewhere but not "
+                        f"here: {', '.join(missing)}",
+                    )
+                )
+    return issues
 
 
 def validate_repository(root: Path) -> list[ValidationIssue]:
@@ -95,6 +165,14 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
                 ValidationIssue(
                     str(skill_file),
                     "description must explain what the skill does and include 'Use when'",
+                )
+            )
+        if "Do not use" not in description:
+            issues.append(
+                ValidationIssue(
+                    str(skill_file),
+                    "description must include a 'Do not use' negative trigger so a "
+                    "neighbouring skill is not selected by accident",
                 )
             )
         if len(text.splitlines()) >= 500:
@@ -270,6 +348,8 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
                     "connector contract must use JSON Schema draft 2020-12",
                 )
             )
+
+    issues.extend(_check_output_contract_alignment(skill_root))
 
     for path in root.rglob("*.md"):
         text = path.read_text(encoding="utf-8")

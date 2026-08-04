@@ -1,6 +1,6 @@
 ---
 name: synthesize-interviews
-description: "Turn consented interview transcripts into source-linked evidence, themes, outliers, and counterevidence. Use when synthesizing customer interviews, VOC, JTBD research, 인터뷰 합성, or preparing evidence before a product or growth decision."
+description: "Turn consented interview transcripts into source-linked evidence, themes, outliers, and counterevidence. Use when synthesizing customer interviews, VOC, JTBD research, 인터뷰 합성, or preparing evidence before a product or growth decision. Do not use for conducting the interview, recruiting participants, or treating model summaries as observed evidence."
 ---
 
 # Synthesize Interviews

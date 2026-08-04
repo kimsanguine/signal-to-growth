@@ -1,6 +1,6 @@
 ---
 name: connect-customer-channels
-description: "Diagnose, verify, normalize, reconcile, and prepare draft-only replies for customer-channel integrations, especially Korean CS channels. Use when working with a Kakao Channel chatbot through Kakao i Open Builder, Naver TalkTalk, Channel Talk, Happytalk, Kakao Channel 1:1 chat, Kakao ConsultTalk or AlimTalk through an approved provider; validating skill requests, webhooks, backfills, delivery states, or connector health; creating channel connection, CS event, delivery, reply-draft, or connector-state artifacts; or handing normalized events to triage-customer-signals. Default to dry-run, read-only, and draft-only."
+description: "Diagnose, verify, normalize, reconcile, and prepare draft-only replies for customer-channel integrations, especially Korean CS channels. Use when working with a Kakao Channel chatbot through Kakao i Open Builder, Naver TalkTalk, Channel Talk, Happytalk, Kakao Channel 1:1 chat, Kakao ConsultTalk or AlimTalk through an approved provider; validating skill requests, webhooks, backfills, delivery states, or connector health; creating channel connection, CS event, delivery, reply-draft, or connector-state artifacts; or handing normalized events to triage-customer-signals. Default to dry-run, read-only, and draft-only. Do not use for classifying signal themes, recruiting research participants, or sending any live message."
 ---
 
 # Connect Customer Channels

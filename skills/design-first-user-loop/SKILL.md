@@ -1,6 +1,6 @@
 ---
 name: design-first-user-loop
-description: "Design a capacity-aware first-user acquisition and learning loop linked to evidence, decisions, metrics, and stop conditions. Use when planning first users, early traction, channel experiments, referral loops, 초기 사용자 확보, or build-in-public experiments."
+description: "Design a capacity-aware first-user acquisition and learning loop linked to evidence, decisions, metrics, and stop conditions. Use when planning first users, early traction, channel experiments, referral loops, 초기 사용자 확보, or build-in-public experiments. Do not use for sending outreach, publishing content, or recording the growth decision itself."
 ---
 
 # Design First User Loop
