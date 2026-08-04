@@ -4,10 +4,11 @@
 
 ## 현재 체크포인트
 
-- **Round**: 1 / 3 완료. Round 2 착수 여부는 사람 결정 대기 (구조적 상한 발견, 아래 참조).
-- **Phase**: Round 1 평가 완료.
-- **HEAD**: `ad591bd` (local == origin/main, push 완료 2026-08-04 13:20 UTC). GitHub 브랜치 보호(merge commit 금지·PR 필수·체크 3개)를 관리자 권한으로 우회해서 반영됨 — push 후 실제 CI 결과로 확인: `validate (3.11)` success, `validate (3.12)` success, `update-uv-graph` success, Vercel 배포 success. 전부 실제 GitHub 라이브 관측(도구 성공 신호 아님).
-- **다음 행동**: Round 2 진행 여부·범위 결정 대기(아래 "구조적 상한" 참조).
+- **Round**: 2 / 3 진행 중. Round 1 push+CI 확인 완료 후, 자율 모드로 좁힌 범위 착수(사용자 승인: "점수가 낮으면 알아서 개선작업을 진행해").
+- **Phase**: Round 2 Wave 1 진행 중 — 프로덕트 제외 4개 도메인(에이전트개발·콘텐츠·마케팅·자동화) 병렬 구현 dispatch 완료.
+- **HEAD**: `f1fa50c` (Round 2 분기점, origin/main과 동일, push+CI 확인 완료).
+- **Round 2 범위(구조적 상한 제외, 구체 결함만)**: 에이전트개발 4건(append-record 명시, 체인 13종 확장+fixture 재생성, audit-answer-visibility 라우터 편입, CLAUDE.md/AGENTS.md 절대경로 정리) / 콘텐츠 2건(citation-gaps.md 자기모순 정정, 목차+용어집) / 마케팅 1건(llms.txt 17→20) / 자동화 2건(정책 파일 런타임 강제, dead-letter runbook). **프로덕트는 제외**(남은 리스크 전부 W0-4 보류에 묶임).
+- **다음 행동**: 4개 완료 대기 → main 머지 → Round 2 평가(fresh 5페르소나, 5개 전부 재평가 — 프로덕트도 변화 없는지 재확인 차원에서 포함).
 
 ## Round 0 (사전 이력, 이번 세션 착수 전) vs Round 1 점수
 
