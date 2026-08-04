@@ -56,7 +56,6 @@ class KakaoSkillServerTests(unittest.TestCase):
         adapter = KakaoOpenBuilderAdapter(
             b"public-dummy-hmac",
             expected_api_key="expected-fixture-key",
-            allow_unverified_fixture=False,
         )
         self.app = KakaoSkillApplication(
             adapter,
@@ -110,7 +109,6 @@ class KakaoSkillServerTests(unittest.TestCase):
         adapter = KakaoOpenBuilderAdapter(
             b"public-dummy-hmac",
             expected_api_key="expected-fixture-key",
-            allow_unverified_fixture=False,
         )
         self.app = KakaoSkillApplication(
             adapter,
@@ -128,7 +126,6 @@ class KakaoSkillServerTests(unittest.TestCase):
         adapter = KakaoOpenBuilderAdapter(
             b"public-dummy-hmac",
             expected_api_key="expected-fixture-key",
-            allow_unverified_fixture=False,
         )
 
         with self.assertRaisesRegex(ValueError, "beginning with APR-"):
@@ -158,7 +155,6 @@ class IngestFailureRoutingTests(unittest.TestCase):
         adapter = KakaoOpenBuilderAdapter(
             b"public-dummy-hmac",
             expected_api_key="expected-fixture-key",
-            allow_unverified_fixture=False,
         )
         return KakaoSkillApplication(
             adapter,

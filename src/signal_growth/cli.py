@@ -23,6 +23,7 @@ from .integrations import (
     import_pmf_radar,
     write_json,
 )
+from .policy import fixture_ingest_policy
 from .privacy import scan_path
 from .questions import lint_questions
 from .repo_validation import validate_repository
@@ -75,7 +76,12 @@ def command_normalize_event(args: argparse.Namespace) -> int:
     adapters = {
         "naver-talktalk": NaverTalkTalkAdapter(_PUBLIC_DUMMY_HMAC_KEY),
         "channel-talk": ChannelTalkAdapter(_PUBLIC_DUMMY_HMAC_KEY),
-        "kakao-openbuilder": KakaoOpenBuilderAdapter(_PUBLIC_DUMMY_HMAC_KEY),
+        # This command normalizes repository fixtures, which carry no provider
+        # authentication, so the fixture-only policy relaxation is explicit.
+        "kakao-openbuilder": KakaoOpenBuilderAdapter(
+            _PUBLIC_DUMMY_HMAC_KEY,
+            policy=fixture_ingest_policy(),
+        ),
     }
     adapter = adapters[args.provider]
     headers = {}

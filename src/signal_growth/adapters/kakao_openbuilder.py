@@ -31,6 +31,7 @@ from ..connector_validation import (
     raw_payload_ref,
     redact_text_with_metadata,
 )
+from ..policy import ConnectorPolicy, default_connector_policy
 from .base import BaseChannelAdapter
 
 
@@ -58,14 +59,16 @@ class KakaoOpenBuilderAdapter(BaseChannelAdapter):
         *,
         expected_api_key: str | None = None,
         processing_basis_ref: str = "POL-PUBLIC-DUMMY",
-        allow_unverified_fixture: bool = True,
+        policy: ConnectorPolicy | None = None,
     ) -> None:
         if not customer_hmac_key:
             raise ValueError("customer_hmac_key is required")
         self._customer_hmac_key = customer_hmac_key
         self._expected_api_key = expected_api_key
         self._processing_basis_ref = processing_basis_ref
-        self._allow_unverified_fixture = allow_unverified_fixture
+        # The repository policy decides which assurance levels may be ingested.
+        # Callers normalizing public dummy fixtures pass fixture_ingest_policy().
+        self._policy = policy or default_connector_policy()
 
     def capabilities(
         self,
@@ -125,13 +128,17 @@ class KakaoOpenBuilderAdapter(BaseChannelAdapter):
                 raise EventVerificationError("Kakao skill x-api-key mismatch")
             auth_verified = True
             assurance = VerificationAssurance.WEAK
-        elif context.environment == "fixture" and self._allow_unverified_fixture:
+        elif context.environment == "fixture":
             auth_verified = False
             assurance = VerificationAssurance.NONE
         else:
             raise EventVerificationError(
                 "Kakao skill requests require a configured x-api-key"
             )
+
+        # Enforced against policies/default-policy.json, not a constructor
+        # default: editing that file changes what this endpoint accepts.
+        self._policy.require_allowed_assurance(self.provider, assurance)
 
         request_id = _header_value(headers, "x-request-id")
         if not isinstance(request_id, str) or not request_id.strip():
