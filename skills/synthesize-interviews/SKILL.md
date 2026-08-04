@@ -32,6 +32,10 @@ Reject summaries that contain no source material.
 9. Ask a person to approve evidence strength and theme wording.
 10. Write the synthesis only after reference integrity passes.
 
+Do not use `awaiting_human_tag` evidence to create downstream signals,
+decisions, or outcomes. Stop for a person's strength review; after the person
+sets `weak`, `medium`, or `strong`, record their identifier in `approved_by`.
+
 ## Boundaries
 
 - Let the model extract candidate quotes, codes, and themes.

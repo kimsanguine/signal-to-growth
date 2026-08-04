@@ -15,3 +15,5 @@ artifacts/runs/
 eval/runs/**/*.stderr.txt
 .vercel
 supabase/.temp/
+.claude/*.local.md
+.worktrees/

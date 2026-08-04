@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from shutil import copy2, copytree
+import json
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -92,6 +93,37 @@ class WorkflowTests(unittest.TestCase):
 
             reason = next_skill_reason(path)
             self.assertIn("partial", reason)
+
+    def test_missing_companion_output_keeps_the_specialist_incomplete(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "artifacts"
+            copytree(ROOT / "fixtures" / "public-dummy" / "artifacts", path)
+            copytree(ROOT / "fixtures" / "public-dummy" / "interviews", root / "interviews")
+            (path / "theme-cards.md").unlink()
+
+            self.assertEqual("synthesize-interviews", next_skill(path))
+            self.assertIn("theme-cards.md", next_skill_reason(path))
+            self.assertNotIn("synthesize-interviews", completed_skills(path))
+
+    def test_awaiting_human_evidence_routes_back_to_synthesis(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "artifacts"
+            copytree(ROOT / "fixtures" / "public-dummy" / "artifacts", path)
+            copytree(ROOT / "fixtures" / "public-dummy" / "interviews", root / "interviews")
+            evidence_path = path / "evidence.jsonl"
+            records = [json.loads(line) for line in evidence_path.read_text(encoding="utf-8").splitlines()]
+            records[0]["strength"] = "awaiting_human_tag"
+            records[0]["approved_by"] = None
+            evidence_path.write_text(
+                "\n".join(json.dumps(record, ensure_ascii=False) for record in records) + "\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual("synthesize-interviews", next_skill(path))
+            self.assertIn("awaiting human strength approval", next_skill_reason(path))
+            self.assertNotIn("synthesize-interviews", completed_skills(path))
 
 
 if __name__ == "__main__":

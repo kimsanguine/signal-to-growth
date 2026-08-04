@@ -20,6 +20,53 @@ CORE_SKILL_FILES = (
     ("record-growth-decision", "decisions.jsonl"),
     ("design-first-user-loop", "first-user-loop.json"),
 )
+# A primary artifact may be schema-valid while the skill is still incomplete.
+# Keep the whole output contract here so routing cannot silently skip the
+# learner-facing handoff artifacts documented by each specialist skill.
+SKILL_OUTPUT_FILES = {
+    "plan-customer-reach": (
+        "reach-plan.json",
+        "contact-drafts.md",
+        "recruitment-log.csv",
+    ),
+    "run-switch-interview": (
+        "interview-guide.md",
+        "timeline-notes.md",
+        "follow-up-questions.md",
+    ),
+    "synthesize-interviews": (
+        "evidence.jsonl",
+        "theme-cards.md",
+        "counterevidence.md",
+        "synthesis-summary.md",
+    ),
+    "triage-customer-signals": (
+        "signals.jsonl",
+        "risk-queue.jsonl",
+        "theme-digest.md",
+        "dead-letter.jsonl",
+    ),
+    "define-growth-metrics": (
+        "metrics.jsonl",
+        "growth-loop-map.md",
+        "measurement-plan.md",
+    ),
+    "record-growth-decision": (
+        "decisions.jsonl",
+        "approvals.jsonl",
+        "hplan-intake.json",
+        "decision-summary.md",
+        "review-queue.md",
+    ),
+    "design-first-user-loop": (
+        "first-user-loop.json",
+        "actions.jsonl",
+        "approvals.jsonl",
+        "experiment-cards.md",
+        "channel-backlog.md",
+        "learning-review.md",
+    ),
+}
 CONNECTOR_SKILL = "connect-customer-channels"
 CONNECTOR_FILES = (
     "channel-connection.json",
@@ -82,6 +129,15 @@ def _valid_jsonl_objects(path: Path) -> list[dict[str, Any]]:
     return values if all(isinstance(value, dict) for value in values) else []
 
 
+def _unreviewed_evidence_ids(artifact_directory: Path) -> list[str]:
+    return [
+        record["evidence_id"]
+        for record in _valid_jsonl_objects(artifact_directory / "evidence.jsonl")
+        if isinstance(record.get("evidence_id"), str)
+        and record.get("strength") == "awaiting_human_tag"
+    ]
+
+
 def _outcome_review_reason(artifact_directory: Path) -> str | None:
     run_state = _valid_json_object(artifact_directory / "run-state.json")
     outcomes = _valid_jsonl_objects(artifact_directory / "outcomes.jsonl")
@@ -137,6 +193,56 @@ def _valid_artifacts(artifact_directory: Path) -> set[str]:
     return valid
 
 
+def _missing_skill_outputs(artifact_directory: Path, skill_name: str) -> list[str]:
+    return [
+        filename
+        for filename in SKILL_OUTPUT_FILES[skill_name]
+        if not _nonempty_file(artifact_directory / filename)
+    ]
+
+
+def _skill_complete(
+    artifact_directory: Path,
+    skill_name: str,
+    valid_artifacts: set[str],
+) -> bool:
+    primary = dict(CORE_SKILL_FILES)[skill_name]
+    if primary not in valid_artifacts:
+        return False
+    if _missing_skill_outputs(artifact_directory, skill_name):
+        return False
+    if skill_name == "synthesize-interviews" and _unreviewed_evidence_ids(
+        artifact_directory
+    ):
+        return False
+    return True
+
+
+def _incomplete_reason(
+    artifact_directory: Path,
+    skill_name: str,
+    valid_artifacts: set[str],
+) -> str:
+    primary = dict(CORE_SKILL_FILES)[skill_name]
+    if primary not in valid_artifacts:
+        return f"{primary} does not exist yet or fails validation."
+    missing = _missing_skill_outputs(artifact_directory, skill_name)
+    if missing:
+        return (
+            f"{skill_name} is missing required output-contract artifacts: "
+            + ", ".join(missing)
+            + "."
+        )
+    unreviewed = _unreviewed_evidence_ids(artifact_directory)
+    if skill_name == "synthesize-interviews" and unreviewed:
+        return (
+            "Evidence is structurally valid but awaiting human strength approval: "
+            + ", ".join(unreviewed)
+            + "."
+        )
+    return f"{skill_name} is not complete."
+
+
 def _objective_route(objective: str | None) -> str | None:
     if not objective:
         return None
@@ -163,10 +269,13 @@ def _route(
     requested = _objective_route(objective)
     if requested is not None:
         requested_file = dict(CORE_SKILL_FILES).get(requested)
-        if requested == CONNECTOR_SKILL or requested_file not in valid:
+        if requested == CONNECTOR_SKILL or (
+            requested_file is not None
+            and not _skill_complete(artifact_directory, requested, valid)
+        ):
             return requested, (
-                f"The stated objective points to '{requested}' and its artifact "
-                "is not yet valid."
+                f"The stated objective points to '{requested}': "
+                + _incomplete_reason(artifact_directory, requested, valid)
             )
 
     has_customer_input = (
@@ -175,25 +284,28 @@ def _route(
         or "signals.jsonl" in valid
     )
     if has_customer_input:
-        if "evidence.jsonl" not in valid and connector_state != "valid":
+        if (
+            "evidence.jsonl" not in valid
+            or not _skill_complete(artifact_directory, "synthesize-interviews", valid)
+        ) and connector_state != "valid":
             return "synthesize-interviews", (
-                "Customer input exists but evidence.jsonl is not yet valid."
+                _incomplete_reason(artifact_directory, "synthesize-interviews", valid)
             )
-        if "signals.jsonl" not in valid:
+        if not _skill_complete(artifact_directory, "triage-customer-signals", valid):
             return "triage-customer-signals", (
-                "Evidence is valid but signals.jsonl is not yet valid."
+                _incomplete_reason(artifact_directory, "triage-customer-signals", valid)
             )
-        if "metrics.jsonl" not in valid:
+        if not _skill_complete(artifact_directory, "define-growth-metrics", valid):
             return "define-growth-metrics", (
-                "Signals are valid but metrics.jsonl is not yet valid."
+                _incomplete_reason(artifact_directory, "define-growth-metrics", valid)
             )
-        if "decisions.jsonl" not in valid:
+        if not _skill_complete(artifact_directory, "record-growth-decision", valid):
             return "record-growth-decision", (
-                "Metrics are valid but decisions.jsonl is not yet valid."
+                _incomplete_reason(artifact_directory, "record-growth-decision", valid)
             )
-        if "first-user-loop.json" not in valid:
+        if not _skill_complete(artifact_directory, "design-first-user-loop", valid):
             return "design-first-user-loop", (
-                "A decision is valid but first-user-loop.json is not yet valid."
+                _incomplete_reason(artifact_directory, "design-first-user-loop", valid)
             )
         outcome_review_reason = _outcome_review_reason(artifact_directory)
         if outcome_review_reason is not None:
@@ -204,8 +316,8 @@ def _route(
         )
 
     for skill_name, filename in CORE_SKILL_FILES[:3]:
-        if filename not in valid:
-            return skill_name, f"{filename} does not exist yet."
+        if not _skill_complete(artifact_directory, skill_name, valid):
+            return skill_name, _incomplete_reason(artifact_directory, skill_name, valid)
     return "triage-customer-signals", (
         "Initial research artifacts exist but signal triage has not run yet."
     )
@@ -233,7 +345,7 @@ def completed_skills(artifact_directory: Path) -> list[str]:
     completed = [
         skill_name
         for skill_name, filename in CORE_SKILL_FILES
-        if filename in valid
+        if filename in valid and _skill_complete(artifact_directory, skill_name, valid)
     ]
     if _connector_state(artifact_directory) == "valid":
         completed.append(CONNECTOR_SKILL)

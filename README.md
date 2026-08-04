@@ -92,6 +92,13 @@ Claude Code 안에서 marketplace를 추가합니다.
 이 고객 신호를 바탕으로 첫 사용자 실험을 설계해줘.
 ```
 
+설치 뒤에는 새 Claude Code 세션에서 `/run-growth-loop` preview를 한 번 실행합니다.
+repository의 release 버전과 이미 설치된 plugin cache 버전은 별개일 수 있으므로,
+preview 안내가 이 README의 six-part preview와 다르면 `/plugin` 화면에서 설치된
+`signal-to-growth` 버전을 확인하고 위 install/reload 순서를 다시 실행하세요.
+이 확인은 Python 설치를 요구하지 않습니다. 자세한 첫 실행·복구 절차는
+[학습자 시작 안내](docs/learner-start.md)를 봅니다.
+
 ### OpenAI Codex
 
 터미널에서 marketplace를 추가합니다.

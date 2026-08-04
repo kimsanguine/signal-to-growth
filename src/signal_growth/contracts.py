@@ -454,6 +454,33 @@ def _check_references(
     check_one("outcome", "action_id", "action")
     check_one("outcome", "metric_id", "metric")
 
+    approved_evidence_ids = {
+        record.get("evidence_id")
+        for record in records.get("evidence", [])
+        if record.get("strength") != "awaiting_human_tag"
+        and isinstance(record.get("approved_by"), str)
+        and record["approved_by"].strip()
+    }
+
+    def check_approved_evidence(kind: str, field: str) -> None:
+        """Do not let evidence awaiting human strength review drive downstream work."""
+        for index, record in enumerate(records.get(kind, []), 1):
+            values = record.get(field, [])
+            if not isinstance(values, list):
+                continue
+            for value in values:
+                if value in ids.get("evidence", set()) and value not in approved_evidence_ids:
+                    issues.append(
+                        ValidationIssue(
+                            f"{ARTIFACT_KIND_FILES[kind]}[{index}]",
+                            f"{field} references evidence awaiting human strength approval",
+                        )
+                    )
+
+    check_approved_evidence("signal", "source_evidence_ids")
+    check_approved_evidence("decision", "evidence_ids")
+    check_approved_evidence("outcome", "evidence_ids")
+
     approvals_by_id = {
         approval.get("approval_id"): approval
         for approval in records.get("approval", [])

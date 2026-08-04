@@ -61,6 +61,11 @@ in `approvals.jsonl`.
 9. In `apply` mode only, update `run-state.json` as a new auditable state.
 10. In `apply` mode only, create a handoff that distinguishes completed, locally validated, externally executed, and outcome-recorded work.
 
+A schema-valid primary file is not a completed skill by itself. Require every
+artifact named in that skill's output contract. In particular, evidence with
+`strength=awaiting_human_tag` is a valid intermediate record but blocks signals,
+decisions, and outcomes until a person records both strength and `approved_by`.
+
 ## Routing graph
 
 ```text

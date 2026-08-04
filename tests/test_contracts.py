@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from shutil import copytree
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,6 +81,31 @@ class ContractValidationTests(unittest.TestCase):
             issues = validate_artifact_directory(artifact_dir)
             self.assertTrue(
                 any("does not match" in issue.message for issue in issues),
+                [issue.render() for issue in issues],
+            )
+
+    def test_signal_cannot_reference_evidence_awaiting_human_strength_review(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifact_dir = root / "artifacts"
+            copytree(ROOT / "fixtures" / "public-dummy" / "artifacts", artifact_dir)
+            copytree(ROOT / "fixtures" / "public-dummy" / "interviews", root / "interviews")
+            evidence_path = artifact_dir / "evidence.jsonl"
+            records = [json.loads(line) for line in evidence_path.read_text(encoding="utf-8").splitlines()]
+            records[1]["strength"] = "awaiting_human_tag"
+            records[1]["approved_by"] = None
+            evidence_path.write_text(
+                "\n".join(json.dumps(record, ensure_ascii=False) for record in records) + "\n",
+                encoding="utf-8",
+            )
+
+            issues = validate_artifact_directory(artifact_dir)
+            self.assertTrue(
+                any(
+                    "source_evidence_ids references evidence awaiting human strength approval"
+                    in issue.message
+                    for issue in issues
+                ),
                 [issue.render() for issue in issues],
             )
 

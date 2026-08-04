@@ -1,0 +1,31 @@
+{
+  "brief_version": "stg.hplan-intake.v1",
+  "generated_at": "2026-07-26T05:26:05.079939+00:00",
+  "status": "ready_for_gate_review",
+  "source_decision_id": "DEC-20260725-001",
+  "product_name": "Signal to Growth",
+  "problem": "팀이 고객 신호를 성장 판단으로 연결할 때 어디서 증거를 잃는가?",
+  "icp": "고객 인터뷰와 CS 데이터를 직접 다루는 초기 SaaS 팀",
+  "jtbd": "고객 근거를 잃지 않고 다음 성장 결정을 내린다.",
+  "functional_requirements": ["근거 ID를 결정과 연결한다."],
+  "acceptance_criteria": [
+    "성숙 cohort의 activation과 counter metric을 함께 검토할 수 있다.",
+    "Stop: 지원 capacity를 넘거나 unsupported decision rate가 증가한다."
+  ],
+  "cogs_ceiling": "프로젝트 정책에서 사람이 설정",
+  "latency_budget": "비동기 분석, 사용자 설정",
+  "counter_position": "상담 자동화가 아니라 근거 계보를 관리한다.",
+  "not_build": ["가격 메시지 전면 개편", "승인 없는 자동 고객 메시지 발송"],
+  "mvp_slice": "한 고객 신호를 승인된 결정까지 연결한다.",
+  "stg_decision_status": "approved",
+  "hplan_gate_decision": null,
+  "strong_signals_list": [
+    "EV-20260725-001: 같은 요청을 두 번 세었다는 사실을 알게 됐습니다. (../interviews/P-20260725-001.md:12)"
+  ],
+  "source_refs": {
+    "evidence_ids": ["EV-20260725-001", "EV-20260725-002", "EV-20260725-003"],
+    "metric_ids": ["MET-20260725-001", "MET-20260725-002"],
+    "action_ids": ["ACT-20260725-001"]
+  },
+  "unknown_fields": []
+}
