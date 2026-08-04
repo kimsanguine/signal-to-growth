@@ -116,7 +116,6 @@ def build_kakao_skill_application(
                 (getenv("STG_PROCESSING_BASIS_REF") or "").strip()
                 or "POL-KAKAO-TEST-SYNTHETIC"
             ),
-            allow_unverified_fixture=False,
         )
         sink = SupabaseEventSink(
             values["SUPABASE_URL"],

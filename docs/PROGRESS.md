@@ -65,6 +65,9 @@ Round 1에서 실제 엔지니어링 작업(Wave 1-3, 5개 도메인)을 했음�
 - **[2026-08-04] 커밋 실수 — add 누락** — 충돌 해결 중 파일을 추가로 Edit한 뒤 `git add` 재실행 없이 커밋해 커밋 메시지와 실제 내용이 불일치했던 사고 발생, `dc9a4fa`로 재커밋해 수정. 교훈: 커밋 직전 항상 `git status --porcelain`으로 unstaged 잔여 확인.
 - **[2026-08-04] Round 1 완료, 구조적 상한 발견** — 5개 전부 HOLD, 90 미도달. 3개 도메인은 W0-4/provider E2E(둘 다 보류 항목)에 점수가 묶여 있어 추가 엔지니어링으로 해소 불가. 2개 도메인(에이전트개발·콘텐츠)은 구체적 신규 결함 발견, 해소 가능. **origin/main이 15커밋 뒤처짐 — 미push 상태로 이번 라운드 전체 작업이 외부에 안 보임.** Round 2 진행 여부 및 push 여부는 사람 결정 대기.
 
+- **[2026-08-04] Round 2 자동화 — 정책 강제 위치 결정.** `policies/default-policy.json`의 `connectors.blocked_verification_assurance`를 런타임이 읽도록 `src/signal_growth/policy.py` 로더 신설, Kakao 어댑터 `verify_event`에서 대조·차단. **`allow_unverified_fixture` 생성자 인자를 제거**하고 정책이 판단하도록 교체 — 기본값이 안전(none 차단)이고, fixture 정규화는 `fixture_ingest_policy()`를 명시적으로 넘긴 호출부(`cli.py`, fixture 테스트)만 허용. 가역성: 2-way door. 검증: 정책 파일의 blocked 목록을 바꾸면 어댑터 수용 여부가 바뀌는 테스트(`tests/test_policy.py`)로 강제성 확인. Naver·Channel Talk 어댑터는 이번 범위 밖(플래그 유지).
+- **[2026-08-04] Round 2 자동화 — dead-letter runbook 작성.** `docs/operations/kakao-dead-letter-runbook.md`. 실측 기반: `service_role`에 `update`·`delete` grant가 없어 삭제·수정은 Dashboard SQL Editor에서 사람이 실행해야 함을 명시. 자동 재처리 도구는 **없음**을 명시(있는 척하지 않음). 재처리 예시 SQL은 이벤트 테이블 NOT NULL 컬럼(`provider`·`provider_event_id`·`received_at`)을 마이그레이션에서 확인해 반영.
+
 ## Wave 0 상태: ✅ 완료 (6/6 결정, 1건 보류)
 
 ## Wave 1 — 병렬 구현 (worktree 격리, 파일 소유권 배타적) — 5/5 완료

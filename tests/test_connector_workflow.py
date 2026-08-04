@@ -21,6 +21,7 @@ from signal_growth.channel_contracts import (  # noqa: E402
     UnsupportedCapability,
 )
 from signal_growth.connector_validation import dedupe_events  # noqa: E402
+from signal_growth.policy import fixture_ingest_policy  # noqa: E402
 
 
 PROVIDERS = ROOT / "fixtures" / "public-dummy" / "providers"
@@ -121,7 +122,10 @@ class ConnectorWorkflowTests(unittest.TestCase):
         self.assert_schema_valid(page.events[0])
 
     def test_kakao_skill_request_normalizes_and_dedupes_by_request_id(self):
-        adapter = KakaoOpenBuilderAdapter(b"public-dummy-hmac")
+        adapter = KakaoOpenBuilderAdapter(
+            b"public-dummy-hmac",
+            policy=fixture_ingest_policy(),
+        )
         raw = (
             PROVIDERS / "kakao-openbuilder" / "skill-request.json"
         ).read_bytes()

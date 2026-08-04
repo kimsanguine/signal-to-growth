@@ -137,7 +137,6 @@ class ConnectorSecurityTests(unittest.TestCase):
         adapter = KakaoOpenBuilderAdapter(
             b"public-dummy-hmac",
             expected_api_key="expected-fixture-key",
-            allow_unverified_fixture=False,
         )
 
         with self.assertRaises(EventVerificationError):
@@ -163,7 +162,6 @@ class ConnectorSecurityTests(unittest.TestCase):
         adapter = KakaoOpenBuilderAdapter(
             b"public-dummy-hmac",
             expected_api_key="expected-fixture-key",
-            allow_unverified_fixture=False,
         )
 
         event = adapter.ingest(
