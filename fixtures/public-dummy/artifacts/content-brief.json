@@ -1,0 +1,22 @@
+{
+  "brief_id": "CB-20260725-001",
+  "created_at": "2026-07-25T14:00:00+09:00",
+  "owner": "fixture-reviewer",
+  "audience": "고객 문의가 여러 채널로 들어오기 시작한 3~10인 규모 초기 SaaS 팀에서 다음에 무엇을 고칠지 결정하는 사람",
+  "question": "인터뷰를 요약해서 남기면 되는데, 왜 발화와 해석을 나눠서 evidence로 남겨야 하는가?",
+  "intent": "informational",
+  "source_signal_ids": ["SIG-20260725-001"],
+  "source_observation_ids": ["VIS-20260725-001"],
+  "evidence_ids": ["EV-20260725-001", "EV-20260725-002", "EV-20260725-003"],
+  "planned_outputs": ["blog-draft", "visual-prompt", "video-script"],
+  "direct_answer": "요약은 근거를 지운다. 발화와 해석을 분리해 저장하면 판단이 바뀌어도 근거는 그대로 남는다.",
+  "limitations": "표본이 합성 인터뷰 3건뿐이라 비율·확률 주장을 할 수 없고, 10인 초과 팀에서 같은 방식이 유지되는지는 확인된 바 없다.",
+  "non_goals": [
+    "제품 구매 설득",
+    "경쟁 제품과의 기능 비교",
+    "가시성 성과 수치 주장"
+  ],
+  "cta": null,
+  "publication_boundary": "이 brief는 초안·프롬프트·스크립트 작성까지만 승인한다. 게시·발송·배포·렌더링은 approvals.jsonl에 범위가 명시된 사람 승인 기록이 있을 때만 가능하며, 현재 그 기록은 없다.",
+  "note": "CTA가 null인 이유는 VIS-20260725-001이 not-live이고 first-user-loop.json이 아직 사람 승인을 받지 않아 착지점 자체가 없기 때문이다."
+}

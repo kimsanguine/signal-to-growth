@@ -66,10 +66,10 @@ SKILL_OUTPUT_FILES = {
         "channel-backlog.md",
         "learning-review.md",
     ),
-    # The two optional-branch skills have no entry in CORE_SKILL_FILES because
+    # The optional-branch skills have no entry in CORE_SKILL_FILES because
     # nothing downstream requires them. They still belong here: without a routed
     # output contract, the three-way drift check silently degrades to a two-way
-    # one and the router can call either skill done with artifacts missing.
+    # one and the router can call such a skill done with artifacts missing.
     "audit-answer-visibility": (
         "visibility-observations.jsonl",
         "citation-gaps.md",
@@ -82,6 +82,11 @@ SKILL_OUTPUT_FILES = {
         "draft.md",
         "review-checklist.md",
     ),
+    "osmu-fanout": (
+        "visual-prompts.md",
+        "video-script.md",
+        "fanout-coverage.md",
+    ),
 }
 CONNECTOR_SKILL = "connect-customer-channels"
 CONNECTOR_FILES = (
@@ -92,9 +97,17 @@ CONNECTOR_FILES = (
 APPROVAL_FILE = "approvals.jsonl"
 # The optional content branch is reachable once the first-user loop is complete,
 # so a product introduction page is written from a validated loop rather than
-# from an untested claim. Adding this edge is why no twelfth skill was created.
+# from an untested claim.
 CONTENT_SKILL = "draft-evidence-content"
 CONTENT_PREREQUISITE = "design-first-user-loop"
+# Reuse of an existing draft on other surfaces. It is the one place a twelfth
+# skill earns its keep: the same brief has to reach an image prompt and a video
+# beat without the topic being re-decided per surface. Its prerequisite is the
+# draft itself, and its input is the brief both surfaces share, so a fanout
+# cannot start from a topic that was never written down.
+FANOUT_SKILL = "osmu-fanout"
+FANOUT_PREREQUISITE = CONTENT_SKILL
+CONTENT_BRIEF_FILE = "content-brief.json"
 # The visibility audit is the other entry to the optional content branch. It
 # reads public surfaces rather than the growth loop, so it has no prerequisite
 # skill and is only reachable from an explicit objective.
@@ -124,6 +137,20 @@ OBJECTIVE_ROUTES = (
     (
         ("소개 페이지", "소개페이지", "landing page", "답변형 콘텐츠", "content draft"),
         CONTENT_SKILL,
+    ),
+    (
+        (
+            "osmu",
+            "원소스",
+            "멀티유즈",
+            "콘텐츠 재사용",
+            "이미지 프롬프트",
+            "영상 스크립트",
+            "카드뉴스",
+            "repurpose",
+            "content fanout",
+        ),
+        FANOUT_SKILL,
     ),
 )
 
@@ -230,6 +257,26 @@ def _outcome_review_reason(artifact_directory: Path) -> str | None:
     return None
 
 
+def _content_brief_issue(artifact_directory: Path) -> str | None:
+    """Return why the shared content brief cannot be reused, or None.
+
+    The brief is an input contract rather than any skill's output, so nothing
+    else in this module would notice its absence. Checking it here is what keeps
+    a fanout from re-deciding the topic per surface out of the draft's prose.
+    """
+    payload = _valid_json_object(artifact_directory / CONTENT_BRIEF_FILE)
+    if payload is None:
+        return (
+            f"{CONTENT_BRIEF_FILE} does not exist or is not a JSON object — the "
+            "audience, question, and evidence scope must be written down and "
+            "owned by a person before another surface reuses them."
+        )
+    issues = validate_schema_record("content-brief.schema.json", payload)
+    if issues:
+        return f"{CONTENT_BRIEF_FILE} fails contract validation: {issues[0]}."
+    return None
+
+
 def _first_user_loop_valid(artifact_directory: Path) -> bool:
     payload = _valid_json_object(artifact_directory / "first-user-loop.json")
     return payload is not None and not validate_schema_record(
@@ -276,6 +323,8 @@ def _skill_complete(
     primary = dict(CORE_SKILL_FILES).get(skill_name)
     if primary is not None and primary not in valid_artifacts:
         return False
+    if skill_name == FANOUT_SKILL and _content_brief_issue(artifact_directory):
+        return False
     if _missing_skill_outputs(artifact_directory, skill_name):
         return False
     if skill_name == "synthesize-interviews" and _unreviewed_evidence_ids(
@@ -299,6 +348,12 @@ def _incomplete_reason(
     primary = dict(CORE_SKILL_FILES).get(skill_name)
     if primary is not None and primary not in valid_artifacts:
         return f"{primary} does not exist yet or fails validation."
+    if skill_name == FANOUT_SKILL:
+        # An input gate, so it is reported before any missing output: writing
+        # prompts first and a brief afterwards inverts the whole branch.
+        brief_issue = _content_brief_issue(artifact_directory)
+        if brief_issue is not None:
+            return brief_issue
     missing = _missing_skill_outputs(artifact_directory, skill_name)
     if missing:
         # A missing approvals.jsonl is a person who has not decided yet, not a
@@ -364,6 +419,16 @@ def _route(
             f"The stated objective points to '{CONTENT_SKILL}', which follows "
             f"'{CONTENT_PREREQUISITE}': "
             + _incomplete_reason(artifact_directory, CONTENT_PREREQUISITE, valid)
+        )
+    if requested == FANOUT_SKILL and not _skill_complete(
+        artifact_directory,
+        FANOUT_PREREQUISITE,
+        valid,
+    ):
+        return FANOUT_PREREQUISITE, (
+            f"The stated objective points to '{FANOUT_SKILL}', which reuses the "
+            f"draft from '{FANOUT_PREREQUISITE}': "
+            + _incomplete_reason(artifact_directory, FANOUT_PREREQUISITE, valid)
         )
     if requested is not None and not _skill_complete(
         artifact_directory,

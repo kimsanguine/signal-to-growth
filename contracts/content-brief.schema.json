@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/content-brief.schema.json",
+  "title": "Content Brief",
+  "description": "The shared decision about which content to make, written before any draft, prompt, or script exists. It is an input contract rather than a skill's own output: draft-evidence-content and osmu-fanout both read it, so the topic is fixed once and every downstream surface inherits the same audience, question, and evidence scope. A brief is not append-only history; it is a plan file that is rewritten until the person owning it stops changing it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "brief_id",
+    "created_at",
+    "owner",
+    "audience",
+    "question",
+    "intent",
+    "source_signal_ids",
+    "source_observation_ids",
+    "planned_outputs",
+    "limitations"
+  ],
+  "properties": {
+    "brief_id": {
+      "type": "string",
+      "pattern": "^CB-[0-9]{8}-[0-9]{3,}$"
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "owner": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The person accountable for the topic choice. Choosing what to publish is a promise to customers, so it is not delegated to the model."
+    },
+    "audience": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Who this is for, stated concretely enough that a reader can tell whether they are excluded."
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The single reader question the content answers."
+    },
+    "intent": {
+      "enum": ["informational", "comparison", "activation", "support"],
+      "description": "Why the reader arrives. It decides the CTA boundary, not the writing style."
+    },
+    "source_signal_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^SIG-[0-9]{8}-[0-9]{3,}$"
+      },
+      "uniqueItems": true,
+      "description": "Triaged customer signals that made this topic worth writing about."
+    },
+    "source_observation_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^VIS-[0-9]{8}-[0-9]{3,}$"
+      },
+      "uniqueItems": true,
+      "description": "Answer-surface observations that made this topic worth writing about."
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
+      },
+      "uniqueItems": true,
+      "description": "The evidence the draft may cite. Evidence outside this list is out of scope for this brief."
+    },
+    "planned_outputs": {
+      "type": "array",
+      "items": {
+        "enum": ["blog-draft", "visual-prompt", "video-script"]
+      },
+      "minItems": 1,
+      "uniqueItems": true,
+      "description": "Which surfaces this one brief will be reused for. Naming them here is what makes the surfaces reuse a single decision instead of drifting into three different topics."
+    },
+    "limitations": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What this brief's evidence cannot support. Required, because a brief with no stated limit reads as unlimited."
+    },
+    "direct_answer": {"type": "string", "minLength": 1},
+    "non_goals": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "cta": {
+      "type": ["string", "null"],
+      "description": "The next step offered to the reader, or null when no landing point is validated yet. Null is a decision, not a missing field."
+    },
+    "publication_boundary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What this brief does not authorize. Publishing, sending, and deploying stay outside every skill that reads the brief."
+    },
+    "note": {"type": "string", "minLength": 1}
+  },
+  "allOf": [
+    {
+      "description": "A topic must name where it came from. At least one triaged signal or one visibility observation is required, so no content is planned from an unrecorded hunch.",
+      "anyOf": [
+        {
+          "properties": {"source_signal_ids": {"minItems": 1}},
+          "required": ["source_signal_ids"]
+        },
+        {
+          "properties": {"source_observation_ids": {"minItems": 1}},
+          "required": ["source_observation_ids"]
+        }
+      ]
+    },
+    {
+      "description": "A brief that plans a blog draft must name the evidence that draft may cite, because draft-evidence-content builds its claim ledger from this scope.",
+      "if": {
+        "properties": {
+          "planned_outputs": {"contains": {"const": "blog-draft"}}
+        },
+        "required": ["planned_outputs"]
+      },
+      "then": {
+        "properties": {"evidence_ids": {"minItems": 1}},
+        "required": ["evidence_ids"]
+      }
+    }
+  ]
+}
