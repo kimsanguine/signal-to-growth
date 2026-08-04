@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/visibility-observation.schema.json",
+  "title": "Visibility Observation",
+  "description": "One answer-surface observation produced by audit-answer-visibility. This contract enforces the floor that the append-only public fixture already carries. Fields that skills/audit-answer-visibility/references/output-contract.md also asks for are typed but optional; see docs/contract-coverage-decisions.md for why they are not yet required.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observation_id",
+    "observed_at",
+    "surface",
+    "status",
+    "claim_state"
+  ],
+  "properties": {
+    "observation_id": {
+      "type": "string",
+      "pattern": "^VIS-[0-9]{8}-[0-9]{3,}$"
+    },
+    "observed_at": {"type": "string", "format": "date-time"},
+    "surface": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The answer surface that was checked."
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Access state of the surface, for example not-live or reachable. Not checked and not present must stay distinguishable."
+    },
+    "claim_state": {
+      "enum": ["observed", "reported", "inferred", "recommended", "unknown"],
+      "description": "The claim state vocabulary from docs/artifact-contracts.md. A visibility result may not be recorded as observed unless it was directly checked."
+    },
+    "note": {"type": "string", "minLength": 1},
+    "url": {"type": "string", "minLength": 1},
+    "file": {"type": "string", "minLength": 1},
+    "locale": {"type": "string", "minLength": 1},
+    "question": {"type": "string", "minLength": 1},
+    "result": {"type": "string", "minLength": 1},
+    "source_pointer": {"type": "string", "minLength": 1}
+  }
+}

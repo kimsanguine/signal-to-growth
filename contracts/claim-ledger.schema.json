@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/claim-ledger.schema.json",
+  "title": "Claim Ledger Entry",
+  "description": "One material claim produced by draft-evidence-content, with its claim state and supporting evidence. This contract enforces the floor that the append-only public fixture already carries. Fields that skills/draft-evidence-content/references/output-contract.md also asks for are typed but optional; see docs/contract-coverage-decisions.md for why they are not yet required.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claim_id",
+    "claim",
+    "evidence_ids",
+    "state",
+    "public"
+  ],
+  "properties": {
+    "claim_id": {
+      "type": "string",
+      "pattern": "^CLM-[0-9]{8}-[0-9]{3,}$"
+    },
+    "claim": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The exact wording of the claim as it would be published."
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
+      },
+      "uniqueItems": true,
+      "description": "Supporting evidence IDs. May be empty only when state is unknown."
+    },
+    "state": {
+      "enum": ["observed", "reported", "inferred", "recommended", "unknown"],
+      "description": "The claim state vocabulary from docs/artifact-contracts.md. Never publish inferred or recommended as observed."
+    },
+    "public": {
+      "type": "boolean",
+      "description": "Whether this claim is eligible for public use."
+    },
+    "approved_by": {"type": ["string", "null"]},
+    "owner": {"type": "string", "minLength": 1},
+    "source_urls": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "source_date": {"type": "string", "format": "date"},
+    "refresh_at": {"type": "string", "format": "date"}
+  },
+  "allOf": [
+    {
+      "description": "A claim asserted as observed or reported must name at least one evidence ID.",
+      "if": {
+        "properties": {"state": {"enum": ["observed", "reported"]}},
+        "required": ["state"]
+      },
+      "then": {
+        "properties": {"evidence_ids": {"minItems": 1}}
+      }
+    },
+    {
+      "description": "A publicly eligible claim must name a human approver.",
+      "if": {
+        "properties": {"public": {"const": true}},
+        "required": ["public"]
+      },
+      "then": {
+        "properties": {"approved_by": {"type": "string", "minLength": 1}},
+        "required": ["approved_by"]
+      }
+    }
+  ]
+}

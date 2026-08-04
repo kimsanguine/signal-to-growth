@@ -7,7 +7,11 @@ import re
 import tomllib
 from pathlib import Path
 
-from .contracts import ValidationIssue
+from .contracts import (
+    GATE_DECISION_SCHEMA_FILE,
+    ValidationIssue,
+    validate_gate_decision_log,
+)
 
 
 EXPECTED_SKILLS = {
@@ -23,6 +27,8 @@ EXPECTED_SKILLS = {
     "design-first-user-loop",
     "run-growth-loop",
 }
+
+GATE_DECISION_LOG = Path("harness") / "decisions.jsonl"
 
 EXPECTED_CONNECTOR_CONTRACTS = {
     "channel-connection.schema.json",
@@ -270,6 +276,15 @@ def validate_repository(root: Path) -> list[ValidationIssue]:
                     "connector contract must use JSON Schema draft 2020-12",
                 )
             )
+
+    gate_decision_schema = contract_root / GATE_DECISION_SCHEMA_FILE
+    gate_decision_log = root / GATE_DECISION_LOG
+    if not gate_decision_schema.exists():
+        issues.append(
+            ValidationIssue(str(gate_decision_schema), "gate decision contract is missing")
+        )
+    elif gate_decision_log.exists():
+        issues.extend(validate_gate_decision_log(gate_decision_log))
 
     for path in root.rglob("*.md"):
         text = path.read_text(encoding="utf-8")

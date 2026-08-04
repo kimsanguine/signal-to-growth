@@ -1,0 +1,125 @@
+# Contract coverage decisions
+
+- Recorded: 2026-08-04
+- Question: for each artifact without a root contract, write a contract or
+  declare it a deliberate non-contract output?
+- Scope: this document records judgements and reasons. It does not change
+  `hooks/`, which another owner maintains.
+
+## 1. Judgements
+
+| Artifact | Judgement | Why |
+|---|---|---|
+| `claim-ledger.jsonl` | **(a) New contract** — `contracts/claim-ledger.schema.json` | Append-only protected, carries IDs and evidence references, and encodes the claim-state rule that a release hard gate depends on |
+| `visibility-observations.jsonl` | **(a) New contract** — `contracts/visibility-observation.schema.json` | Same reasoning: append-only protected and carries a claim state that must not be overstated |
+| `reach-plan.json` | **(b) Deliberate non-contract output** | Not append-only protected, holds no ID and no lineage reference, and is a human planning input rather than an audited record |
+| `interview-guide.md` | **(b) Deliberate non-contract output** | Prose. A JSON Schema cannot express what makes an interview guide good; `lint-questions` already covers the risk that matters (leading questions) |
+
+### Why the first two were the priority
+
+`hooks/guard_append_only.py` already refused direct writes to both files. That
+produced a contradictory state: the repository asserted the records were
+important enough to be immutable history, while nothing defined what a valid
+record was. Immutability without a contract preserves malformed history rather
+than preventing it. Both now have a contract, and both are validated by
+`validate-artifacts`.
+
+### Why the last two are not a gap
+
+Declaring a non-contract output is a judgement, not an omission, and the test is
+whether the artifact carries auditable state that a downstream gate reads.
+
+- `reach-plan.json` records a research question, a segment, exclusions, and
+  `external_send: false`. Nothing references it by ID and no gate reads it. Its
+  one safety-relevant field, the external-send boundary, is already enforced
+  where it is acted on, not where it is declared.
+- `interview-guide.md` is instructional prose for a human interviewer. Schema
+  validation of prose produces a passing check that means nothing, which is worse
+  than no check because it reads as coverage.
+
+Both remain reviewable as ordinary files. If either later gains an ID or is read
+by a gate, this judgement should be reopened.
+
+## 2. Cross-check: `APPEND_ONLY_FILES` versus `contracts/`
+
+Cross-checked mechanically against `hooks/guard_append_only.py`
+(13 entries) after this round's additions.
+
+| Append-only file | Contract | Enforced by |
+|---|---|---|
+| `evidence.jsonl` | `evidence.schema.json` | `validate-artifacts` |
+| `signals.jsonl` | `signal.schema.json` | `validate-artifacts` |
+| `metrics.jsonl` | `metric.schema.json` | `validate-artifacts` |
+| `decisions.jsonl` | `decision.schema.json` | `validate-artifacts` |
+| `actions.jsonl` | `action.schema.json` | `validate-artifacts` |
+| `outcomes.jsonl` | `outcome.schema.json` | `validate-artifacts` |
+| `approvals.jsonl` | `approval.schema.json` | `validate-artifacts` |
+| `claim-ledger.jsonl` | `claim-ledger.schema.json` | `validate-artifacts` (new) |
+| `visibility-observations.jsonl` | `visibility-observation.schema.json` | `validate-artifacts` (new) |
+| `cs-events.jsonl` | `cs-event.schema.json` | `validate-connectors` |
+| `reply-drafts.jsonl` | `reply-draft.schema.json` | `validate-connectors` |
+| `delivery-events.jsonl` | `delivery-event.schema.json` | `validate-connectors` |
+| `integration-references.jsonl` | `integration-reference.schema.json` | `import-pmf-radar` at write time |
+
+**Result: no remaining mismatch.** Before this round, `claim-ledger.jsonl` and
+`visibility-observations.jsonl` were the only two protected files with no
+contract.
+
+### Contracts that protect no append-only file
+
+`channel-connection.schema.json`, `connector-state.schema.json`,
+`run-state.schema.json`, `first-user-loop.schema.json`,
+`hplan-intake-brief.schema.json`, `pmf-radar-export.schema.json`,
+`gate-decision.schema.json`.
+
+This is not a mismatch. The first six describe **current-state JSON documents**
+that are meant to be rewritten as state advances — a cursor, a health record, a
+run's phase. Making them append-only would be wrong. `gate-decision.schema.json`
+is the exception and is discussed below.
+
+### One filename, two contracts
+
+`decisions.jsonl` appears in two places under two different contracts, which is
+deliberate and easy to misread:
+
+| Path | Contract | Content |
+|---|---|---|
+| `<artifacts>/decisions.jsonl` | `decision.schema.json` | `DEC-` growth decisions traced to evidence IDs |
+| `harness/decisions.jsonl` | `gate-decision.schema.json` | `dec-` repository build/release gate verdicts |
+
+The append-only hook matches on **basename**, so it protects both. Validation
+routes by **path**: `validate-artifacts` applies the growth contract to a run's
+artifact directory, and `validate-repo` applies the gate contract to
+`harness/decisions.jsonl`. The two record shapes do not overlap — every gate
+record violates the growth contract on many required fields — which is why the
+gate log was given its own contract rather than being rewritten. Rewriting it
+would have destroyed append-only history to satisfy a contract it was never
+written against.
+
+`tests/test_gate_decision_contract.py` asserts this divergence directly, so if
+the two contracts ever converge the test fails and the seam is reconsidered
+rather than kept out of habit.
+
+## 3. Known gap: schema floor versus prose output contract
+
+The two new contracts enforce **less** than their skills' prose output contracts
+ask for, and this is a deliberate, bounded compromise rather than an oversight.
+
+| Contract | Prose asks for, schema does not require |
+|---|---|
+| `claim-ledger.schema.json` | source date, owner, refresh date |
+| `visibility-observation.schema.json` | URL or file, locale, question, result, source pointer |
+
+Reason: the only records that exist are in the frozen public fixture, and that
+fixture predates the fuller prose contract. Because both files are append-only,
+a missing field **cannot be backfilled** — the record can only be superseded by
+appending a new one. Requiring those fields today would make the shipped public
+fixture permanently invalid and break `make check` for every student.
+
+Each field above is therefore declared and typed in the schema but optional, so a
+record that supplies it is still validated. Raising them to required is a
+follow-up that needs a superseding fixture record appended through
+`append-record`, which is a separate change.
+
+Do not read these two contracts as full coverage of their skills' output
+contracts. They are an enforced floor.

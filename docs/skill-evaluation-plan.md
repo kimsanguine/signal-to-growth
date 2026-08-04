@@ -168,6 +168,8 @@ release 판정 기준은 다음과 같다.
   - 전체 task success 85% 이상
   - critical skill별 80점 이상
   - cross-runtime semantic parity 90% 이상
+  - **ICP 확정 (§9-5)** — Primary target을 범용 SaaS로 둘지 AI B2B SaaS로
+    좁힐지가 사람이 승인한 결정으로 기록돼 있어야 한다. 미정이면 `GO` 불가.
 - **CONDITIONAL GO**
   - hard-gate failure는 없지만 task success 또는 특정 skill이 목표 미달
   - remediation과 regression case가 명확함
@@ -178,6 +180,18 @@ release 판정 기준은 다음과 같다.
 
 평균 점수만 보고 GO를 결정하지 않는다. evaluator 간 점수 차이가 15점
 이상이면 persona mismatch, 모호한 rubric, runtime 차이를 별도 분석한다.
+
+### ICP hard gate가 왜 점수와 분리되는가
+
+ICP가 미정이면 §5 루브릭의 `Target-user usefulness`(10점)와 §2의 비타겟 판정
+기준이 어떤 사용자를 기준으로 매겨졌는지 확정되지 않는다. 즉 ICP는 점수를
+받는 항목이 아니라 **점수의 해석 조건**이다. 그래서 평균 점수가 아무리 높아도
+ICP 미정 상태의 `GO`는 성립하지 않는다.
+
+이 판정의 입력은 실제 고객 인터뷰다. 인터뷰 참가자 섭외·동의·공개는 되돌리기
+어려운 결정이므로 현재 **사람 승인 대기 상태로 보류**돼 있다. 아래 §9의
+"재개 시 기본 제안"에 있는 `한국어 AI B2B SaaS founder·product lead`는 제안일
+뿐이며, 이 hard gate를 충족하지 않는다.
 
 ## 8. 평가 산출물
 
@@ -208,14 +222,23 @@ eval/
 
 ## 9. 정식 runtime 평가 시작 전 결정할 것
 
+> 실행 순서의 단일 출처는 [`HANDOFF.md`](HANDOFF.md) "Resume sequence"이며,
+> 이 다섯 항목은 그 백로그의 1단계다. 이 문서는 평가 방법·루브릭·판정 기준만
+> 소유한다.
+
 1. 평가 snapshot을 현재 feature branch로 할지 `main` 병합 후로 할지
+   (2026-07-27 병합 완료로 `main`이 기본값)
 2. Claude Code·Codex의 고정 model과 version
 3. network를 완전히 끈 fixture-only 평가와 허용된 read-only research의 비율
 4. 실행 비용·시간 상한
 5. Primary target의 산업 예시를 범용 SaaS로 둘지 AI B2B SaaS로 좁힐지
+   — **§7의 release `GO` hard gate로 승격됨.** 더 이상 "실행 전 편의상 정할
+   것"이 아니라, 확정 없이는 release가 `GO`에 도달할 수 없는 조건이다. 판정의
+   입력은 실제 고객 인터뷰이며 해당 인터뷰는 현재 사람 승인 대기로 보류돼 있다.
 
-이 다섯 항목은 정식 runtime case 실행 전에 고정한다. 이미 완료한 정적
-기준선은 remediation 대상을 찾기 위한 별도 단계로 유지한다.
+이 다섯 항목은 정식 runtime case 실행 전에 고정한다. 1~4는 실행 조건이고,
+5는 실행 조건인 동시에 release 판정 조건이다. 이미 완료한 정적 기준선은
+remediation 대상을 찾기 위한 별도 단계로 유지한다.
 
 ### 재개 시 기본 제안
 
