@@ -43,7 +43,7 @@ Round 1에서 실제 엔지니어링 작업(Wave 1-3, 5개 도메인)을 했음�
 5. (부수) `CLAUDE.md`/`AGENTS.md`가 이 머신에도 없는 절대경로 스크립트를 검증 절차로 지시(개인 경로 노출)
 
 **콘텐츠 (74→72) — 2개 구체 항목**
-1. `docs/self-marketing/citation-gaps.md`가 "EV-003는 어떤 claim에도 인용 안 됨"이라 적었지만, 실측 결과 `CLM-004`·`CLM-005`가 인용 중 — **자기 ledger와 모순**(제가 직접 재현 확인)
+1. `fixtures/public-dummy/artifacts/citation-gaps.md`가 "EV-003는 어떤 claim에도 인용 안 됨"이라 적었지만, 실측 결과 `CLM-004`·`CLM-005`가 인용 중 — **자기 ledger와 모순**(제가 직접 재현 확인). Round 2에서 정정. (최초 기록의 경로 `docs/self-marketing/citation-gaps.md`는 오기였고 함께 정정)
 2. README 부피(716행)·용어 밀도(WSGI/RLS/parity 무설명) — 목차·용어집 부재
 
 **마케팅 — 확인된 사실 오류 1건**
