@@ -27,6 +27,7 @@ ID_PATTERNS = {
     "approval": re.compile(r"^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"),
     "claim": re.compile(r"^CLM-\d{8}-\d{3,}$"),
     "visibility_observation": re.compile(r"^VIS-\d{8}-\d{3,}$"),
+    "content_brief": re.compile(r"^CB-\d{8}-\d{3,}$"),
 }
 
 ID_FIELDS = {
@@ -40,6 +41,7 @@ ID_FIELDS = {
     "approval": "approval_id",
     "claim": "claim_id",
     "visibility_observation": "observation_id",
+    "content_brief": "brief_id",
 }
 
 REQUIRED_FIELDS = {
@@ -170,6 +172,18 @@ REQUIRED_FIELDS = {
         "status",
         "claim_state",
     },
+    "content_brief": {
+        "brief_id",
+        "created_at",
+        "owner",
+        "audience",
+        "question",
+        "intent",
+        "source_signal_ids",
+        "source_observation_ids",
+        "planned_outputs",
+        "limitations",
+    },
 }
 
 ENUM_FIELDS = {
@@ -204,6 +218,12 @@ ENUM_FIELDS = {
     ("approval", "status"): {"approved", "revoked"},
     ("claim", "state"): CLAIM_STATES,
     ("visibility_observation", "claim_state"): CLAIM_STATES,
+    ("content_brief", "intent"): {
+        "informational",
+        "comparison",
+        "activation",
+        "support",
+    },
 }
 
 # Decision event kinds. Deliberately NOT in ENUM_FIELDS: that table treats a
@@ -234,6 +254,7 @@ ARTIFACT_FILES = {
     "approvals.jsonl": "approval",
     "claim-ledger.jsonl": "claim",
     "visibility-observations.jsonl": "visibility_observation",
+    "content-brief.json": "content_brief",
 }
 REQUIRED_COMPLETE_FILES = frozenset(
     {
@@ -259,6 +280,7 @@ SCHEMA_FILES = {
     "approval": "approval.schema.json",
     "claim": "claim-ledger.schema.json",
     "visibility_observation": "visibility-observation.schema.json",
+    "content_brief": "content-brief.schema.json",
 }
 
 GATE_DECISION_SCHEMA_FILE = "gate-decision.schema.json"
@@ -539,6 +561,9 @@ def _check_references(
     check_many("signal", "source_evidence_ids", "evidence")
     check_many("decision", "evidence_ids", "evidence")
     check_many("claim", "evidence_ids", "evidence")
+    check_many("content_brief", "source_signal_ids", "signal")
+    check_many("content_brief", "source_observation_ids", "visibility_observation")
+    check_many("content_brief", "evidence_ids", "evidence")
     check_many("action", "metric_ids", "metric")
     check_many("outcome", "evidence_ids", "evidence")
     check_one("action", "decision_id", "decision")
@@ -572,6 +597,35 @@ def _check_references(
     check_approved_evidence("decision", "evidence_ids")
     check_approved_evidence("outcome", "evidence_ids")
     check_approved_evidence("claim", "evidence_ids")
+    check_approved_evidence("content_brief", "evidence_ids")
+
+    # A content brief chooses a public topic, so existence of the signal it
+    # cites is not enough. A signal still awaiting human review, or one marked
+    # restricted, is exactly the material that must not become the reason a
+    # page gets written.
+    publishable_signal_ids = {
+        record.get("signal_id")
+        for record in records.get("signal", [])
+        if record.get("status") == "approved"
+        and record.get("privacy") != "restricted"
+    }
+    for index, brief in enumerate(records.get("content_brief", []), 1):
+        signal_ids = brief.get("source_signal_ids", [])
+        if not isinstance(signal_ids, list):
+            continue
+        for value in signal_ids:
+            if (
+                value in ids.get("signal", set())
+                and value not in publishable_signal_ids
+            ):
+                issues.append(
+                    ValidationIssue(
+                        f"{ARTIFACT_KIND_FILES['content_brief']}[{index}]",
+                        "source_signal_ids references a signal that is not "
+                        "approved, or is restricted, so it cannot justify "
+                        "public content",
+                    )
+                )
 
     approvals_by_id = {
         approval.get("approval_id"): approval

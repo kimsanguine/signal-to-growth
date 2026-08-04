@@ -1,0 +1,4 @@
+interface:
+  display_name: "OSMU Fanout"
+  short_description: "Reuse one brief as claim-linked prompts and a script"
+  default_prompt: "Use $osmu-fanout to fan this approved draft out into visual prompts and a video script."

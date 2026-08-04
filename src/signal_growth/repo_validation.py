@@ -25,6 +25,7 @@ EXPECTED_SKILLS = {
     "record-growth-decision",
     "audit-answer-visibility",
     "draft-evidence-content",
+    "osmu-fanout",
     "design-first-user-loop",
     "run-growth-loop",
 }

@@ -5,7 +5,7 @@ description: "Route an evidence-to-growth workflow by validating artifacts, appr
 
 # Run Growth Loop
 
-Coordinate state and handoffs. Do not replace the specialist judgment contained in the other ten skills.
+Coordinate state and handoffs. Do not replace the specialist judgment contained in the other eleven skills.
 
 ## Inputs
 
@@ -84,6 +84,7 @@ approved decision needing build review
 optional content branch
   → audit-answer-visibility → draft-evidence-content
   → design-first-user-loop → draft-evidence-content
+  → draft-evidence-content → osmu-fanout
 ```
 
 Route from the stated objective and valid available artifacts, not from a
@@ -97,6 +98,12 @@ When the objective asks for a product introduction page or other answer-first
 content, route to `draft-evidence-content` only after `design-first-user-loop`
 is complete, so the page describes a loop that was actually validated. While
 that loop is incomplete, route to `design-first-user-loop` first and say why.
+
+When the objective asks to reuse existing content on other surfaces, route to
+`osmu-fanout` only after `draft-evidence-content` is complete and a
+`content-brief.json` validates against `contracts/content-brief.schema.json`.
+The brief is the shared input both surfaces read; without it each surface would
+re-decide the topic on its own.
 
 ## Boundaries
 

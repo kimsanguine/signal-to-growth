@@ -56,6 +56,29 @@ Use one of:
 
 Never express `inferred` or `recommended` as `observed`.
 
+## Content brief
+
+`content-brief.json` follows `contracts/content-brief.schema.json`. It is the
+one place the topic is decided, and both content surfaces read it: the blog
+draft from `draft-evidence-content` and the visual prompts and video script from
+`osmu-fanout`. Deciding once is what makes the surfaces reuse of one source
+rather than three separately invented stories.
+
+Unlike the ledgers above, a brief is **not** append-only. It is a plan file that
+is rewritten until the person named in `owner` stops changing it, so it carries
+no hash chain.
+
+| Field | Why it is required |
+|---|---|
+| `source_signal_ids` / `source_observation_ids` | A topic must name where it came from; at least one of the two must be non-empty |
+| `evidence_ids` | The scope a draft may cite, required whenever `planned_outputs` includes `blog-draft` |
+| `planned_outputs` | The surfaces this one decision covers |
+| `limitations` | A brief with no stated limit reads as unlimited |
+| `owner` | Choosing what to publish is a promise to customers, so a person owns it |
+
+`cta: null` is a decision, not a missing field. Record it when no validated
+landing point exists yet.
+
 ## Approval states
 
 ```text
@@ -87,6 +110,11 @@ by itself is not approval.
 - An approved or executed external action references a scoped `APR-` approval artifact.
 - The referenced approval is `approved`, has `approver_type=human`, records a
   `user_turn_ref`, and covers the exact decision or action ID.
+- A content brief references existing signal, observation, and evidence IDs.
+- A content brief's signals are `approved` and not `restricted`; an unreviewed
+  or restricted signal cannot justify public content.
+- A fanout reuses claims from an existing ledger and never raises a claim state
+  to make a stronger picture.
 - A connector stores secret references, never credential values.
 - A normalized event records provider identity, verification assurance, and an idempotency key.
 - A reply remains `external_write=false` until a separate approval artifact authorizes the exact target and content.
