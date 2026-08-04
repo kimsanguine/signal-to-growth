@@ -43,7 +43,9 @@
 
 마케팅 포지셔닝 문구 + 프로덕트 점수공시 절충안(상단은 링크만, 하위 섹션에 67·49.2 둘 다 명시) 입력받아 콘텐츠가 1회 통합.
 
-## Round 1 평가: 미실시
+## Round 1 평가: 진행 중
+
+Wave 3 통합 완료(`10d0a3f`, 164 tests OK, validate-repo/demo green). fresh 5-persona 평가 에이전트(eval-r1-*) 병렬 dispatch 완료, 결과 대기 중.
 
 ## 열린 이슈 / 사람 승인 대기
 
