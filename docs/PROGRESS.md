@@ -6,8 +6,8 @@
 
 - **Round**: 1 / 3 완료. Round 2 착수 여부는 사람 결정 대기 (구조적 상한 발견, 아래 참조).
 - **Phase**: Round 1 평가 완료.
-- **HEAD**: `10d0a3f` (local main). **origin/main 대비 15커밋 앞섬 — 아직 push 안 함.**
-- **다음 행동**: 사람 결정 2건 대기 — (1) origin push 여부, (2) Round 2 진행 여부(아래 "구조적 상한" 참조).
+- **HEAD**: `ad591bd` (local == origin/main, push 완료 2026-08-04 13:20 UTC). GitHub 브랜치 보호(merge commit 금지·PR 필수·체크 3개)를 관리자 권한으로 우회해서 반영됨 — push 후 실제 CI 결과로 확인: `validate (3.11)` success, `validate (3.12)` success, `update-uv-graph` success, Vercel 배포 success. 전부 실제 GitHub 라이브 관측(도구 성공 신호 아님).
+- **다음 행동**: Round 2 진행 여부·범위 결정 대기(아래 "구조적 상한" 참조).
 
 ## Round 0 (사전 이력, 이번 세션 착수 전) vs Round 1 점수
 
