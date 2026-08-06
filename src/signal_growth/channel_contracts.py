@@ -211,6 +211,7 @@ class CanonicalChannelEvent:
     provider_status: str
     canonical_status: CanonicalEventStatus
     source_evidence_ids: tuple[str, ...] = ()
+    bot_ref: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         value = asdict(self)

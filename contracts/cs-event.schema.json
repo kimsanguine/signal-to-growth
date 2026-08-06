@@ -178,6 +178,19 @@
         "pattern": "^EV-[A-Z0-9][A-Z0-9._-]{2,127}$"
       }
     },
+    "bot_ref": {
+      "description": "Optional connector-supplied bot/product identity for routing events to the correct business. Not a customer identifier. Absent or null on events normalized before this field existed.",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "record_hash": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"

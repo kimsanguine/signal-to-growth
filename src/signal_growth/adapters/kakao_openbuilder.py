@@ -236,6 +236,7 @@ class KakaoOpenBuilderAdapter(BaseChannelAdapter):
             verification_assurance=verified_event.verification_assurance,
             provider_status="skill_request_received",
             canonical_status=CanonicalEventStatus.NORMALIZED,
+            bot_ref=bot_id,
         )
 
     @staticmethod
