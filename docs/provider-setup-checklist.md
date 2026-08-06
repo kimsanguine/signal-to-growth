@@ -6,19 +6,21 @@
 
 ## 0. 현재 준비 상태
 
-2026-07-26 기준 확인된 상태:
+2026-07-26 기준 확인된 상태 (2026-08-06 갱신분은 † 표시):
 
 - Kakao Business Channel 생성: 완료
 - 격리된 Supabase Pro test project와 migration: 완료
 - Vercel Preview의 필수 5개·명시적 기본값 2개 환경변수: 암호화·브랜치 범위로 등록
+- †Vercel Production 환경변수 7개 등록 및 `GET /api/health` `status=configured`/`storage=reachable` 실측 확인 (2026-08-06)
 - public fixture를 사용한 Preview→Supabase→`version=2.0` 왕복: 완료
 - 동일 `X-Request-Id` 2회 전송 후 Supabase 1행 저장: 완료
-- Kakao Chatbot Admin Center 가입·bot·개발 채널 연결: 미확인
+- †Kakao Chatbot Admin Center 가입·bot·개발 채널 연결: 완료 — 폴백 블록에 `signal-to-growth-test` 스킬 연결 후 배포 (2026-08-06)
+- †Chatbot Admin Center 스킬 테스트 왕복: 완료 — `event_id=CSE-cdcb93c608f7abd2acb47920b267ae51`, `provider_event_id=46de3144fe6fc17b488cb882362ad6aa`, `auth_verified=true`로 `kakao_cs_events_test`에 저장, `kakao_cs_dead_letters_test` 0건 유지 확인 (2026-08-06)
 - Channel Talk paid Open API: 강의 실습에서 제외, 제품의 선택형 adapter로만 유지
 - Production 배포·실제 고객 대화·외부 발송: 미실행
 
-따라서 현재 상태는 `hosted synthetic E2E verified`다.
-`kakao chatbot test connected` 또는 `production-operational`은 아니다.
+따라서 현재 상태는 `kakao chatbot test connected`다 (2026-08-06 갱신).
+`production-operational`은 아니다 — 실제 고객 대화·외부 발송은 여전히 미실행이며, 아래 8절의 6번 항목(동일 발화 2회 중복 제거 실측)은 개발 채널 직접 입력으로 아직 확인 전이다.
 
 ## 1. 권장 경로
 
@@ -232,14 +234,15 @@ Bizppurio 실제 API를 선택하면 별도로 확인할 항목:
 
 계정 생성만으로 연동 완료라고 판단하지 않는다.
 
-1. 승인된 Kakao development channel과 bot 연결
-2. Chatbot Admin Center의 skill test 성공
-3. 개발 채널에서 synthetic 문의 1건
-4. `X-Request-Id`를 가진 request 수신
-5. canonical event 정규화와 fixed `version=2.0` 응답
-6. 같은 발화 2회가 서로 다른 request identity로 기록됨
-7. 일반 log에 사용자 identifier·발화 원문·secret이 없음
-8. ConsultTalk·AlimTalk·외부 Send API 호출 0건
+1. 승인된 Kakao development channel과 bot 연결 — ✅ 완료 (2026-08-06)
+2. Chatbot Admin Center의 skill test 성공 — ✅ 완료 (2026-08-06, `event_id=CSE-cdcb93c608f7abd2acb47920b267ae51`)
+3. 개발 채널에서 synthetic 문의 1건 — ✅ 완료 (skill test 기본 발화)
+4. `X-Request-Id`를 가진 request 수신 — ✅ 완료 (`provider_event_id=46de3144fe6fc17b488cb882362ad6aa`)
+5. canonical event 정규화와 fixed `version=2.0` 응답 — ✅ 완료 (`auth_verified=true` 저장, dead-letter 0건)
+6. 같은 발화 2회가 서로 다른 request identity로 기록됨 — ⏳ 미확인 — 개발 채널에서 동일 발화 2회 직접 전송 필요
+7. 일반 log에 사용자 identifier·발화 원문·secret이 없음 — ✅ 완료 (Vercel runtime log·Supabase 조회로 확인, secret 미노출)
+8. ConsultTalk·AlimTalk·외부 Send API 호출 0건 — ✅ 완료 (코드에 발송 경로 자체 없음)
 
-이 여덟 항목이 확인돼야 `kakao chatbot test connected`와 `inbound verified`
-상태를 기록한다. Channel Talk는 별도의 선택형 검증 상태로 관리한다.
+1·2·3·4·5·7·8은 2026-08-06 기준 확인됐다. `kakao chatbot test connected`는
+이 시점 기준으로 기록하되, `inbound verified`(8항목 전체)는 6번을 개발 채널에서
+직접 확인한 뒤에 기록한다. Channel Talk는 별도의 선택형 검증 상태로 관리한다.
