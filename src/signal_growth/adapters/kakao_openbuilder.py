@@ -143,6 +143,10 @@ class KakaoOpenBuilderAdapter(BaseChannelAdapter):
         request_id = _header_value(headers, "x-request-id")
         if not isinstance(request_id, str) or not request_id.strip():
             raise EventIdentityError("Kakao skill request requires X-Request-Id")
+        if len(request_id.strip()) > 256:
+            raise PayloadValidationError(
+                "X-Request-Id must not exceed 256 characters"
+            )
 
         payload = parse_json_body(raw_body)
         self._validate_payload(payload)
@@ -164,18 +168,28 @@ class KakaoOpenBuilderAdapter(BaseChannelAdapter):
         action = payload.get("action")
         if not isinstance(user_request, Mapping):
             raise PayloadValidationError("Kakao skill payload requires userRequest")
-        if not isinstance(bot, Mapping) or not isinstance(bot.get("id"), str):
+        bot_id = bot.get("id") if isinstance(bot, Mapping) else None
+        if not isinstance(bot_id, str) or not bot_id.strip():
             raise PayloadValidationError("Kakao skill payload requires bot.id")
-        if not isinstance(action, Mapping) or not isinstance(action.get("id"), str):
+        if len(bot_id.strip()) > 128:
+            raise PayloadValidationError("bot.id must not exceed 128 characters")
+        action_id = action.get("id") if isinstance(action, Mapping) else None
+        if not isinstance(action_id, str) or not action_id.strip():
             raise PayloadValidationError("Kakao skill payload requires action.id")
         user = user_request.get("user")
-        if not isinstance(user, Mapping) or not isinstance(user.get("id"), str):
+        user_id = user.get("id") if isinstance(user, Mapping) else None
+        if not isinstance(user_id, str) or not user_id.strip():
             raise PayloadValidationError(
                 "Kakao skill payload requires userRequest.user.id"
             )
-        if not isinstance(user_request.get("utterance"), str):
+        utterance = user_request.get("utterance")
+        if not isinstance(utterance, str):
             raise PayloadValidationError(
                 "Kakao skill payload requires userRequest.utterance"
+            )
+        if len(utterance) > 20000:
+            raise PayloadValidationError(
+                "userRequest.utterance must not exceed 20000 characters"
             )
 
     def normalize_event(

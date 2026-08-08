@@ -16,6 +16,7 @@ from signal_growth.adapters import (  # noqa: E402
 from signal_growth.channel_contracts import (  # noqa: E402
     EventIdentityError,
     EventVerificationError,
+    PayloadValidationError,
     RequestContext,
 )
 from signal_growth.connector_validation import (  # noqa: E402
@@ -205,6 +206,66 @@ class ConnectorSecurityTests(unittest.TestCase):
             any("external writes" in issue.message for issue in unsafe),
             [issue.render() for issue in unsafe],
         )
+
+    def _kakao_payload(self, **overrides):
+        payload = json.loads(KAKAO_FIXTURE.read_text(encoding="utf-8"))
+        for path, value in overrides.items():
+            target = payload
+            keys = path.split(".")
+            for key in keys[:-1]:
+                target = target[key]
+            target[keys[-1]] = value
+        return payload
+
+    def _ingest_kakao(self, payload):
+        adapter = KakaoOpenBuilderAdapter(
+            b"public-dummy-hmac",
+            expected_api_key="expected-fixture-key",
+        )
+        return adapter.ingest(
+            json.dumps(payload).encode("utf-8"),
+            headers={
+                "x-api-key": "expected-fixture-key",
+                "x-request-id": "request-public-dummy-001",
+            },
+            received_at="2026-07-26T03:00:00Z",
+            request_context=RequestContext(environment="test"),
+        )
+
+    def test_kakao_rejects_oversized_bot_id(self):
+        payload = self._kakao_payload(**{"bot.id": "b" * 129})
+
+        with self.assertRaises(PayloadValidationError):
+            self._ingest_kakao(payload)
+
+    def test_kakao_rejects_oversized_utterance(self):
+        payload = self._kakao_payload(**{"userRequest.utterance": "x" * 20001})
+
+        with self.assertRaises(PayloadValidationError):
+            self._ingest_kakao(payload)
+
+    def test_kakao_rejects_empty_user_id(self):
+        payload = self._kakao_payload(**{"userRequest.user.id": "  "})
+
+        with self.assertRaises(PayloadValidationError):
+            self._ingest_kakao(payload)
+
+    def test_kakao_rejects_oversized_request_id(self):
+        adapter = KakaoOpenBuilderAdapter(
+            b"public-dummy-hmac",
+            expected_api_key="expected-fixture-key",
+        )
+
+        with self.assertRaises(PayloadValidationError):
+            adapter.ingest(
+                KAKAO_FIXTURE.read_bytes(),
+                headers={
+                    "x-api-key": "expected-fixture-key",
+                    "x-request-id": "r" * 257,
+                },
+                received_at="2026-07-26T03:00:00Z",
+                request_context=RequestContext(environment="test"),
+            )
 
 
 if __name__ == "__main__":
