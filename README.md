@@ -8,6 +8,8 @@
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-126E5A)](https://agentskills.io/)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A5CF5)](https://code.claude.com/docs/en/plugins)
 [![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-plugin-111111)](https://github.com/openai/plugins)
+[![Skills](https://img.shields.io/badge/skills-13-orange)](#13개-스킬)
+[![Schemas](https://img.shields.io/badge/schemas-22-orange)](#artifact-contract)
 
 **성장 프롬프트 모음이 아닙니다.** 고객 인용문에서 결과까지의 참조 무결성과
 사람 승인 경계를 파일로 강제하는 작은 운영 체계입니다.
@@ -43,6 +45,13 @@ fixtures/public-dummy/artifacts를 학습 모드로 점검해줘. 파일은 바�
 남은 검증 범위는 [「프로젝트 상태」](#프로젝트-상태)에 그대로 적어 두었습니다.
 [변경 이력](CHANGELOG.md)에서 release 단위의 차이를 확인할 수 있습니다.
 
+**지금까지 실제로 확인된 것** (전체 목록과 근거는 [「프로젝트 상태」](#프로젝트-상태)):
+
+- 271개 unit/integration test와 `validate-repo`·`validate-artifacts`·`demo` 통과
+- Kakao Channel chatbot: Open Builder→Supabase 합성 E2E, 2026-08-06 실제 개발 채널 연결·skill test 왕복
+- append-only 해시 체인, scoped human approval, 발송·게시·배포·삭제·환불 기본 차단
+- **아직 안 된 것**: 30-case Claude Code·Codex 교차 런타임 평가, Production 승격, 실제 고객 인터뷰 승인(ICP 확정)
+
 ## 목차
 
 > 처음 보는 단어가 나오면 [**용어집**](docs/glossary.md)을 보세요.
@@ -57,6 +66,7 @@ fixtures/public-dummy/artifacts를 학습 모드로 점검해줘. 파일은 바�
 
 **무엇을 하는가**
 
+- [누구를 위한 것인가](#누구를-위한-것인가)
 - [13개 스킬](#13개-스킬) · [목표 → 스킬 → 산출물](#목표--스킬--산출물)
 - [실제 사용 예](#실제-사용-예) · [우리 저장소에 직접 적용해본 결과](#우리-저장소에-직접-적용해본-결과)
 - [안전과 승인 경계](#안전과-승인-경계)
@@ -189,6 +199,17 @@ signal-to-growth validate-artifacts \
   fixtures/public-dummy/artifacts \
   --require-complete
 ```
+
+## 누구를 위한 것인가
+
+| 상황 | 적합도 |
+|---|---|
+| 고객 인터뷰·CS 신호가 쌓이는데 인용문 원문과 결론이 따로 논다 | 잘 맞음 |
+| "이 결정을 왜 내렸는지" 나중에 설명해야 한다(투자자·사내 승인·강의 제출) | 잘 맞음 |
+| Kakao·Naver 등 한국형 CS 채널을 자동으로 정규화하고 싶다 | 잘 맞음 |
+| 그냥 빠르게 성장 아이디어 프롬프트만 필요하다 | **과잉일 수 있음** — 이 저장소는 근거·승인·schema 검증을 강제해 그만큼 느립니다 |
+| 아직 고객 인터뷰가 0건이고 evidence로 연결할 신호 자체가 없다 | **과잉일 수 있음** — `synthesize-interviews`부터 시작할 원재료가 없으면 이 체계가 요구하는 절차가 오버헤드만 됩니다 |
+| 목적이 발송·게시 자동화다 | **안 맞음** — 이 release는 모든 외부 실행을 기본 차단합니다([「안전과 승인 경계」](#안전과-승인-경계)) |
 
 ## 13개 스킬
 
@@ -404,16 +425,16 @@ Connector JSON Schema:
 
 Signal to Growth는 이 연결을 하나의 artifact lineage로 관리합니다.
 
-```text
-quote
-  → evidence
-  → channel event (when a connector is configured)
-  → signal / theme
-  → decision
-  → action
-  → metric
-  → outcome
-  → learning
+```mermaid
+flowchart LR
+    A(quote) --> B(evidence)
+    B --> C["channel event<br/>(connector 설정 시)"]
+    C --> D("signal / theme")
+    D --> E(decision)
+    E --> F(action)
+    F --> G(metric)
+    G --> H(outcome)
+    H --> I(learning)
 ```
 
 이 저장소는 “성장 prompt를 많이 제공하는 catalog”가 아닙니다. 증거 계보, 승인 상태, 설정 가능한 지표 정책, 실패 시 중단 조건을 제공하는 작은 운영 체계입니다.
