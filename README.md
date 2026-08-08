@@ -12,7 +12,7 @@
 **성장 프롬프트 모음이 아닙니다.** 고객 인용문에서 결과까지의 참조 무결성과
 사람 승인 경계를 파일로 강제하는 작은 운영 체계입니다.
 
-**그럼 무엇인가.** 11개 스킬이 주고받는 산출물을 20개 JSON Schema로 고정한
+**그럼 무엇인가.** 13개 스킬이 주고받는 산출물을 22개 JSON Schema로 고정한
 운영 체계입니다. 인용문에는 원문 파일·줄 위치를, 지표에는 baseline과
 counter-metric을 필수 필드로 요구하고, 원장은 고쳐 쓰면 드러나는 해시 체인으로
 잇습니다. 발송·게시·배포·삭제·환불은 `policies/default-policy.json`이 기본으로
@@ -20,10 +20,10 @@ counter-metric을 필수 필드로 요구하고, 원장은 고쳐 쓰면 드러�
 고객 인터뷰·CS·행동 지표에서 얻은 신호가 입력이고, 사람이 승인한 성장 결정과
 콘텐츠·첫 사용자 루프·측정이 출력입니다.
 
-- 하나의 `skills/` 소스에 **11개 스킬**이 있고, Claude Code와 OpenAI Codex가
+- 하나의 `skills/` 소스에 **13개 스킬**이 있고, Claude Code와 OpenAI Codex가
   각자의 manifest로 같은 소스를 참조합니다. 다만 런타임이 제공하는 강제 수준은
   아직 동일하지 않습니다[^runtime-parity].
-- 산출물은 대화 기억이 아니라 **20개 JSON Schema 계약**(`contracts/`)으로
+- 산출물은 대화 기억이 아니라 **22개 JSON Schema 계약**(`contracts/`)으로
   다음 단계에 연결됩니다.
 - 발송·게시·배포·환불·삭제는 기본 정책에서 꺼져 있습니다
   (`policies/default-policy.json`의 `external_write_default: false`).
@@ -57,7 +57,7 @@ fixtures/public-dummy/artifacts를 학습 모드로 점검해줘. 파일은 바�
 
 **무엇을 하는가**
 
-- [11개 스킬](#11개-스킬) · [목표 → 스킬 → 산출물](#목표--스킬--산출물)
+- [13개 스킬](#13개-스킬) · [목표 → 스킬 → 산출물](#목표--스킬--산출물)
 - [실제 사용 예](#실제-사용-예) · [우리 저장소에 직접 적용해본 결과](#우리-저장소에-직접-적용해본-결과)
 - [안전과 승인 경계](#안전과-승인-경계)
 - [Artifact contract](#artifact-contract)
@@ -190,7 +190,7 @@ signal-to-growth validate-artifacts \
   --require-complete
 ```
 
-## 11개 스킬
+## 13개 스킬
 
 | 순서 | 스킬 | 하는 일 | 핵심 산출물 |
 |---:|---|---|---|
@@ -203,8 +203,15 @@ signal-to-growth validate-artifacts \
 | 7 | `record-growth-decision` | 근거·대안·중단 조건·결과의 append-only 기록 | `decisions.jsonl` |
 | 8 | `audit-answer-visibility` | SEO·GEO·AEO 표면의 날짜가 있는 관찰 감사 | `visibility-observations.jsonl` |
 | 9 | `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
-| 10 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
-| 11 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
+| 10 | `osmu-fanout` | 승인된 content brief·claim ledger를 claim ID 추적 가능한 이미지 프롬프트·영상 스크립트로 재사용 | `visual-prompts.md`, `video-script.md` |
+| 11 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
+| 12 | `announce-release-to-customers` | 결정론적 변경 목록을 커밋·근거에 연결된 고객 언어 릴리스 노트로 번역 | `release-notes.jsonl` |
+| 13 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
+
+`osmu-fanout`과 `announce-release-to-customers`는 2026-08-05에 추가됐고
+`src/signal_growth/repo_validation.py`의 `EXPECTED_SKILLS`와
+`src/signal_growth/workflow.py`의 routing에 반영돼 있습니다. 강의 커리큘럼
+매핑(아래 「강의 커리큘럼 × 스킬 × 산출물」)에는 아직 배치되지 않았습니다.
 
 각 스킬은 독립적으로 사용할 수 있습니다. connector를 설정하지 않으면 기존 manual signal flow를 그대로 사용합니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
 
@@ -441,7 +448,7 @@ CLI는 AI 판단을 대신하지 않습니다. schema, reference, privacy patter
 | 형식 | 조건 | 주로 쓰는 곳 |
 |---|---|---|
 | `signal-to-growth <명령>` | `pip install -e .`로 패키지를 설치했고 venv가 활성화된 상태 | 이 README의 예시, 일상적인 로컬 사용 |
-| `python3 scripts/stg.py <명령>` | 설치 없이 저장소 checkout만 있는 상태 | 11개 `SKILL.md`의 검증 지시, CI, `CLAUDE.md`의 검증 절차 |
+| `python3 scripts/stg.py <명령>` | 설치 없이 저장소 checkout만 있는 상태 | 13개 `SKILL.md`의 검증 지시, CI, `CLAUDE.md`의 검증 절차 |
 
 `scripts/stg.py`는 `src/`를 `sys.path`에 넣고 같은 `main()`을 호출하는 얇은 wrapper입니다. `SKILL.md`가 wrapper 형식을 쓰는 이유는, skill을 읽는 학습자·에이전트가 패키지를 설치했는지 보장할 수 없기 때문입니다. 설치를 마쳤다면 `signal-to-growth`가 짧고, 설치 전이거나 다른 사람의 환경을 재현하는 중이라면 `python3 scripts/stg.py`가 항상 동작합니다.
 
@@ -453,7 +460,7 @@ signal-to-growth validate-repo .
 
 검사 범위:
 
-- 11개 스킬 존재 여부
+- 13개 스킬 존재 여부
 - portable frontmatter
 - skill 이름과 폴더 일치
 - `agents/openai.yaml`
@@ -529,7 +536,7 @@ gate 통과나 구현 가능성을 대신 판정하지 않습니다. 계약과 �
 
 | 표면 | 현재 구현 | 아직 검증하지 않은 것 |
 |---|---|---|
-| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel Preview→Supabase 합성 E2E, live [idempotency](docs/glossary.md#idempotency-멱등성), `version=2.0` 응답 | Chatbot Admin Center 개발 채널 왕복, 실제 반복 발화에서 서로 다른 `X-Request-Id`가 생성되는지, Production |
+| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel Preview→Supabase 합성 E2E, live [idempotency](docs/glossary.md#idempotency-멱등성), `version=2.0` 응답, Chatbot Admin Center 개발 채널 연결과 skill test 왕복(2026-08-06) | 동일 발화를 개발 채널에서 2회 보냈을 때 서로 다른 `X-Request-Id`가 생성되는지, Production |
 | Naver TalkTalk | public dummy event 정규화·마스킹·중복 제거 | 실제 test account webhook, backfill, 발송 |
 | Channel Talk | webhook 정규화와 injected read-only backfill·대사 | 실제 credential·HTTPS endpoint 왕복 |
 | Kakao 상담톡 via Channel Talk | product boundary와 계정 설정 절차 | 실제 채널 이관·상담 event |
@@ -588,8 +595,12 @@ SUPABASE_KAKAO_EVENTS_TABLE
 Preview에서 실제로 검증했습니다. `health=200/configured`, 잘못된
 `x-api-key=401`, 정상 합성 요청 두 회 모두 `200/version=2.0`, 같은
 `X-Request-Id`의 저장 행은 한 건이었습니다. 6단계인 Kakao 개발 채널
-왕복은 아직 별도 검증 대상입니다. 실행 증거와 남은 경계는
-[Verification](docs/verification.md)에 기록합니다.
+연결과 skill test 왕복은 2026-08-06에 실제 개발 채널에서 검증했습니다
+(`event_id=CSE-cdcb93c608f7abd2acb47920b267ae51`, `auth_verified=true`,
+dead-letter 0건 유지). 동일 발화를 그 채널에서 2회 보냈을 때 서로 다른
+`X-Request-Id`가 생성되는지는 아직 별도 검증 대상입니다. 실행 증거와 남은
+경계는 [Verification](docs/verification.md)과
+[Provider setup checklist](docs/provider-setup-checklist.md)에 기록합니다.
 
 이 table은 [RLS](docs/glossary.md#rls-row-level-security-행-수준-보안)를 활성화하고 `anon`·`authenticated` 권한을 제거하며,
 두 browser role에 명시적인 deny policy도 적용합니다.
@@ -774,9 +785,9 @@ parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인�
 
 포함:
 
-- 11개 portable skill
+- 13개 portable skill
 - Claude Code·Codex plugin manifest
-- `contracts/`의 20개 JSON Schema 계약 — core artifact, scoped approval,
+- `contracts/`의 22개 JSON Schema 계약 — core artifact, scoped approval,
   first-user-loop, connector, claim ledger, visibility observation, gate decision
 - 전체 Draft 2020-12 schema와 exact evidence locator를 검증하는 CLI
 - 합성 한국어 fixture
@@ -793,14 +804,14 @@ parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인�
 
 아직 포함하지 않음:
 
-- 실제 Kakao development channel과 배포 endpoint의 왕복 검증
+- 동일 발화를 Kakao 개발 채널에서 2회 보냈을 때 서로 다른 `X-Request-Id`가 생성되는지의 직접 검증
 - Happytalk·카카오 공식 딜러의 live adapter
 - 자동 발송·게시
 - 익명 telemetry
 - 보편적인 SaaS benchmark
 - 30-case Claude Code·Codex runtime 재평가와 실제 invocation parity
 
-한국형 CS connector의 설계 근거와 단계별 검증 계획은 [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 기록합니다. 현재 P0 source·fixture와 격리된 hosted synthetic E2E는 검증됐지만, Kakao Chatbot Admin Center 개발 채널 연결이나 Production 운영 상태를 뜻하지 않습니다.
+한국형 CS connector의 설계 근거와 단계별 검증 계획은 [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 기록합니다. 현재 P0 source·fixture, 격리된 hosted synthetic E2E, 2026-08-06 Kakao Chatbot Admin Center 개발 채널 연결·skill test 왕복은 검증됐지만, Production 운영 상태를 뜻하지 않습니다.
 
 Channel Talk·Kakao 상담톡·Naver TalkTalk test account를 준비할 때는 [Provider setup checklist](docs/provider-setup-checklist.md)를 따르세요. API secret, 고객 원문, 전화번호는 repository나 AI 대화에 입력하지 마세요.
 
