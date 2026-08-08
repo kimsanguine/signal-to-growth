@@ -1,6 +1,6 @@
 ---
 name: connect-customer-channels
-description: "Diagnose, verify, normalize, reconcile, and prepare draft-only replies for customer-channel integrations, especially Korean CS channels. Use when working with a Kakao Channel chatbot through Kakao i Open Builder, Naver TalkTalk, Channel Talk, Happytalk, Kakao Channel 1:1 chat, Kakao ConsultTalk or AlimTalk through an approved provider; validating skill requests, webhooks, backfills, delivery states, or connector health; creating channel connection, CS event, delivery, reply-draft, or connector-state artifacts; or handing normalized events to triage-customer-signals. Default to dry-run, read-only, and draft-only. Do not use for classifying signal themes, recruiting research participants, or sending any live message."
+description: "Create, diagnose, verify, normalize, reconcile, and prepare draft-only replies for customer-channel integrations, especially Korean CS channels. Use when setting up or creating a Kakao Channel chatbot through Kakao i Open Builder (channel, bot, blocks, skill server registration) before it exists; working with an existing Kakao Channel chatbot, Naver TalkTalk, Channel Talk, Happytalk, Kakao Channel 1:1 chat, Kakao ConsultTalk or AlimTalk through an approved provider; validating skill requests, webhooks, backfills, delivery states, or connector health; creating channel connection, CS event, delivery, reply-draft, or connector-state artifacts; or handing normalized events to triage-customer-signals. Default to dry-run, read-only, and draft-only. Do not use for classifying signal themes, recruiting research participants, or sending any live message."
 ---
 
 # Connect Customer Channels
@@ -25,6 +25,7 @@ Do not request or persist a raw credential. Accept only a secret reference from 
 
 Read:
 
+- [references/kakao-chatbot-setup.md](references/kakao-chatbot-setup.md) before creating a Kakao Channel chatbot that does not exist yet;
 - [references/providers-kr.md](references/providers-kr.md) before selecting or mapping a Korean provider;
 - [references/output-contract.md](references/output-contract.md) before creating artifacts;
 - [references/approval-boundaries.md](references/approval-boundaries.md) before using a real account or preparing an outbound operation;
@@ -33,25 +34,28 @@ Read:
 ## Workflow
 
 1. Set `dry-run`, `read-only`, and `draft-only` as the initial operating modes.
-2. Identify the provider, business product, transport surface, environment, and contract version.
-3. Separate confirmed capabilities from unsupported and unconfirmed capabilities.
-4. Select an approved connection reference. Otherwise, use a public dummy fixture and make no network call.
-5. Verify the raw request before parsing provider-controlled JSON when the provider contract supports verification.
-6. Reject stale, replayed, malformed, unauthorized, or unverifiable production input.
-7. Persist a restricted inbox pointer and stable provider identity before acknowledging valid webhook input.
-8. Normalize the verified input into a provider-neutral CS event without erasing provider-specific status.
-9. Redact content, HMAC-reference customer identity per tenant, and retain only allowed attachment metadata.
-10. Derive the idempotency key and event ID from stable provider fields. Never invent identity from model text.
-11. Record duplicate, unsupported, and dead-letter outcomes explicitly.
-12. Backfill or poll only when the confirmed provider capability and approved connection allow it.
-13. Reconcile webhook and API records without creating a second canonical event.
-14. Preserve each delivery attempt and project its current state without equating acceptance with delivery.
-15. Create a reply draft only when the product, session, risk, purpose, and approval requirements can be evaluated.
-16. Keep `external_write=false` and do not call a send, reply, handover, assignment, tag, template, or fallback endpoint.
-17. Hand only verified and redacted CS events to `triage-customer-signals`.
-18. When PMF Radar is the operational inbox, accept only its
+2. When the channel, bot, or skill server does not exist yet, follow
+   `references/kakao-chatbot-setup.md` to create it, then continue below —
+   creating it is not the same as verifying it.
+3. Identify the provider, business product, transport surface, environment, and contract version.
+4. Separate confirmed capabilities from unsupported and unconfirmed capabilities.
+5. Select an approved connection reference. Otherwise, use a public dummy fixture and make no network call.
+6. Verify the raw request before parsing provider-controlled JSON when the provider contract supports verification.
+7. Reject stale, replayed, malformed, unauthorized, or unverifiable production input.
+8. Persist a restricted inbox pointer and stable provider identity before acknowledging valid webhook input.
+9. Normalize the verified input into a provider-neutral CS event without erasing provider-specific status.
+10. Redact content, HMAC-reference customer identity per tenant, and retain only allowed attachment metadata.
+11. Derive the idempotency key and event ID from stable provider fields. Never invent identity from model text.
+12. Record duplicate, unsupported, and dead-letter outcomes explicitly.
+13. Backfill or poll only when the confirmed provider capability and approved connection allow it.
+14. Reconcile webhook and API records without creating a second canonical event.
+15. Preserve each delivery attempt and project its current state without equating acceptance with delivery.
+16. Create a reply draft only when the product, session, risk, purpose, and approval requirements can be evaluated.
+17. Keep `external_write=false` and do not call a send, reply, handover, assignment, tag, template, or fallback endpoint.
+18. Hand only verified and redacted CS events to `triage-customer-signals`.
+19. When PMF Radar is the operational inbox, accept only its
     `pmf-radar.stg.v1` export and validate it with `import-pmf-radar`.
-19. Report artifact validation, round-trip evidence, blocked capabilities, and unverified operational claims separately.
+20. Report artifact validation, round-trip evidence, blocked capabilities, and unverified operational claims separately.
 
 ## Kakao product boundary
 

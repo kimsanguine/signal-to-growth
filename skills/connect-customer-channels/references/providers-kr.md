@@ -26,8 +26,18 @@ Use `supported`, `unsupported`, or `unconfirmed`. Mark every missing public cont
 - Require `X-Request-Id` for event identity and a configured `x-api-key` header for the test endpoint.
 - Record the shared static header as weak assurance because it is not a payload-bound signature.
 - Return the official `version=2.0` skill response within five seconds.
+- Compute `event_id = hash(request_id, bot.id, action.id)` — never include the
+  customer utterance in that hash. A resend with the same `X-Request-Id`,
+  `bot.id`, and `action.id` must produce the same `event_id` even if wording
+  differs on retry; conversely, byte-identical wording under a new
+  `X-Request-Id` must produce a new `event_id`. Reproduce both directions with
+  `python3 scripts/stg.py normalize-event --provider kakao-openbuilder` against
+  `fixtures/public-dummy/providers/kakao-openbuilder/scenario-notes.md` before
+  claiming idempotency works.
 - Do not call this ConsultTalk, native Channel 1:1 counselor chat, or an outbound Send API.
 - Mark history backfill, counselor assignment, delivery receipt, and read receipt unsupported for this adapter.
+- The channel and bot must exist and be connected before any of the above
+  applies — see `references/kakao-chatbot-setup.md` when they do not yet.
 
 Official sources checked on 2026-07-26:
 
