@@ -16,6 +16,11 @@ versioning once a version is tagged.
 - A `reason` field on `next-step` output explaining in plain language why a
   given skill is next.
 - A portable `connect-customer-channels` skill shared by Claude Code and Codex.
+- An `optimize-search-visibility` skill for website SEO ranking and AI-answer
+  (GEO/AEO) citation visibility — keyword/SERP/backlink research, passage
+  citability scoring, AI crawler access checks, llms.txt generation,
+  brand-mention authority, and schema markup. Ported from two licensed
+  open-source skills; see `skills/optimize-search-visibility/NOTICE.md`.
 - Korean CS connector contracts, public dummy fixtures, and deterministic
   validation for Kakao Open Builder, Naver TalkTalk, and Channel Talk.
 - A fail-closed Kakao Open Builder test endpoint backed by a restricted Supabase

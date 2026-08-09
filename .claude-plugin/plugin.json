@@ -14,7 +14,9 @@
     "product-growth",
     "saas",
     "evidence",
-    "agent-skills"
+    "agent-skills",
+    "seo",
+    "geo"
   ],
   "skills": "./skills/"
 }

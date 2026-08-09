@@ -188,6 +188,11 @@ OBJECTIVE_ROUTES = (
 # artifacts are governed by the connector contract, not by a routed output
 # contract. Its completion therefore reads from the connector state, and these
 # are the reasons a caller sees for each state that is not yet `valid`.
+#
+# `optimize-search-visibility` is absent for the same reason it is not part of
+# the growth loop at all: its reports describe an external website, not this
+# repository's own evidence-to-growth artifacts, so there is nothing for the
+# router to route to next.
 _CONNECTOR_INCOMPLETE_REASONS = {
     "not-configured": (
         f"{CONNECTOR_SKILL} has not run yet: the connector is not-configured, so "

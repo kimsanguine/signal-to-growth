@@ -8,13 +8,13 @@
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-open%20standard-126E5A)](https://agentskills.io/)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A5CF5)](https://code.claude.com/docs/en/plugins)
 [![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-plugin-111111)](https://github.com/openai/plugins)
-[![Skills](https://img.shields.io/badge/skills-13-orange)](#13개-스킬)
+[![Skills](https://img.shields.io/badge/skills-14-orange)](#14개-스킬)
 [![Schemas](https://img.shields.io/badge/schemas-22-orange)](#artifact-contract)
 
 **성장 프롬프트 모음이 아닙니다.** 고객 인용문에서 결과까지의 참조 무결성과
 사람 승인 경계를 파일로 강제하는 작은 운영 체계입니다.
 
-**그럼 무엇인가.** 13개 스킬이 주고받는 산출물을 22개 JSON Schema로 고정한
+**그럼 무엇인가.** 14개 스킬이 주고받는 산출물을 22개 JSON Schema로 고정한
 운영 체계입니다. 인용문에는 원문 파일·줄 위치를, 지표에는 baseline과
 counter-metric을 필수 필드로 요구하고, 원장은 고쳐 쓰면 드러나는 해시 체인으로
 잇습니다. 발송·게시·배포·삭제·환불은 `policies/default-policy.json`이 기본으로
@@ -22,7 +22,7 @@ counter-metric을 필수 필드로 요구하고, 원장은 고쳐 쓰면 드러�
 고객 인터뷰·CS·행동 지표에서 얻은 신호가 입력이고, 사람이 승인한 성장 결정과
 콘텐츠·첫 사용자 루프·측정이 출력입니다.
 
-- 하나의 `skills/` 소스에 **13개 스킬**이 있고, Claude Code와 OpenAI Codex가
+- 하나의 `skills/` 소스에 **14개 스킬**이 있고, Claude Code와 OpenAI Codex가
   각자의 manifest로 같은 소스를 참조합니다. 다만 런타임이 제공하는 강제 수준은
   아직 동일하지 않습니다[^runtime-parity].
 - 산출물은 대화 기억이 아니라 **22개 JSON Schema 계약**(`contracts/`)으로
@@ -67,7 +67,7 @@ fixtures/public-dummy/artifacts를 학습 모드로 점검해줘. 파일은 바�
 **무엇을 하는가**
 
 - [누구를 위한 것인가](#누구를-위한-것인가)
-- [13개 스킬](#13개-스킬) · [목표 → 스킬 → 산출물](#목표--스킬--산출물)
+- [14개 스킬](#14개-스킬) · [목표 → 스킬 → 산출물](#목표--스킬--산출물)
 - [실제 사용 예](#실제-사용-예) · [우리 저장소에 직접 적용해본 결과](#우리-저장소에-직접-적용해본-결과)
 - [안전과 승인 경계](#안전과-승인-경계)
 - [Artifact contract](#artifact-contract)
@@ -211,7 +211,7 @@ signal-to-growth validate-artifacts \
 | 아직 고객 인터뷰가 0건이고 evidence로 연결할 신호 자체가 없다 | **과잉일 수 있음** — `synthesize-interviews`부터 시작할 원재료가 없으면 이 체계가 요구하는 절차가 오버헤드만 됩니다 |
 | 목적이 발송·게시 자동화다 | **안 맞음** — 이 release는 모든 외부 실행을 기본 차단합니다([「안전과 승인 경계」](#안전과-승인-경계)) |
 
-## 13개 스킬
+## 14개 스킬
 
 | 순서 | 스킬 | 하는 일 | 핵심 산출물 |
 |---:|---|---|---|
@@ -228,6 +228,7 @@ signal-to-growth validate-artifacts \
 | 11 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
 | 12 | `announce-release-to-customers` | 결정론적 변경 목록을 커밋·근거에 연결된 고객 언어 릴리스 노트로 번역 | `release-notes.jsonl` |
 | 13 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
+| 14 | `optimize-search-visibility` | 웹사이트 SEO 랭킹·AI 답변엔진(GEO/AEO) 인용 가시성 감사·개선 | `geo-audit-report.md`, `llms.txt` |
 
 `osmu-fanout`과 `announce-release-to-customers`는 2026-08-05에 추가됐고
 `src/signal_growth/repo_validation.py`의 `EXPECTED_SKILLS`와
@@ -469,7 +470,7 @@ CLI는 AI 판단을 대신하지 않습니다. schema, reference, privacy patter
 | 형식 | 조건 | 주로 쓰는 곳 |
 |---|---|---|
 | `signal-to-growth <명령>` | `pip install -e .`로 패키지를 설치했고 venv가 활성화된 상태 | 이 README의 예시, 일상적인 로컬 사용 |
-| `python3 scripts/stg.py <명령>` | 설치 없이 저장소 checkout만 있는 상태 | 13개 `SKILL.md`의 검증 지시, CI, `CLAUDE.md`의 검증 절차 |
+| `python3 scripts/stg.py <명령>` | 설치 없이 저장소 checkout만 있는 상태 | 14개 `SKILL.md`의 검증 지시, CI, `CLAUDE.md`의 검증 절차 |
 
 `scripts/stg.py`는 `src/`를 `sys.path`에 넣고 같은 `main()`을 호출하는 얇은 wrapper입니다. `SKILL.md`가 wrapper 형식을 쓰는 이유는, skill을 읽는 학습자·에이전트가 패키지를 설치했는지 보장할 수 없기 때문입니다. 설치를 마쳤다면 `signal-to-growth`가 짧고, 설치 전이거나 다른 사람의 환경을 재현하는 중이라면 `python3 scripts/stg.py`가 항상 동작합니다.
 
@@ -481,7 +482,7 @@ signal-to-growth validate-repo .
 
 검사 범위:
 
-- 13개 스킬 존재 여부
+- 14개 스킬 존재 여부
 - portable frontmatter
 - skill 이름과 폴더 일치
 - `agents/openai.yaml`
@@ -806,7 +807,7 @@ parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인�
 
 포함:
 
-- 13개 portable skill
+- 14개 portable skill
 - Claude Code·Codex plugin manifest
 - `contracts/`의 22개 JSON Schema 계약 — core artifact, scoped approval,
   first-user-loop, connector, claim ledger, visibility observation, gate decision
@@ -850,7 +851,7 @@ Channel Talk·Kakao 상담톡·Naver TalkTalk test account를 준비할 때는 [
 - [OpenAI Plugins](https://github.com/openai/plugins)
 - [Microsoft Agent Skills](https://github.com/MicrosoftDocs/Agent-Skills)
 
-도메인·평가 참고 자료는 [Competitive landscape](docs/competitive-landscape.md)에 license와 함께 기록합니다. 이 저장소의 구현과 문서는 별도로 작성되었으며 타 저장소의 고유 scoring 공식을 포함하지 않습니다.
+도메인·평가 참고 자료는 [Competitive landscape](docs/competitive-landscape.md)에 license와 함께 기록합니다. 이 저장소의 구현과 문서는 별도로 작성되었으며 타 저장소의 고유 scoring 공식을 포함하지 않습니다 — 단, `skills/optimize-search-visibility`는 예외로, 두 개의 라이선스가 명시된 오픈소스 스킬을 포팅한 것입니다(출처·라이선스 전문: [`NOTICE.md`](skills/optimize-search-visibility/NOTICE.md)).
 
 ## License
 

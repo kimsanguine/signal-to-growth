@@ -151,9 +151,11 @@ class RoutedSkillCoverageTests(unittest.TestCase):
     someone has to change on purpose.
     """
 
-    # Both skills emit a different artifact set per requested operation or mode,
-    # so no fixed completion list can describe them.
-    EXEMPT = {"connect-customer-channels", "run-growth-loop"}
+    # All three skills emit a different artifact set per requested operation or
+    # mode, so no fixed completion list can describe them. optimize-search-
+    # visibility's reports also describe an external website rather than this
+    # repository's own growth-loop state, so there is nothing to route to next.
+    EXEMPT = {"connect-customer-channels", "run-growth-loop", "optimize-search-visibility"}
 
     def test_every_skill_is_routed_unless_deliberately_exempt(self) -> None:
         self.assertEqual(

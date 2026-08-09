@@ -29,6 +29,7 @@ EXPECTED_SKILLS = {
     "design-first-user-loop",
     "announce-release-to-customers",
     "run-growth-loop",
+    "optimize-search-visibility",
 }
 
 GATE_DECISION_LOG = Path("harness") / "decisions.jsonl"

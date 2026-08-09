@@ -1,0 +1,4 @@
+interface:
+  display_name: "Optimize Search Visibility"
+  short_description: "Audit and improve SEO + AI-answer (GEO) visibility"
+  default_prompt: "Use $optimize-search-visibility to audit this site's search and AI-answer visibility."
