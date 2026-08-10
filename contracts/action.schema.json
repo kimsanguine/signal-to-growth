@@ -21,7 +21,7 @@
       "pattern": "^ACT-[0-9]{8}-[0-9]{3,}$"
     },
     "decision_id": {
-      "type": "string",
+      "type": ["string", "null"],
       "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
     },
     "created_at": {"type": "string", "format": "date-time"},
@@ -38,7 +38,6 @@
         "type": "string",
         "pattern": "^MET-[0-9]{8}-[0-9]{3,}$"
       },
-      "minItems": 1,
       "uniqueItems": true
     },
     "external_write": {"type": "boolean"},
@@ -74,6 +73,23 @@
             "type": "string",
             "pattern": "^APR-[A-Za-z0-9][A-Za-z0-9._-]{2,127}$"
           }
+        }
+      }
+    },
+    {
+      "$comment": "decision_id may start null when the growth decision is recorded after the experiment is drafted, but it must be a real DEC- reference by the time the action is approved or executed — deferred, not skipped.",
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["approved", "executed"]
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "decision_id": {"type": "string"},
+          "metric_ids": {"minItems": 1}
         }
       }
     }

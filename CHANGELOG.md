@@ -3,6 +3,28 @@
 This file records user-visible changes. Signal to Growth follows semantic
 versioning once a version is tagged.
 
+## 0.4.2
+
+### Changed
+
+- `design-first-user-loop` no longer requires a pre-existing evidence ID,
+  metric ID, or decision ID to draft a first-five experiment. The first batch
+  is often how a founder gets the first evidence at all — blocking on evidence
+  that does not yet exist had the sequence backwards.
+  `first-user-loop.json` now carries `evidence_basis` (`prior_evidence` or
+  `first_experiment`, required) and `proposed_metrics` (inline candidate
+  metrics with a stated rationale, required alongside `metric_ids` — at least
+  one of the two must be non-empty). `decision_id` may be `null` while the
+  draft waits for `record-growth-decision` to run, which can now follow the
+  experiment instead of preceding it.
+- `actions.jsonl` records may likewise start with `decision_id: null` and
+  empty `metric_ids` while drafting. Both must resolve to real values before
+  an action's `status` reaches `approved` or `executed` — deferred, not
+  skipped.
+- Capacity limits, the five-person batch cap, and human approval before any
+  external write are unchanged — those were never the source of the friction
+  this release removes.
+
 ## 0.4.1
 
 ### Changed

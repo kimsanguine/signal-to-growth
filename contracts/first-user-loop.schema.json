@@ -6,6 +6,7 @@
   "additionalProperties": false,
   "required": [
     "segment",
+    "evidence_basis",
     "evidence_ids",
     "channel",
     "offer",
@@ -17,17 +18,20 @@
     "stop_condition",
     "external_write",
     "metric_ids",
+    "proposed_metrics",
     "decision_id"
   ],
   "properties": {
     "segment": {"type": "string", "minLength": 1},
+    "evidence_basis": {
+      "enum": ["prior_evidence", "first_experiment"]
+    },
     "evidence_ids": {
       "type": "array",
       "items": {
         "type": "string",
         "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
       },
-      "minItems": 1,
       "uniqueItems": true
     },
     "channel": {"type": "string", "minLength": 1},
@@ -53,11 +57,23 @@
         "type": "string",
         "pattern": "^MET-[0-9]{8}-[0-9]{3,}$"
       },
-      "minItems": 1,
       "uniqueItems": true
     },
+    "proposed_metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "why_this_metric", "how_to_measure"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "why_this_metric": {"type": "string", "minLength": 1},
+          "how_to_measure": {"type": "string", "minLength": 1}
+        }
+      }
+    },
     "decision_id": {
-      "type": "string",
+      "type": ["string", "null"],
       "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
     },
     "loop_mode": {
@@ -124,6 +140,23 @@
         "properties": {"loop_mode": {"const": "introduction_enabled"}},
         "required": ["loop_mode"]
       }
+    },
+    {
+      "$comment": "prior_evidence claims an existing record; first_experiment is the honest label when this batch is how evidence gets created, so evidence_ids may stay empty.",
+      "if": {
+        "properties": {"evidence_basis": {"const": "prior_evidence"}},
+        "required": ["evidence_basis"]
+      },
+      "then": {
+        "properties": {"evidence_ids": {"minItems": 1}}
+      }
+    },
+    {
+      "$comment": "A real metric_id or a self-proposed candidate must exist — this experiment is not exempt from stating what would count as a good result, only from requiring that result to already be a validated contract.",
+      "anyOf": [
+        {"properties": {"metric_ids": {"minItems": 1}}},
+        {"properties": {"proposed_metrics": {"minItems": 1}}}
+      ]
     }
   ]
 }

@@ -350,9 +350,15 @@ counter-metric을 포함하고 baseline은 모르면 null로 남겨줘.
 ```text
 $design-first-user-loop
 
-승인된 evidence와 metric을 바탕으로 5팀 규모의 첫 사용자 실험을 설계해줘.
+5팀 규모의 첫 사용자 실험을 설계해줘. evidence·metric이 이미 있으면 참조하고,
+없으면 이 실험 자체가 첫 근거가 되는 것으로 보고 후보 지표를 제안해줘.
 메시지는 초안까지만 만들고 실제 발송은 하지 마.
 ```
+
+evidence·metric·decision 중 무엇이 이미 있고 무엇이 없어도 이 스킬 자체는 막히지
+않습니다 — 없으면 `evidence_basis: first_experiment`로 정직하게 표시하고
+`proposed_metrics`로 후보 지표를 제안합니다. 다만 실제 발송·보상 같은 외부
+행동은 여전히 사람 승인 전까지 열리지 않습니다.
 
 ### 우리 저장소에 직접 적용해본 결과
 

@@ -1,5 +1,6 @@
 {
   "segment": "고객 증거를 수동으로 정리하는 초기 SaaS 팀",
+  "evidence_basis": "prior_evidence",
   "evidence_ids": [
     "EV-20260725-001",
     "EV-20260725-002"
@@ -20,6 +21,7 @@
     "MET-20260725-001",
     "MET-20260725-002"
   ],
+  "proposed_metrics": [],
   "decision_id": "DEC-20260725-001",
   "loop_mode": "direct_seeding"
 }

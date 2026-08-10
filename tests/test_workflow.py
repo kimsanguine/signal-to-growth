@@ -322,6 +322,93 @@ class FirstUserIntroductionContractTests(unittest.TestCase):
                 next_skill(path, objective="activation 지표 계약을 설계한다"),
             )
 
+    def test_first_experiment_needs_no_prior_evidence_metric_or_decision(self) -> None:
+        """The first batch is often how a founder gets evidence, not a consumer of it."""
+        payload = {
+            "segment": "동네 카페 사장님 5곳",
+            "evidence_basis": "first_experiment",
+            "evidence_ids": [],
+            "channel": "오프라인 방문 아웃리치",
+            "offer": "1주일 무료 체험",
+            "value_moment": "체험 종료 후 첫 결제",
+            "capacity": 5,
+            "budget": {"currency": "KRW", "amount": 0},
+            "batch_size": 5,
+            "review_at": "2026-09-01T00:00:00+09:00",
+            "stop_condition": "5명 응답 없으면 채널을 재검토한다.",
+            "external_write": False,
+            "metric_ids": [],
+            "proposed_metrics": [
+                {
+                    "name": "첫 결제 도달률",
+                    "why_this_metric": "유료 전환이 실제 가치를 얻었다는 가장 직접적인 신호다.",
+                    "how_to_measure": "체험 종료 시점에 결제 여부를 수동으로 확인한다.",
+                }
+            ],
+            "decision_id": None,
+            "loop_mode": "direct_seeding",
+        }
+        self.assertEqual(
+            [],
+            validate_schema_record("first-user-loop.schema.json", payload),
+        )
+
+    def test_prior_evidence_basis_still_requires_a_real_evidence_id(self) -> None:
+        """Claiming prior evidence without naming any record is not honest labeling."""
+        payload = {
+            "segment": "동네 카페 사장님 5곳",
+            "evidence_basis": "prior_evidence",
+            "evidence_ids": [],
+            "channel": "오프라인 방문 아웃리치",
+            "offer": "1주일 무료 체험",
+            "value_moment": "체험 종료 후 첫 결제",
+            "capacity": 5,
+            "budget": {"currency": "KRW", "amount": 0},
+            "batch_size": 5,
+            "review_at": "2026-09-01T00:00:00+09:00",
+            "stop_condition": "5명 응답 없으면 채널을 재검토한다.",
+            "external_write": False,
+            "metric_ids": [],
+            "proposed_metrics": [
+                {
+                    "name": "첫 결제 도달률",
+                    "why_this_metric": "유료 전환이 실제 가치를 얻었다는 신호다.",
+                    "how_to_measure": "수동 확인",
+                }
+            ],
+            "decision_id": None,
+            "loop_mode": "direct_seeding",
+        }
+        self.assertNotEqual(
+            [],
+            validate_schema_record("first-user-loop.schema.json", payload),
+        )
+
+    def test_no_real_or_proposed_metric_fails_validation(self) -> None:
+        """A first-user experiment must still say what a good result looks like."""
+        payload = {
+            "segment": "동네 카페 사장님 5곳",
+            "evidence_basis": "first_experiment",
+            "evidence_ids": [],
+            "channel": "오프라인 방문 아웃리치",
+            "offer": "1주일 무료 체험",
+            "value_moment": "체험 종료 후 첫 결제",
+            "capacity": 5,
+            "budget": {"currency": "KRW", "amount": 0},
+            "batch_size": 5,
+            "review_at": "2026-09-01T00:00:00+09:00",
+            "stop_condition": "5명 응답 없으면 채널을 재검토한다.",
+            "external_write": False,
+            "metric_ids": [],
+            "proposed_metrics": [],
+            "decision_id": None,
+            "loop_mode": "direct_seeding",
+        }
+        self.assertNotEqual(
+            [],
+            validate_schema_record("first-user-loop.schema.json", payload),
+        )
+
 
 class ApprovalWaitReasonTests(unittest.TestCase):
     """Waiting for a person is not the same as a forgotten output artifact."""

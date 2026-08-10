@@ -69,14 +69,19 @@ decisions, and outcomes until a person records both strength and `approved_by`.
 ## Routing graph
 
 ```text
+first-five / direct-seeding objective, no prior evidence or metric
+  → design-first-user-loop directly (states a working hypothesis and proposes
+    candidate metrics inline; evidence and a decision record can follow)
+
 research objective
   → plan-customer-reach → run-switch-interview → synthesize-interviews
 
 configured CS source
   → connect-customer-channels → triage-customer-signals
 
-validated evidence or signal
+validated evidence or signal already on hand
   → define-growth-metrics → record-growth-decision → design-first-user-loop
+  (a reasonable default when evidence exists, not a precondition for the skill)
 
 completed first-five direct seeding + introduction/referral objective
   → define-growth-metrics (introduction recipe) → record-growth-decision

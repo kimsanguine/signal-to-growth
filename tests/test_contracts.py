@@ -109,6 +109,37 @@ class ContractValidationTests(unittest.TestCase):
                 [issue.render() for issue in issues],
             )
 
+    def test_draft_action_may_defer_decision_and_metric_links(self) -> None:
+        """A first-user-loop draft can exist before record-growth-decision runs."""
+        record = {
+            "action_id": "ACT-20260726-002",
+            "decision_id": None,
+            "created_at": "2026-07-26T00:00:00Z",
+            "action_type": "first_user_experiment",
+            "status": "draft",
+            "owner": "owner",
+            "metric_ids": [],
+            "external_write": True,
+            "approved_by": None,
+        }
+        self.assertEqual([], validate_record("action", record, "action[1]"))
+
+    def test_approved_action_requires_a_real_decision_link(self) -> None:
+        """Deferred is fine while drafting; a null decision may not reach approved."""
+        record = {
+            "action_id": "ACT-20260726-003",
+            "decision_id": None,
+            "created_at": "2026-07-26T00:00:00Z",
+            "action_type": "first_user_experiment",
+            "status": "approved",
+            "owner": "owner",
+            "metric_ids": ["MET-20260726-001"],
+            "external_write": True,
+            "approved_by": "APR-20260726-001",
+        }
+        issues = validate_record("action", record, "action[1]")
+        self.assertTrue(issues, [issue.render() for issue in issues])
+
     def test_external_write_approval_requires_scoped_reference(self) -> None:
         record = {
             "action_id": "ACT-20260726-001",

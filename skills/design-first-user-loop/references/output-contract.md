@@ -2,9 +2,19 @@
 
 ## `first-user-loop.json`
 
-Follow `contracts/first-user-loop.schema.json`. Require segment, evidence IDs,
-decision ID, channel, offer, value moment, capacity, budget, metric IDs, batch
-size, review date, stop condition, and `external_write=false`.
+Follow `contracts/first-user-loop.schema.json`. Require segment,
+`evidence_basis`, evidence IDs, channel, offer, value moment, capacity,
+budget, metric IDs, `proposed_metrics`, batch size, review date, stop
+condition, and `external_write=false`. `decision_id` may be `null`.
+
+`evidence_basis` is `prior_evidence` (then `evidence_ids` needs at least one
+real ID) or `first_experiment` (then `evidence_ids` may stay empty — this batch
+is the evidence-gathering activity, not a consumer of one). Either
+`metric_ids` or `proposed_metrics` must have at least one entry: a real
+contract ID when `define-growth-metrics` already produced one, or an inline
+`{name, why_this_metric, how_to_measure}` candidate when it has not.
+`decision_id` stays `null` until `record-growth-decision` runs, which can
+happen before or after this draft.
 
 Use `loop_mode=direct_seeding` for this skill's first-five learning batch.
 The schema still accepts a backward-compatible `introduction_enabled` record,
@@ -14,10 +24,13 @@ referral request from this batch.
 
 ## `actions.jsonl`
 
-Follow `contracts/action.schema.json`. Link one decision and at least one
-metric. An approved or executed external action requires a scoped `APR-`
-approval reference that exists in `approvals.jsonl` and covers the exact action
-ID.
+Follow `contracts/action.schema.json`. `decision_id` may start `null` and
+`metric_ids` may start empty — both are filled in once `record-growth-decision`
+and `define-growth-metrics` catch up to this draft. Neither may stay `null`/empty
+by the time `status` is `approved` or `executed`: the schema enforces a real
+`decision_id` string at that point. An approved or executed external action also
+requires a scoped `APR-` approval reference that exists in `approvals.jsonl` and
+covers the exact action ID.
 
 ## `approvals.jsonl`
 
