@@ -50,6 +50,17 @@ human approval.
 
 List upcoming review dates, owners, pending outcomes, and blocked evidence. Do not treat a missed review as silent approval.
 
+## Review-time addendum (not a completion requirement)
+
+At review time, once a linked action's metric has matured enough to compare,
+append a record to `outcomes.jsonl`, following `contracts/outcome.schema.json` —
+`outcome_id`, `action_id`, `metric_id`, `observed_at`, `value`,
+`maturity_status`, `comparison`, `conclusion`, `next_decision_id`,
+`interpretation`, and `evidence_ids`. This file is read by the router's
+outcome-review gate (`_outcome_review_reason` in `workflow.py`) but is
+deliberately absent from `workflow.SKILL_OUTPUT_FILES`, since a decision can
+be approved and routed onward long before its outcome matures.
+
 ## Completion gate
 
 The decision is approved only when reference validation passes and

@@ -230,10 +230,15 @@ signal-to-growth validate-artifacts \
 | 13 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
 | 14 | `optimize-search-visibility` | 웹사이트 SEO 랭킹·AI 답변엔진(GEO/AEO) 인용 가시성 감사·개선 | `geo-audit-report.md`, `llms.txt` |
 
-`osmu-fanout`과 `announce-release-to-customers`는 2026-08-05에 추가됐고
-`src/signal_growth/repo_validation.py`의 `EXPECTED_SKILLS`와
-`src/signal_growth/workflow.py`의 routing에 반영돼 있습니다. 강의 커리큘럼
-매핑(아래 「강의 커리큘럼 × 스킬 × 산출물」)에는 아직 배치되지 않았습니다.
+`osmu-fanout`과 `announce-release-to-customers`는 2026-08-05에,
+`optimize-search-visibility`는 2026-08-09에 추가됐고 셋 다
+`src/signal_growth/repo_validation.py`의 `EXPECTED_SKILLS`에 반영돼
+있습니다. `osmu-fanout`과 `announce-release-to-customers`는
+`src/signal_growth/workflow.py`의 routing graph에도 있지만,
+`optimize-search-visibility`는 의도적으로 빠져 있습니다 — 외부 사이트를
+감사하는 리포트 스킬이라 growth loop 상태에 연결되지 않기 때문입니다
+(`workflow.py`의 관련 주석 참고). 셋 다 강의 커리큘럼 매핑(아래 「강의
+커리큘럼 × 스킬 × 산출물」)에는 아직 배치되지 않았습니다.
 
 각 스킬은 독립적으로 사용할 수 있습니다. connector를 설정하지 않으면 기존 manual signal flow를 그대로 사용합니다. `run-growth-loop`는 전문 스킬의 판단을 대신하지 않고 상태와 handoff만 관리합니다.
 

@@ -77,6 +77,13 @@ Create or append:
 - `review-queue.md`
 - `introduction-loop-decision.md`
 
+At review time, once a linked action's metric has matured enough to compare,
+append to `outcomes.jsonl` per workflow step 11. It is not a completion
+requirement for this skill — a decision can be `approved` and routed onward
+long before its outcome matures — so it stays out of the bullet list above and
+the router's completion check, the same way `connect-customer-channels` stays
+out of that check for a different reason.
+
 For an introduction or referral objective, additionally create
 `introduction-loop-decision.md`. It captures the loop-coefficient definition,
 HOLD and resume conditions, reward-experiment choice, approval state, owner,
@@ -85,8 +92,9 @@ turn.
 
 Read [references/output-contract.md](references/output-contract.md) before writing them.
 
-Add every new record to `decisions.jsonl` and `approvals.jsonl` with the
-`append-record` command, never by writing or editing the file:
+Add every new record to `decisions.jsonl`, `approvals.jsonl`, and, at review
+time, `outcomes.jsonl`, with the `append-record` command, never by writing or
+editing the file:
 
 ```bash
 python3 scripts/stg.py append-record <artifact-directory>/decisions.jsonl '<json-object>'
