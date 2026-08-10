@@ -1,6 +1,6 @@
 ---
 name: triage-customer-signals
-description: "Classify and safely route verified, redacted customer events into human-reviewed signals, risk queues, themes, and optional Switch-style Four Forces tags. Use when CS/VOC problem triage begins after provider verification and canonical identity are complete. Do not use for webhook authentication, connector setup, research-participant recruiting, or outbound replies."
+description: "Classify and safely route verified, redacted customer events into human-reviewed signals, risk queues, themes, and optional Switch-style Four Forces tags. Use when CS/VOC problem triage(고객 신호 분류, CS 이슈 분류) begins after provider verification and canonical identity are complete. Do not use for webhook authentication, connector setup, research-participant recruiting, or outbound replies."
 ---
 
 # Triage Customer Signals

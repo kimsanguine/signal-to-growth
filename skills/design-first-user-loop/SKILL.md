@@ -1,6 +1,6 @@
 ---
 name: design-first-user-loop
-description: "Use when planning the first five users, direct seeding, early traction, or a bounded channel experiment. Do not use for referral activation, sending outreach, publishing content, or recording the growth decision itself."
+description: "Use when planning the first five users (초기 사용자 확보, 첫 유저 5명 확보), direct seeding, early traction, or a bounded channel experiment (채널 실험 설계). Do not use for referral activation, sending outreach, publishing content, or recording the growth decision itself."
 ---
 
 # Design First User Loop

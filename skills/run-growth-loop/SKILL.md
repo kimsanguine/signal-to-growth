@@ -1,6 +1,6 @@
 ---
 name: run-growth-loop
-description: "Route an evidence-to-growth workflow by validating artifacts, approval states, blockers, and the next specialist skill. Use when coordinating the full Signal to Growth loop, resuming a paused run, checking 다음 단계, or creating a growth-operations handoff. Do not use for doing the specialist work itself, approving decisions, or executing external writes."
+description: "Route an evidence-to-growth workflow by validating artifacts, approval states, blockers, and the next specialist skill. Use when coordinating the full Signal to Growth loop(성장 루프 조율), resuming a paused run(중단된 실행 재개), checking 다음 단계, or creating a growth-operations handoff(그로스 오퍼레이션 인계). Do not use for doing the specialist work itself, approving decisions, or executing external writes."
 ---
 
 # Run Growth Loop
