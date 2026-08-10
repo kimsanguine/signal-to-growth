@@ -3,6 +3,25 @@
 This file records user-visible changes. Signal to Growth follows semantic
 versioning once a version is tagged.
 
+## 0.4.1
+
+### Changed
+
+- `design-first-user-loop` no longer designs referral/introduction activation
+  together with first-user acquisition. It now scopes to one segment, one
+  channel, a 5-person cap, and an observed value moment before any expansion.
+
+### Added
+
+- An introduction-loop gate split into the existing four skills' contracts:
+  `define-growth-metrics` adds an introduction-loop-metric-recipe (qualified
+  introduction, referred first value, reuse, activation-based loop
+  coefficient, all null until observed), and `record-growth-decision` adds an
+  introduction-loop-decision (HOLD/resume, reward choice) that must exist
+  before any new bounded `design-first-user-loop` iteration. `run-growth-loop`
+  routes accordingly and refuses to jump from a first-five request straight to
+  a send, reward, or new batch. No new skill was added.
+
 ## 0.4.0
 
 ### Added
