@@ -78,6 +78,10 @@ configured CS source
 validated evidence or signal
   → define-growth-metrics → record-growth-decision → design-first-user-loop
 
+completed first-five direct seeding + introduction/referral objective
+  → define-growth-metrics (introduction recipe) → record-growth-decision
+  → design-first-user-loop (only after a new bounded decision)
+
 approved decision needing build review
   → export-hplan → hplan gates
 
@@ -101,6 +105,13 @@ When the objective asks for a product introduction page or other answer-first
 content, route to `draft-evidence-content` only after `design-first-user-loop`
 is complete, so the page describes a loop that was actually validated. While
 that loop is incomplete, route to `design-first-user-loop` first and say why.
+
+When the objective asks for an introduction or referral loop, route to
+`design-first-user-loop` until the first-five direct-seeding output is complete.
+Then route to `define-growth-metrics` to define qualified introduction, referred
+first value, reuse, and the activation-based loop coefficient. Do not route from
+that request to a send, reward, or new batch; `record-growth-decision` must
+capture the HOLD/resume and reward choice before any later bounded iteration.
 
 When the objective asks to reuse existing content on other surfaces, route to
 `osmu-fanout` only after `draft-evidence-content` is complete and a

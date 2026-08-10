@@ -30,6 +30,21 @@ Require:
 8. Propose a target only with provenance, rationale, and human owner.
 9. Add at least one counter-metric for quality, risk, or cost.
 10. Separate activation, retention, revenue, and satisfaction rather than merging them into one score.
+11. For an introduction-enabled first-user loop, use the recipe below instead of treating an invite or signup as value.
+
+## Introduction-loop metric recipe
+
+Use this only after the first-five direct-seeding batch has a reviewable value
+observation. Keep each event separate:
+
+- `qualified introduction`: an eligible reuser identifies a recipient with the same stated problem; it is not a sent message.
+- `referred user's first value`: the introduced user reaches the same defined value event.
+- `referred user's reuse`: that introduced user repeats the value event inside the stated window.
+- `activation-based loop coefficient`: `referred users reaching first value / eligible reusers observed in the same cohort`.
+
+Record the cohort, maturity window, source event, owner, and counter-metric for
+each. The coefficient, introduction rate, and reuse rate have `baseline=null`
+and `target=null` until observed data and a human owner exist.
 
 ## Boundaries
 
@@ -39,6 +54,7 @@ Require:
 - Do not use an industry benchmark as a default target.
 - Do not calculate immature cohorts as failures.
 - Do not treat shipping or signup as demonstrated value without a stated rationale.
+- Do not set a universal referral or viral-coefficient target. A target remains null until a baseline and owner exist.
 
 ## Outputs
 
@@ -47,7 +63,13 @@ Create:
 - `metrics.jsonl`
 - `growth-loop-map.md`
 - `measurement-plan.md`
+- `introduction-loop-metric-recipe.md`
 - optional query stubs that are clearly marked unverified until executed
+
+For an introduction or referral objective after direct seeding, additionally
+create `introduction-loop-metric-recipe.md`. It names the four events above,
+the formula, cohort, observation window, baseline state, owner, and
+counter-metric; it is a routing handoff, not an approval to contact anyone.
 
 Read [references/output-contract.md](references/output-contract.md) before writing them.
 

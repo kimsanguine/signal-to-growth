@@ -50,6 +50,7 @@ SKILL_OUTPUT_FILES = {
         "metrics.jsonl",
         "growth-loop-map.md",
         "measurement-plan.md",
+        "introduction-loop-metric-recipe.md",
     ),
     "record-growth-decision": (
         "decisions.jsonl",
@@ -57,6 +58,7 @@ SKILL_OUTPUT_FILES = {
         "hplan-intake.json",
         "decision-summary.md",
         "review-queue.md",
+        "introduction-loop-decision.md",
     ),
     "design-first-user-loop": (
         "first-user-loop.json",
@@ -77,6 +79,7 @@ SKILL_OUTPUT_FILES = {
         "recommendations.md",
     ),
     "draft-evidence-content": (
+        "content-brief.json",
         "content-brief.md",
         "claim-ledger.jsonl",
         "draft.md",
@@ -113,6 +116,15 @@ CONTENT_PREREQUISITE = "design-first-user-loop"
 FANOUT_SKILL = "osmu-fanout"
 FANOUT_PREREQUISITE = CONTENT_SKILL
 CONTENT_BRIEF_FILE = "content-brief.json"
+INTRODUCTION_METRIC_RECIPE_FILE = "introduction-loop-metric-recipe.md"
+INTRODUCTION_DECISION_FILE = "introduction-loop-decision.md"
+INTRODUCTION_LOOP_HINTS = (
+    "입소문",
+    "추천 전략",
+    "추천 루프",
+    "referral loop",
+    "소개 루프",
+)
 # The visibility audit is the other entry to the optional content branch. It
 # reads public surfaces rather than the growth loop, so it has no prerequisite
 # skill and is only reachable from an explicit objective.
@@ -135,7 +147,16 @@ OBJECTIVE_ROUTES = (
     (("신호", "triage", "signal", "cs 분류"), "triage-customer-signals"),
     (("지표", "metric", "activation", "retention"), "define-growth-metrics"),
     (("결정", "decision", "what not to build"), "record-growth-decision"),
-    (("첫 사용자", "first user", "activation experiment"), "design-first-user-loop"),
+    (
+        (
+            "첫 사용자",
+            "first user",
+            "activation experiment",
+            "직접 시딩",
+            "direct seeding",
+        ),
+        "design-first-user-loop",
+    ),
     (("인터뷰 합성", "synthesis", "quote"), "synthesize-interviews"),
     (("인터뷰 질문", "switch interview"), "run-switch-interview"),
     (("인터뷰 모집", "research participant"), "plan-customer-reach"),
@@ -428,6 +449,13 @@ def _objective_route(objective: str | None) -> str | None:
     return None
 
 
+def _is_introduction_loop_objective(objective: str | None) -> bool:
+    if not objective:
+        return False
+    normalized = objective.casefold()
+    return any(hint in normalized for hint in INTRODUCTION_LOOP_HINTS)
+
+
 def _route(
     artifact_directory: Path,
     objective: str | None = None,
@@ -441,10 +469,44 @@ def _route(
         )
 
     valid = _valid_artifacts(artifact_directory)
+    if _is_introduction_loop_objective(objective):
+        if not _skill_complete(artifact_directory, "design-first-user-loop", valid):
+            return "design-first-user-loop", (
+                "An introduction objective starts with the bounded first-five "
+                "direct-seeding experiment: "
+                + _incomplete_reason(
+                    artifact_directory,
+                    "design-first-user-loop",
+                    valid,
+                )
+            )
+        if not _nonempty_file(artifact_directory / INTRODUCTION_METRIC_RECIPE_FILE):
+            return "define-growth-metrics", (
+                "The direct-seeding first-five stage is complete; define the "
+                "introduction value-event recipe before deciding whether another "
+                "bounded loop is justified."
+            )
+        if not _nonempty_file(artifact_directory / INTRODUCTION_DECISION_FILE):
+            return "record-growth-decision", (
+                "The introduction metric recipe exists; record the loop "
+                "coefficient, HOLD/resume conditions, and reward choice before "
+                "another bounded loop."
+            )
+        return None, (
+            "The first-five experiment, introduction metric recipe, and "
+            "draft decision are present; wait for the stated human review and "
+            "do not start another loop automatically."
+        )
     requested = _objective_route(objective)
     prerequisite = BRANCH_PREREQUISITES.get(requested)
     if prerequisite is not None:
         if _skill_complete(artifact_directory, prerequisite, valid):
+            if not _skill_complete(artifact_directory, requested, valid):
+                return requested, (
+                    f"The stated objective points to '{requested}', but its output "
+                    "contract is incomplete: "
+                    + _incomplete_reason(artifact_directory, requested, valid)
+                )
             return requested, (
                 f"The stated objective points to '{requested}' and "
                 f"'{prerequisite}' is complete, so the optional branch can run "

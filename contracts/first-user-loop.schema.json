@@ -59,6 +59,71 @@
     "decision_id": {
       "type": "string",
       "pattern": "^DEC-[0-9]{8}-[0-9]{3,}$"
+    },
+    "loop_mode": {
+      "enum": ["direct_seeding", "introduction_enabled"]
+    },
+    "introduction_loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "activation_event",
+        "reuse_window",
+        "referral_eligibility",
+        "recipient_fit",
+        "landing_handoff",
+        "hold_conditions",
+        "external_write"
+      ],
+      "properties": {
+        "activation_event": {"type": "string", "minLength": 1},
+        "reuse_window": {"type": "string", "minLength": 1},
+        "referral_eligibility": {"type": "string", "minLength": 1},
+        "recipient_fit": {"type": "string", "minLength": 1},
+        "landing_handoff": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["audience", "trigger", "promise", "evidence_ids", "cta"],
+          "properties": {
+            "audience": {"type": "string", "minLength": 1},
+            "trigger": {"type": "string", "minLength": 1},
+            "promise": {"type": "string", "minLength": 1},
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^EV-[0-9]{8}-[0-9]{3,}$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "cta": {"type": "string", "minLength": 1}
+          }
+        },
+        "hold_conditions": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "external_write": {"const": false}
+      }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"loop_mode": {"const": "introduction_enabled"}},
+        "required": ["loop_mode"]
+      },
+      "then": {"required": ["introduction_loop"]}
+    },
+    {
+      "if": {"required": ["introduction_loop"]},
+      "then": {
+        "properties": {"loop_mode": {"const": "introduction_enabled"}},
+        "required": ["loop_mode"]
+      }
+    }
+  ]
 }

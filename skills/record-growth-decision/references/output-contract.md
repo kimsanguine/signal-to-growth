@@ -33,6 +33,19 @@ gates, not an approved implementation handoff. Keep missing values in
 
 Explain the decision, evidence, uncertainty, trade-off, and next review in plain language. Keep approval state visible.
 
+For an introduction-loop decision, also state the loop coefficient definition,
+HOLD condition, resume condition, and reward-experiment choice. Treat a reward
+as `not selected` unless a later scoped human approval covers the exact external
+action and spend.
+
+## Conditional `introduction-loop-decision.md`
+
+Create only after `introduction-loop-metric-recipe.md` exists for an
+introduction or referral objective. It must name the coefficient definition,
+HOLD condition, resume condition, reward-experiment choice, decision owner,
+review date, and current approval state. Never represent the file itself as
+human approval.
+
 ## `review-queue.md`
 
 List upcoming review dates, owners, pending outcomes, and blocked evidence. Do not treat a missed review as silent approval.

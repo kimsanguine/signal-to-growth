@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from signal_growth.append_only import chain_records
+from signal_growth.schema_validation import validate_schema_record
 from signal_growth.workflow import completed_skills, next_skill, next_skill_reason
 
 
@@ -215,6 +216,103 @@ class ContentBranchRoutingTests(unittest.TestCase):
             reason = next_skill_reason(path, objective=objective)
             self.assertIn("draft-evidence-content", reason)
             self.assertIn("experiment-cards.md", reason)
+
+    def test_direct_seeding_does_not_require_a_referral_message_draft(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._workspace(Path(directory))
+            (path / "referral-message-drafts.md").unlink(missing_ok=True)
+
+            objective = "첫 5명 직접 시딩을 설계한다"
+            self.assertEqual(
+                "record-growth-decision",
+                next_skill(path, objective=objective),
+            )
+            self.assertNotIn(
+                "referral-message-drafts.md",
+                next_skill_reason(path, objective=objective),
+            )
+
+    def test_introduction_objective_hands_off_after_direct_seeding(self) -> None:
+        """A referral loop starts with measurement, not another direct send."""
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._workspace(Path(directory))
+            loop_path = path / "first-user-loop.json"
+            payload = json.loads(loop_path.read_text(encoding="utf-8"))
+            payload["loop_mode"] = "direct_seeding"
+            payload.pop("introduction_loop", None)
+            loop_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+            (path / "introduction-loop-metric-recipe.md").unlink()
+            (path / "introduction-loop-decision.md").unlink()
+
+            objective = "입소문 소개 루프를 다음 단계로 진행한다"
+            self.assertEqual(
+                "define-growth-metrics",
+                next_skill(path, objective=objective),
+            )
+            self.assertIn(
+                "direct-seeding",
+                next_skill_reason(path, objective=objective),
+            )
+
+    def test_introduction_objective_routes_to_a_decision_after_metric_recipe(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = self._workspace(Path(directory))
+            (path / "introduction-loop-decision.md").unlink()
+            (path / "introduction-loop-metric-recipe.md").write_text(
+                "Qualified introduction and first-value definition are drafted.\n",
+                encoding="utf-8",
+            )
+
+            objective = "입소문 소개 루프를 다음 단계로 진행한다"
+            self.assertEqual(
+                "record-growth-decision",
+                next_skill(path, objective=objective),
+            )
+            self.assertIn(
+                "HOLD",
+                next_skill_reason(path, objective=objective),
+            )
+
+            (path / "introduction-loop-decision.md").write_text(
+                "HOLD and resume decision is awaiting human review.\n",
+                encoding="utf-8",
+            )
+            self.assertIsNone(next_skill(path, objective=objective))
+
+
+class FirstUserIntroductionContractTests(unittest.TestCase):
+    """An introduction loop is still draft-only first-user work."""
+
+    def test_introduction_enabled_loop_accepts_reuse_and_hold_conditions(self) -> None:
+        payload = json.loads(
+            (
+                ROOT / "fixtures" / "public-dummy" / "artifacts" / "first-user-loop.json"
+            ).read_text(encoding="utf-8")
+        )
+        payload["loop_mode"] = "introduction_enabled"
+        payload["introduction_loop"] = {
+            "activation_event": "첫 evidence-backed decision 승인",
+            "reuse_window": "첫 가치 경험 뒤 7일 안에 같은 문제를 다시 해결한다.",
+            "referral_eligibility": "첫 가치 경험과 재사용을 모두 확인한 뒤에만 요청한다.",
+            "recipient_fit": "같은 업무 상황에서 고객 증거를 정리하는 동료 한 명",
+            "landing_handoff": {
+                "audience": "고객 증거를 수동으로 정리하는 초기 SaaS 팀",
+                "trigger": "인터뷰와 CS 메모가 흩어져 다음 결정을 미루는 순간",
+                "promise": "근거와 해석을 분리해 다음 결정을 검토할 수 있게 한다.",
+                "evidence_ids": ["EV-20260725-001", "EV-20260725-002"],
+                "cta": "내 상황이 맞는지 확인을 요청한다.",
+            },
+            "hold_conditions": [
+                "재사용 증거가 없으면 추천 요청을 보류한다.",
+                "공개 가능한 근거가 없으면 사회적 증거를 표시하지 않는다.",
+            ],
+            "external_write": False,
+        }
+
+        self.assertEqual(
+            [],
+            validate_schema_record("first-user-loop.schema.json", payload),
+        )
 
     def test_content_objective_does_not_disturb_other_objectives(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

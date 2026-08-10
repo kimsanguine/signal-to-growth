@@ -1,6 +1,6 @@
 ---
 name: design-first-user-loop
-description: "Design a capacity-aware first-user acquisition and learning loop linked to evidence, decisions, metrics, and stop conditions. Use when planning first users, early traction, channel experiments, referral loops, 초기 사용자 확보, or build-in-public experiments. Do not use for sending outreach, publishing content, or recording the growth decision itself."
+description: "Use when planning the first five users, direct seeding, early traction, or a bounded channel experiment. Do not use for referral activation, sending outreach, publishing content, or recording the growth decision itself."
 ---
 
 # Design First User Loop
@@ -22,22 +22,31 @@ Require:
 
 1. State the segment, trigger, and evidence behind the experiment.
 2. Define the promised value and the first value moment.
-3. Choose one primary channel based on access and fit, not popularity.
-4. Define the smallest batch that the team can support.
-5. Create an offer and message as drafts.
+3. Start in `direct_seeding`: choose one primary channel based on access and fit, not popularity.
+4. Cap the learning batch at the first five users. State who counts toward the five, the support capacity per user, and the condition that stops further invitations.
+5. Create a value-moment observation plan; do not turn the first five into a referral or incentive experiment.
 6. Link the action to a decision, success metric, counter-metric, review date, and stop condition.
 7. State what will be learned if the result is positive, negative, or inconclusive.
 8. Require human approval in a later user turn before spend, posting, email, direct message, or customer promise.
 9. Record that approval in `approvals.jsonl` with the exact action ID before changing an external action to approved or executed.
 10. Record outcomes and return them to the decision log.
 
+## Handoff after the first five
+
+Do not expand the batch merely because five people were invited. When the first
+five have a reviewable value observation, hand off an introduction or referral
+objective to `define-growth-metrics`. That skill defines qualified introduction,
+referred first value, reuse, and an activation-based loop coefficient before a
+later decision considers a new loop, a reward, or additional external activity.
+
 ## Boundaries
 
-- Let the model propose channel, offer, referral, and learning-loop options.
+- Let the model propose channel, offer, and learning-loop options.
 - Use deterministic checks for capacity, ownership, metric references, approval state, and external-write flag.
 - Require a person to approve spend, targets, public activity, and delivery commitments.
 - Do not count posts, messages, or signups as delivered value unless the metric contract says why.
 - Do not run multiple channels when the experiment cannot distinguish their effects.
+- Do not show unverified social proof, invent testimonials, or treat an invite click as a value moment.
 
 ## Outputs
 
@@ -65,7 +74,7 @@ same command is `signal-to-growth append-record`.
 
 ## Stop conditions
 
-Stop when support capacity is unknown, evidence does not identify a segment, success cannot be measured, or an external action lacks explicit approval.
+Stop when support capacity is unknown, evidence does not identify a segment, success cannot be measured, the first-five batch is full without a review decision, or an external action lacks explicit approval.
 
 ## Verification
 

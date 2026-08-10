@@ -1,6 +1,6 @@
 ---
 name: draft-evidence-content
-description: "Draft answer-first product content with a claim ledger that links customer evidence and authoritative sources. Use when creating evidence-based articles, FAQs, landing-page copy, comparison content, 답변형 콘텐츠, or GEO-ready drafts without publishing. Do not use for publishing, scheduling, or distributing content, or for inventing customer quotes."
+description: "Use when creating evidence-based articles, FAQs, landing-page copy, comparison content, 답변형 콘텐츠, or GEO-ready drafts without publishing. Do not use for publishing, scheduling, distributing content, or inventing customer quotes."
 ---
 
 # Draft Evidence Content
@@ -42,12 +42,17 @@ Require:
 
 Create:
 
+- `content-brief.json`
 - `content-brief.md`
 - `draft.md`
 - `claim-ledger.jsonl`
 - `review-checklist.md`
 
 Read [references/output-contract.md](references/output-contract.md) before writing them.
+
+Create `content-brief.json` first. It is the schema-valid shared scope that
+later fanout surfaces reuse. `content-brief.md` is a readable mirror; it does
+not replace the JSON contract.
 
 Add every new record to `claim-ledger.jsonl` with the `append-record` command,
 never by writing or editing the file:

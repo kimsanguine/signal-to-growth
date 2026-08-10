@@ -225,7 +225,7 @@ signal-to-growth validate-artifacts \
 | 8 | `audit-answer-visibility` | SEO·GEO·AEO 표면의 날짜가 있는 관찰 감사 | `visibility-observations.jsonl` |
 | 9 | `draft-evidence-content` | claim과 source를 연결한 answer-first 초안 | `claim-ledger.jsonl` |
 | 10 | `osmu-fanout` | 승인된 content brief·claim ledger를 claim ID 추적 가능한 이미지 프롬프트·영상 스크립트로 재사용 | `visual-prompts.md`, `video-script.md` |
-| 11 | `design-first-user-loop` | capacity·metric·stop condition이 있는 초기 사용자 실험 | `first-user-loop.json` |
+| 11 | `design-first-user-loop` | 첫 5명 직접 시딩과 가치 관찰에 집중하는 초기 사용자 실험 | `first-user-loop.json`, `experiment-cards.md` |
 | 12 | `announce-release-to-customers` | 결정론적 변경 목록을 커밋·근거에 연결된 고객 언어 릴리스 노트로 번역 | `release-notes.jsonl` |
 | 13 | `run-growth-loop` | artifact 상태와 승인에 따른 다음 스킬 routing | `run-state.json` |
 | 14 | `optimize-search-visibility` | 웹사이트 SEO 랭킹·AI 답변엔진(GEO/AEO) 인용 가시성 감사·개선 | `geo-audit-report.md`, `llms.txt` |
@@ -262,7 +262,7 @@ signal-to-growth validate-artifacts \
 | 무엇을 만들지 **않기로** 했는지를 근거와 함께 남기고 싶다 | `record-growth-decision` | `decisions.jsonl`, `decision-summary.md` | append-only 해시 체인이라 결정 당시의 근거를 나중에 결과에 맞춰 손볼 수 없습니다. Claude Code에서는 훅이 덮어쓰기를 도구 수준에서 차단합니다[^runtime-parity] |
 | AI 검색·생성형 답변에 우리 페이지가 잡히는지 확인하고 싶다 | `audit-answer-visibility` | `visibility-observations.jsonl`, `citation-gaps.md`, `technical-findings.md` | 관찰마다 날짜와 접근 상태가 필요합니다. 확인하지 못한 표면은 낮은 점수가 아니라 `unknown`으로 남고, 진단 점수를 쓸 때는 가중치를 공개하고 heuristic이라고 라벨해야 합니다 |
 | AEO 콘텐츠를 쓰되 문장마다 출처를 남기고 싶다 | `audit-answer-visibility` → `draft-evidence-content` | `citation-gaps.md` → `claim-ledger.jsonl`, `draft.md` | 주장마다 출처와 claim state를 `claim-ledger.schema.json`에 맞춰 원장에 남깁니다. 초안이 완성돼도 게시로 넘어가지 않습니다 — `publish`가 승인 목록에 있고, 이 release에는 게시 경로가 구현돼 있지 않습니다 |
-| 첫 사용자 5~10팀으로 실험하되 중단 조건을 미리 정하고 싶다 | `design-first-user-loop` | `first-user-loop.json`, `experiment-cards.md` | `capacity`와 `stop_condition`이 `first-user-loop.schema.json`의 필수 필드이고, 이 파일이 schema를 통과해야 라우터가 다음 단계를 엽니다(`src/signal_growth/workflow.py`). 중단 조건을 안 정하면 실험이 시작되지 않습니다 |
+| 첫 5명을 직접 시딩하고, 이후 소개·추천 가능성을 검증하고 싶다 | `design-first-user-loop` → `define-growth-metrics` → `record-growth-decision` | `first-user-loop.json` → `growth-loop-map.md` → `decisions.jsonl` | 첫 5명은 `capacity`와 `stop_condition` 안에서만 관찰합니다. 이후 소개는 qualified introduction·첫 가치·재사용을 별도 측정하고, HOLD·재개·보상 선택을 결정 로그에 남깁니다. 게시·발송은 일어나지 않습니다 |
 | 지금 어디까지 왔고 다음에 뭘 해야 하는지 모르겠다 | `run-growth-loop` | `run-state.json`, `next-action.md`, `blocked-items.md` | 선행 산출물이 계약을 통과해야 다음 스킬을 제안합니다. 통과하지 못하면 건너뛰지 않고 막힌 이유를 `blocked-items.md`에 적고 멈춥니다 |
 
 표를 읽는 법 두 가지.
@@ -289,7 +289,7 @@ signal-to-growth validate-artifacts \
 | 04-01 답변 가시성 감사 | `audit-answer-visibility` | `visibility-observations.jsonl`, `citation-gaps.md`, `technical-findings.md` |
 | 04-02 근거 기반 콘텐츠 초안 | `draft-evidence-content` | `claim-ledger.jsonl`, `draft.md`, `review-checklist.md` |
 | 05-01 첫 사용자 루프 설계 | `design-first-user-loop` | `first-user-loop.json`, `experiment-cards.md` |
-| 05-02 승인 경계 아래의 실행 | `design-first-user-loop` + `draft-evidence-content` 조합 | `first-user-loop.json` → `claim-ledger.jsonl`, `approvals.jsonl` |
+| 05-02 승인 경계 아래의 실행 | `design-first-user-loop` → `draft-evidence-content` | `first-user-loop.json` → `content-brief.json`, `claim-ledger.jsonl`, `approvals.jsonl` |
 | 전 구간 (오케스트레이션) | `run-growth-loop` | `run-state.json`, `next-action.md`, `blocked-items.md` |
 
 두 가지를 분명히 해 둡니다.

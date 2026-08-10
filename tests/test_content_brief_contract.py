@@ -125,13 +125,32 @@ class FanoutRoutingTests(unittest.TestCase):
             )
             self.assertIn("draft.md", next_skill_reason(artifacts, objective=objective))
 
+    def test_a_landing_draft_requires_the_schema_valid_brief(self) -> None:
+        """A Markdown summary cannot substitute for the fanout input contract."""
+        with tempfile.TemporaryDirectory() as directory:
+            artifacts = _workspace(Path(directory))
+            (artifacts / "content-brief.json").unlink()
+
+            objective = "제품 소개 페이지 초안"
+            self.assertEqual(
+                "draft-evidence-content",
+                next_skill(artifacts, objective=objective),
+            )
+            self.assertIn(
+                "content-brief.json",
+                next_skill_reason(artifacts, objective=objective),
+            )
+
     def test_a_missing_brief_is_named_as_the_blocker(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             artifacts = _workspace(Path(directory))
             (artifacts / "content-brief.json").unlink()
 
             objective = "카드뉴스 개요"
-            self.assertEqual("osmu-fanout", next_skill(artifacts, objective=objective))
+            self.assertEqual(
+                "draft-evidence-content",
+                next_skill(artifacts, objective=objective),
+            )
             reason = next_skill_reason(artifacts, objective=objective)
             self.assertIn("content-brief.json", reason)
             self.assertNotIn("visual-prompts.md", reason)

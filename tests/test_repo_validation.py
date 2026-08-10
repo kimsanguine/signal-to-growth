@@ -74,6 +74,7 @@ class OutputContractAlignmentTests(unittest.TestCase):
         "`hplan-intake.json`",
         "`decision-summary.md`",
         "`review-queue.md`",
+        "`introduction-loop-decision.md`",
     ]
 
     def test_only_bullets_under_the_outputs_heading_count(self) -> None:

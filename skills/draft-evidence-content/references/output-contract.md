@@ -1,8 +1,16 @@
 # Output contract
 
+## `content-brief.json`
+
+Follow `contracts/content-brief.schema.json`. This is the shared scope for
+drafting and fanout, so name the human owner, source signal or observation,
+evidence scope, planned outputs, limitations, CTA boundary, and publication
+boundary before writing copy.
+
 ## `content-brief.md`
 
-State audience, question, intent, direct answer, evidence scope, limitations, CTA, and publication boundary.
+Provide a readable mirror of the schema-valid brief. It must not introduce a
+different audience, question, evidence scope, CTA, or publication boundary.
 
 ## `claim-ledger.jsonl`
 

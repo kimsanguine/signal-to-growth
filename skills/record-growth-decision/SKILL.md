@@ -41,6 +41,21 @@ Require:
     `event_type` out rather than guessing; an unclassified event is honest,
     a wrong one is not.
 
+## Introduction-loop decision example
+
+After reviewing the first-five direct-seeding batch, record one explicit
+decision instead of assuming that referral is the next action:
+
+- **Question:** should the team test a draft-only introduction loop for this segment?
+- **Metric rule:** name the `loop coefficient` numerator, denominator, cohort, and maturity window from `define-growth-metrics`.
+- **HOLD condition:** name the observed condition that prevents a request, such as no repeat value, recipient-fit evidence, or support capacity.
+- **Resume condition:** name the new evidence, owner, and review date needed to leave HOLD.
+- **Reward experiment:** choose `not selected`, `draft for later review`, or a separately approved experiment. A reward is never implied by a referral objective and may not be promised, sent, or funded without scoped human approval.
+
+Record the resulting continue, hold, change, or stop as a later append-only
+event. Do not retrofit the original first-five decision to make the next loop
+look pre-approved.
+
 ## Boundaries
 
 - Let the model identify missing evidence, alternatives, and counterarguments.
@@ -60,6 +75,13 @@ Create or append:
 - `hplan-intake.json` as a pre-gate intake, never as an hplan gate decision
 - `decision-summary.md`
 - `review-queue.md`
+- `introduction-loop-decision.md`
+
+For an introduction or referral objective, additionally create
+`introduction-loop-decision.md`. It captures the loop-coefficient definition,
+HOLD and resume conditions, reward-experiment choice, approval state, owner,
+and review date. It is a draft decision until a person approves in a later
+turn.
 
 Read [references/output-contract.md](references/output-contract.md) before writing them.
 
