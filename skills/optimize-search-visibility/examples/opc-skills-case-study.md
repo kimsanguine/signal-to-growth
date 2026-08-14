@@ -327,4 +327,4 @@ To replicate this optimization for your own site:
 |------|---------|
 | `website/worker.js` | Meta tags, Schema, Hero section, FAQ section, Stats bar |
 | `README.md` | Badges, navigation links, updated tagline |
-| `docs/MARKETING_SPEC.md` | Comprehensive marketing plan (new) |
+| `MARKETING_SPEC.md` | Comprehensive marketing plan (new) |

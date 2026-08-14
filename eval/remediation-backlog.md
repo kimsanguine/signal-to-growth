@@ -1,7 +1,7 @@
 # Evaluation remediation backlog
 
 The ordered backlog of remaining work lives in one place:
-[`../docs/HANDOFF.md`](../docs/HANDOFF.md) — "Resume sequence". This file keeps
+The private handoff's "Resume sequence". This file keeps
 only the record of what the post-baseline hardening actually changed, because
 that record is evidence rather than a plan.
 
@@ -22,6 +22,6 @@ that record is evidence rather than a plan.
 
 ## Pending release gates
 
-Moved. See [`../docs/HANDOFF.md`](../docs/HANDOFF.md) steps 2 to 6. Release stays
+Moved to the private handoff. Release stays
 `NO-GO` until hard-gate failures are zero. Step 2's 2026-08-04 status (blocked by
 account spend limit) is recorded in HANDOFF step 2 directly.

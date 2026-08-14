@@ -35,7 +35,7 @@ same artifact as a run's `decisions.jsonl`, which holds `DEC-` growth decisions
 under `contracts/decision.schema.json`. A gate record states a verdict
 (`build`, `hold`, `pivot`), at least one reason, and the trigger that reopens it.
 `validate-repo` checks it. See
-[`contract-coverage-decisions.md`](contract-coverage-decisions.md) for why the
+the private contract-coverage decision record for why the
 two contracts are separate.
 
 ## Claim states
@@ -44,7 +44,7 @@ two contracts are separate.
 `visibility-observations.jsonl` follows
 `contracts/visibility-observation.schema.json`. Both enforce the vocabulary
 below, and both enforce a floor rather than their skills' full prose output
-contract — see [`contract-coverage-decisions.md`](contract-coverage-decisions.md).
+contract.
 
 Use one of:
 

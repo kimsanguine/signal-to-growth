@@ -17,3 +17,5 @@ eval/runs/**/*.stderr.txt
 supabase/.temp/
 .claude/*.local.md
 .worktrees/
+**/docs/
+**/.archive/

@@ -11,7 +11,7 @@ it hides which dependency broke. Persistence failures are therefore split:
   closed with 503 rather than acknowledging. The design intends the provider to
   re-send and no event to be lost — but that outcome depends on Kakao's retry
   behavior, which this repository has not observed against a live channel
-  (`docs/PROGRESS.md`). Treat it as the intent, not a verified guarantee. No
+  historical project notes. Treat them as intent, not a verified guarantee. No
   dead-letter row is written on this path.
 - **Contract** (`ValueError` family, including `SupabaseWriteRejected`): an
   identical retry can never succeed. Divert the event to the dead-letter sink
