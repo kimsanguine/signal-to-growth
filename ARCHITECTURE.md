@@ -78,7 +78,7 @@ Webhook and polling are recovery pairs. A provider acceptance response never pro
 PMF Radar may operate the long-running inbox, retry, raw-retention, and operator
 queue. In that deployment, it exports `pmf-radar.stg.v1`; Signal to Growth
 validates and imports only the redacted canonical event and bridge metadata.
-See [PMF Radar and hplan integration](integrations/pmf-radar-hplan.md).
+See [PMF Radar and hplan integration](INTEGRATIONS.md).
 
 ## Orchestrator boundary
 

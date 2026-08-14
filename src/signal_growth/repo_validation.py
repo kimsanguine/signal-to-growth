@@ -33,6 +33,8 @@ EXPECTED_SKILLS = {
 }
 
 GATE_DECISION_LOG = Path("harness") / "decisions.jsonl"
+FORBIDDEN_PUBLIC_DIRECTORIES = frozenset({"docs", ".archive"})
+LOCAL_SCAN_EXCLUSIONS = frozenset({".git", ".worktrees", "worktrees", ".venv", "__pycache__"})
 
 EXPECTED_CONNECTOR_CONTRACTS = {
     "channel-connection.schema.json",
@@ -130,8 +132,29 @@ def _check_output_contract_alignment(skill_root: Path) -> list[ValidationIssue]:
     return issues
 
 
+def public_surface_violations(root: Path) -> set[str]:
+    """Return public-source directory paths that this repository forbids."""
+    violations: set[str] = set()
+    for candidate in root.rglob("*"):
+        if not candidate.is_dir():
+            continue
+        relative = candidate.relative_to(root)
+        if LOCAL_SCAN_EXCLUSIONS.intersection(relative.parts):
+            continue
+        if FORBIDDEN_PUBLIC_DIRECTORIES.intersection(relative.parts):
+            violations.add(relative.as_posix())
+    return violations
+
+
 def validate_repository(root: Path) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
+    for relative in sorted(public_surface_violations(root)):
+        issues.append(
+            ValidationIssue(
+                relative,
+                "public repository policy forbids docs/.archive directories",
+            )
+        )
     skill_root = root / "skills"
     actual_skills = {
         path.name

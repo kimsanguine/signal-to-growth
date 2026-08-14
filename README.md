@@ -29,7 +29,7 @@ counter-metric을 필수 필드로 요구하고, 원장은 고쳐 쓰면 드러�
   다음 단계에 연결됩니다.
 - 발송·게시·배포·환불·삭제는 기본 정책에서 꺼져 있습니다
   (`policies/default-policy.json`의 `external_write_default: false`).
-- 인용문에는 파일·줄 [locator](docs/glossary.md#locator-로케이터)가 필요하고, 합성 quote는 허용하지 않습니다
+- 인용문에는 파일·줄 [locator](GLOSSARY.md#locator-로케이터)가 필요하고, 합성 quote는 허용하지 않습니다
   (`allow_synthetic_quotes: false`).
 
 **먼저 할 일 하나** — 파일을 바꾸지 않는 preview를 한 번 돌려보세요.
@@ -47,14 +47,14 @@ fixtures/public-dummy/artifacts를 학습 모드로 점검해줘. 파일은 바�
 
 **지금까지 실제로 확인된 것** (전체 목록과 근거는 [「프로젝트 상태」](#프로젝트-상태)):
 
-- 271개 unit/integration test와 `validate-repo`·`validate-artifacts`·`demo` 통과
+- 281개 unit/integration test와 `validate-repo`·`validate-artifacts`·`demo` 통과
 - Kakao Channel chatbot: Open Builder→Supabase 합성 E2E, 2026-08-06 실제 개발 채널 연결·skill test 왕복
 - append-only 해시 체인, scoped human approval, 발송·게시·배포·삭제·환불 기본 차단
 - **아직 안 된 것**: 30-case Claude Code·Codex 교차 런타임 평가, Production 승격, 실제 고객 인터뷰 승인(ICP 확정)
 
 ## 목차
 
-> 처음 보는 단어가 나오면 [**용어집**](docs/glossary.md)을 보세요.
+> 처음 보는 단어가 나오면 [**용어집**](GLOSSARY.md)을 보세요.
 > `deterministic`·`locator`·`parity`·`idempotency`·`dedupe`·`state projection`·`WSGI`·`RLS` 등을
 > 비개발 PM 기준으로 풀어 두었습니다.
 
@@ -113,7 +113,7 @@ preview 안내가 이 README의 six-part preview 목록
 `/plugin` 화면에서 설치된
 `signal-to-growth` 버전을 확인하고 위 install/reload 순서를 다시 실행하세요.
 이 확인은 Python 설치를 요구하지 않습니다. 자세한 첫 실행·복구 절차는
-[학습자 시작 안내](docs/learner-start.md)를 봅니다.
+[학습자 시작 안내](GETTING_STARTED.md)를 봅니다.
 
 ### OpenAI Codex
 
@@ -144,7 +144,7 @@ npx skills add kimsanguine/signal-to-growth -a claude-code -a codex
 
 Claude Code에서 skill을 설치하고 학습·preview 모드로 읽는 데 Python 3.11
 설치를 선행할 필요는 없습니다. 첫 호출은 파일을 바꾸지 않고 AI 판단,
-[deterministic](docs/glossary.md#deterministic-결정론적) 검증 상태, 사람 결정, 다음 skill을 분리합니다.
+[deterministic](GLOSSARY.md#deterministic-결정론적) 검증 상태, 사람 결정, 다음 skill을 분리합니다.
 
 ```text
 /run-growth-loop
@@ -165,7 +165,7 @@ AI가 제안할 것, 사람이 결정할 것, 검증됨과 미확인을 분리�
 6. **제안된 파일 변경과 다음 skill 하나(proposed changes + next skill)** — 이유를 함께
 
 여섯 항목 중 일부만 돌아오거나 라벨이 없다면 설치·버전 문제일 가능성이 큽니다.
-[학습자 시작 안내](docs/learner-start.md)의 복구 절차를 따르세요.
+[학습자 시작 안내](GETTING_STARTED.md)의 복구 절차를 따르세요.
 
 미리보기를 검토한 뒤 별도의 다음 메시지에서 변경할 파일과 범위를 확인해야
 `apply`로 전환합니다. Python CLI가 없거나 실행되지 않으면 해당 검증은
@@ -307,7 +307,7 @@ signal-to-growth validate-artifacts \
   만들지 않습니다.
 - 클립 번호 중 01-01, 04-01, 04-02, 05-01, 전 구간 행은 저장소 문서에 번호 기록이
   없어 스킬 순서와 산출물 의존 관계로 배치한 **제안**입니다. 나머지 행은
-  [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 근거가 있습니다.
+  `contracts/`와 `src/signal_growth/adapters/`의 현재 구현에 근거가 있습니다.
   산출물 이름의 정본은 각 `skills/<name>/references/output-contract.md`입니다.
 
 > **연동 문서를 쓰기 전에**: `verify_event`·`normalize_event`의 실제 시그니처는 항상
@@ -360,21 +360,12 @@ evidence·metric·decision 중 무엇이 이미 있고 무엇이 없어도 이 �
 `proposed_metrics`로 후보 지표를 제안합니다. 다만 실제 발송·보상 같은 외부
 행동은 여전히 사람 승인 전까지 열리지 않습니다.
 
-### 우리 저장소에 직접 적용해본 결과
+### 공개 저장소 경계
 
-이 도구를 남에게 권하기 전에 우리 자신에게 먼저 적용했습니다. `audit-answer-visibility`와
-`draft-evidence-content`로 이 저장소의 README·문서·manifest를 감사했고, 그때 나온
-산출물을 요약하지 않고 [`docs/self-marketing/`](docs/self-marketing/)에 그대로 두었습니다.
-
-- [`visibility-observations.jsonl`](docs/self-marketing/visibility-observations.jsonl) — 날짜와 접근 상태가 붙은 관찰 기록
-- [`technical-findings.md`](docs/self-marketing/technical-findings.md) — `not checked`와 `not present`를 구분한 기술 점검표
-- [`claim-ledger.jsonl`](docs/self-marketing/claim-ledger.jsonl) — 마케팅 문장마다 붙인 출처와 claim 상태
-- [`recommendations.md`](docs/self-marketing/recommendations.md) — 채택하지 **않기로** 권고한 항목 포함
-
-읽는 사람에게 유리한 부분만 남기지 않았습니다. 감사 결과 `llms.txt`가 없었고, 질문형
-헤딩이 31개 중 1개였고, 구조화 데이터가 0건이었다는 사실이 그대로 적혀 있습니다.
-라이브 관찰이 0건이라 점수를 매기지 않은 이유도 함께 적었습니다. 이 산출물들이
-실제 계약을 지키는지는 [`tests/test_self_marketing_artifacts.py`](tests/test_self_marketing_artifacts.py)가 검사합니다.
+저장소 자체에 적용한 마케팅 감사·운영 메모·초안은 공개 런타임 계약이 아닙니다. 공개
+저장소에는 재현 가능한 스킬, 계약, fixture, 그리고 `runtime/decision-log.md`만 남깁니다.
+내부 감사 기록과 계획 문서는 로컬 비공개 보관소에서 관리합니다. 자세한 기준은
+[`PUBLIC_SURFACE.md`](PUBLIC_SURFACE.md)를 참고하세요.
 
 ## 안전과 승인 경계
 
@@ -423,7 +414,7 @@ Connector JSON Schema:
 | Delivery event | [`delivery-event.schema.json`](contracts/delivery-event.schema.json) |
 | Connector state | [`connector-state.schema.json`](contracts/connector-state.schema.json) |
 
-상세 연결 규칙은 [Artifact contracts](docs/artifact-contracts.md)를 확인하세요.
+상세 연결 규칙은 [Artifact contracts](ARTIFACT_CONTRACTS.md)를 확인하세요.
 
 ## 왜 만들었나
 
@@ -466,7 +457,7 @@ flowchart LR
 현재 Claude Code에만 구현돼 있습니다(`hooks/hooks.json`). Codex에서는 같은
 규칙이 `SKILL.md`의 지시와 `append-record` CLI로만 유지되며, 도구 수준의
 강제는 아직 없습니다(`.codex-plugin/plugin.json`에 hooks 키 없음). Codex 대응은
-진행 중입니다. 두 런타임의 30-case 호출 [parity](docs/glossary.md#parity-동등성) 역시 미검증 상태입니다
+진행 중입니다. 두 런타임의 30-case 호출 [parity](GLOSSARY.md#parity-동등성) 역시 미검증 상태입니다
 ([Evaluation summary](eval/summary.md)). 승인 경계·정책·schema 검증은 두 런타임
 공통이며, 차이는 훅이라는 한 층입니다.
 
@@ -562,14 +553,14 @@ signal-to-growth export-hplan \
 
 출력의 `hplan_gate_decision`은 항상 `null`입니다. Signal to Growth는 hplan의
 gate 통과나 구현 가능성을 대신 판정하지 않습니다. 계약과 상태 전이는
-[PMF Radar and hplan integration](docs/integrations/pmf-radar-hplan.md)에
+[PMF Radar and hplan integration](INTEGRATIONS.md)에
 정리했습니다.
 
 ### 한국형 CS 지원 수준
 
 | 표면 | 현재 구현 | 아직 검증하지 않은 것 |
 |---|---|---|
-| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel Preview→Supabase 합성 E2E, live [idempotency](docs/glossary.md#idempotency-멱등성), `version=2.0` 응답, Chatbot Admin Center 개발 채널 연결과 skill test 왕복(2026-08-06) | 동일 발화를 개발 채널에서 2회 보냈을 때 서로 다른 `X-Request-Id`가 생성되는지, Production |
+| Kakao Channel chatbot | Open Builder 요청 정규화·마스킹·중복 제거, Supabase restricted sink, Vercel Preview→Supabase 합성 E2E, live [idempotency](GLOSSARY.md#idempotency-멱등성), `version=2.0` 응답, Chatbot Admin Center 개발 채널 연결과 skill test 왕복(2026-08-06) | 동일 발화를 개발 채널에서 2회 보냈을 때 서로 다른 `X-Request-Id`가 생성되는지, Production |
 | Naver TalkTalk | public dummy event 정규화·마스킹·중복 제거 | 실제 test account webhook, backfill, 발송 |
 | Channel Talk | webhook 정규화와 injected read-only backfill·대사 | 실제 credential·HTTPS endpoint 왕복 |
 | Kakao 상담톡 via Channel Talk | product boundary와 계정 설정 절차 | 실제 채널 이관·상담 event |
@@ -584,7 +575,7 @@ Channel Talk는 Open API key 발급에 유료 plan이 필요한 선택형 connec
 skill request는 상담톡이나 native 1:1 상담 이력 API가 아닙니다.
 
 `KakaoSkillApplication`은 정규화 event를 먼저 저장한 뒤 fixed
-`version=2.0` 응답을 반환하는 deployment-neutral [WSGI](docs/glossary.md#wsgi) application입니다.
+`version=2.0` 응답을 반환하는 deployment-neutral [WSGI](GLOSSARY.md#wsgi) application입니다.
 `app.py`는 Vercel entry point, `SupabaseEventSink`는 server-only secret을
 사용하는 저장 adapter입니다. 저장 실패 시 성공 응답을 반환하지 않습니다.
 승인 참조는 canonical 고객 event와 분리된 `approval_ref` 열에 저장합니다.
@@ -632,18 +623,17 @@ Preview에서 실제로 검증했습니다. `health=200/configured`, 잘못된
 (`event_id=CSE-cdcb93c608f7abd2acb47920b267ae51`, `auth_verified=true`,
 dead-letter 0건 유지). 동일 발화를 그 채널에서 2회 보냈을 때 서로 다른
 `X-Request-Id`가 생성되는지는 아직 별도 검증 대상입니다. 실행 증거와 남은
-경계는 [Verification](docs/verification.md)과
-[Provider setup checklist](docs/provider-setup-checklist.md)에 기록합니다.
+경계는 [Verification](VERIFICATION.md)과
+[Provider setup checklist](PROVIDER_SETUP.md)에 기록합니다.
 
-이 table은 [RLS](docs/glossary.md#rls-row-level-security-행-수준-보안)를 활성화하고 `anon`·`authenticated` 권한을 제거하며,
+이 table은 [RLS](GLOSSARY.md#rls-row-level-security-행-수준-보안)를 활성화하고 `anon`·`authenticated` 권한을 제거하며,
 두 browser role에 명시적인 deny policy도 적용합니다.
 `sb_secret_...` key는 backend 전용이며 브라우저나 교안에 노출하지 않습니다.
 실제 고객 데이터가 아닌 합성 발화만 사용합니다.
 `STG_APPROVAL_REF`에는 secret이나 자유 서술 대신 `APR-KAKAO-TEST-001` 같은
 비민감 승인 record ID를 사용합니다. 각 행의 `expires_at`은 7일 뒤를
 가리키지만 자동 삭제 작업은 아닙니다. 삭제 절차와 승인 경계는
-[Kakao test retention runbook](docs/operations/kakao-test-retention.md)을
-따릅니다.
+사람 승인된 private retention runbook을 따릅니다.
 
 ### 개인정보 pattern 검사
 
@@ -690,7 +680,7 @@ skills/                         공통 source of truth
 - 플랫폼별 manifest가 skill 행동을 복제하지 않습니다.
 - release metadata를 바꾸면 두 manifest와 두 marketplace를 함께 갱신합니다.
 
-설계 근거는 [Architecture](docs/architecture.md)에 있습니다.
+설계 근거는 [Architecture](ARCHITECTURE.md)에 있습니다.
 
 ## 저장소 구조
 
@@ -701,7 +691,7 @@ signal-to-growth/
 ├── .codex-plugin/
 ├── app.py
 ├── contracts/
-├── docs/
+├── runtime/
 ├── fixtures/
 │   ├── negative/
 │   └── public-dummy/
@@ -749,17 +739,15 @@ python3 /path/to/skill-creator/scripts/quick_validate.py \
 5. **Integration** — evidence에서 outcome까지 연결
 6. **Cross-runtime** — Claude Code와 Codex의 핵심 artifact 비교
 
-현재 release에서 자동화한 범위와 남은 runtime 검증은 [Verification](docs/verification.md)에 기록합니다.
+현재 release에서 자동화한 범위와 남은 runtime 검증은 [Verification](VERIFICATION.md)에 기록합니다.
 평가 점수와 릴리스 판정은 한곳에만 두었습니다 — [「프로젝트 상태」](#프로젝트-상태)를 보세요.
 점수 하나만 보고 준비도를 과대평가하지 않도록, 그 섹션에 공개된 두 점수를 함께 적어 두었습니다.
-평가 범위와 원점수는 [Skill evaluation plan](docs/skill-evaluation-plan.md)과
-[Evaluation summary](eval/summary.md)에 기록합니다.
-현재 branch 상태, 재개 명령, 승인 필요 항목은
-[Continuation handoff](docs/HANDOFF.md)를 먼저 확인하세요.
+평가 범위와 원점수는 [Evaluation summary](eval/summary.md)에 기록합니다.
+공개 source에는 private handoff를 포함하지 않습니다.
 
 ## 경쟁 제품과 다른 점
 
-범용·도메인 skill 저장소 18개를 비교했습니다. 자세한 조사와 채택·배제 판단은 [Competitive landscape](docs/competitive-landscape.md)에 있습니다.
+범용·도메인 skill 저장소 18개를 비교했습니다. 상세 조사와 채택·배제 판단은 private archive에 보존합니다.
 
 Signal to Growth가 집중하는 공백:
 
@@ -777,11 +765,10 @@ Signal to Growth가 집중하는 공백:
 human approval, Bash overwrite guard를 추가한 release candidate입니다.
 
 **릴리스 게이트: `HOLD / NO-GO`.** 판정 근거와 원점수는
-[Evaluation summary](eval/summary.md), 판정 기준은
-[Skill evaluation plan](docs/skill-evaluation-plan.md)에 있습니다.
+[Evaluation summary](eval/summary.md)에 기록합니다.
 
 이 저장소가 스스로 내린 gate 판정의 전체 기록은
-[**Decision log**](docs/decision-log.md)에 있습니다. append-only 원장인
+[**Decision log**](runtime/decision-log.md)에 있습니다. append-only 원장인
 `harness/decisions.jsonl`을 렌더링한 문서이며, 각 판정의 근거·재검토 조건과
 아직 관측되지 않은 결과를 분리해 보여줍니다.
 
@@ -810,7 +797,7 @@ artifact E2E, 실제 plugin 설치, provider 운영, Claude Code·Codex parity�
 기본 브랜치를 더 높은 점수로 읽지 마세요. release tag, Production 승격,
 provider 운영, 외부 write는 모두 미승인 상태입니다.
 
-`GO` 판정은 [판정 기준](docs/skill-evaluation-plan.md) 6개 조건이 **전부**
+`GO` 판정은 이 README에 열거한 6개 조건이 **전부**
 충족될 때만 나옵니다(hard-gate 실패 0건, deterministic artifact 검증 100%,
 전체 task 성공률 85% 이상, 핵심 스킬 각 80점 이상, cross-runtime semantic
 parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인터뷰가 사람 승인
@@ -833,7 +820,7 @@ parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인�
 - Kakao Open Builder용 Vercel WSGI endpoint와 Supabase restricted sink
 - 격리된 Vercel Preview→Supabase 합성 E2E와 live idempotency 증거
 - synthetic event approval reference와 7일 deletion-eligibility marker
-- provider-neutral [dedupe](docs/glossary.md#dedupe-중복-제거)·redaction·delivery [state projection](docs/glossary.md#state-projection-상태-투영)
+- provider-neutral [dedupe](GLOSSARY.md#dedupe-중복-제거)·redaction·delivery [state projection](GLOSSARY.md#state-projection-상태-투영)
 
 아직 포함하지 않음:
 
@@ -844,9 +831,9 @@ parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인�
 - 보편적인 SaaS benchmark
 - 30-case Claude Code·Codex runtime 재평가와 실제 invocation parity
 
-한국형 CS connector의 설계 근거와 단계별 검증 계획은 [Korean CS integration plan](docs/v2-korean-cs-integration-plan.md)에 기록합니다. 현재 P0 source·fixture, 격리된 hosted synthetic E2E, 2026-08-06 Kakao Chatbot Admin Center 개발 채널 연결·skill test 왕복은 검증됐지만, Production 운영 상태를 뜻하지 않습니다.
+한국형 CS connector의 현재 계약은 `contracts/`와 `src/signal_growth/adapters/`에 있습니다. P0 source·fixture, 격리된 hosted synthetic E2E, 2026-08-06 Kakao Chatbot Admin Center 개발 채널 연결·skill test 왕복은 검증됐지만, Production 운영 상태를 뜻하지 않습니다.
 
-Channel Talk·Kakao 상담톡·Naver TalkTalk test account를 준비할 때는 [Provider setup checklist](docs/provider-setup-checklist.md)를 따르세요. API secret, 고객 원문, 전화번호는 repository나 AI 대화에 입력하지 마세요.
+Channel Talk·Kakao 상담톡·Naver TalkTalk test account를 준비할 때는 [Provider setup checklist](PROVIDER_SETUP.md)를 따르세요. API secret, 고객 원문, 전화번호는 repository나 AI 대화에 입력하지 마세요.
 
 ## 기여
 
@@ -862,7 +849,7 @@ Channel Talk·Kakao 상담톡·Naver TalkTalk test account를 준비할 때는 [
 - [OpenAI Plugins](https://github.com/openai/plugins)
 - [Microsoft Agent Skills](https://github.com/MicrosoftDocs/Agent-Skills)
 
-도메인·평가 참고 자료는 [Competitive landscape](docs/competitive-landscape.md)에 license와 함께 기록합니다. 이 저장소의 구현과 문서는 별도로 작성되었으며 타 저장소의 고유 scoring 공식을 포함하지 않습니다 — 단, `skills/optimize-search-visibility`는 예외로, 두 개의 라이선스가 명시된 오픈소스 스킬을 포팅한 것입니다(출처·라이선스 전문: [`NOTICE.md`](skills/optimize-search-visibility/NOTICE.md)).
+이 저장소의 구현과 공개 안내는 별도로 작성되었으며 타 저장소의 고유 scoring 공식을 포함하지 않습니다 — 단, `skills/optimize-search-visibility`는 예외로, 두 개의 라이선스가 명시된 오픈소스 스킬을 포팅한 것입니다(출처·라이선스 전문: [`NOTICE.md`](skills/optimize-search-visibility/NOTICE.md)).
 
 ## License
 

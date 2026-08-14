@@ -3,6 +3,17 @@
 This file records user-visible changes. Signal to Growth follows semantic
 versioning once a version is tagged.
 
+## 0.4.3
+
+### Changed
+
+- Public repository policy now rejects any tracked `docs` or `.archive`
+  directory recursively. Minimal reader guides live at the repository root and
+  public runtime projections live under `runtime/`; internal plans, handoffs,
+  operations notes, and self-marketing audit records remain local/private.
+- Moved the public decision-log projection to `runtime/decision-log.md` and
+  updated all public links and deterministic validation paths accordingly.
+
 ## 0.4.2
 
 ### Changed
@@ -82,7 +93,7 @@ versioning once a version is tagged.
 - The missing `recommendations.md` output for `audit-answer-visibility`, with
   every recommendation tied to an observation ID, mechanism, owner,
   verification method, and update risk.
-- An explicit six-part preview list in `README.md` and `docs/learner-start.md`,
+- An explicit six-part preview list in `README.md` and `GETTING_STARTED.md`,
   so a learner can tell a healthy install from a stale plugin cache.
 - A documented relationship between the `signal-to-growth` console script and
   the `python3 scripts/stg.py` wrapper used by every `SKILL.md`.

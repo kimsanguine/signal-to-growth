@@ -14,6 +14,7 @@ from signal_growth.repo_validation import (
     _check_output_contract_alignment,
     _declared_output_files,
     _documented_output_files,
+    public_surface_violations,
     validate_repository,
 )
 from signal_growth.workflow import SKILL_OUTPUT_FILES
@@ -62,6 +63,17 @@ class RepositoryValidationTests(unittest.TestCase):
     def test_repository_structure_is_valid(self) -> None:
         issues = validate_repository(ROOT)
         self.assertEqual([], issues, [issue.render() for issue in issues])
+
+    def test_public_surface_rejects_nested_docs_and_archive_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".snapshot" / "docs").mkdir(parents=True)
+            (root / "history" / ".archive").mkdir(parents=True)
+
+            self.assertEqual(
+                {".snapshot/docs", "history/.archive"},
+                public_surface_violations(root),
+            )
 
 
 class OutputContractAlignmentTests(unittest.TestCase):

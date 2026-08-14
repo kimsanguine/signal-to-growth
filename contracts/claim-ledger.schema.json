@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/claim-ledger.schema.json",
   "title": "Claim Ledger Entry",
-  "description": "One material claim produced by draft-evidence-content, with its claim state and supporting evidence. This contract enforces the floor that the append-only public fixture already carries. Fields that skills/draft-evidence-content/references/output-contract.md also asks for are typed but optional; see docs/contract-coverage-decisions.md for why they are not yet required.",
+  "description": "One material claim produced by draft-evidence-content, with its claim state and supporting evidence. This contract enforces the floor that the append-only public fixture already carries. Fields that skills/draft-evidence-content/references/output-contract.md also asks for are typed but optional; see the private contract-coverage decision record for why they are not yet required.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -33,7 +33,7 @@
     },
     "state": {
       "enum": ["observed", "reported", "inferred", "recommended", "unknown"],
-      "description": "The claim state vocabulary from docs/artifact-contracts.md. Never publish inferred or recommended as observed."
+      "description": "The claim state vocabulary from ARTIFACT_CONTRACTS.md. Never publish inferred or recommended as observed."
     },
     "public": {
       "type": "boolean",

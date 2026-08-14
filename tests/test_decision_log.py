@@ -1,6 +1,6 @@
 """Verify the published decision log stays a projection of the gate log.
 
-`docs/decision-log.md` exists so a reader can see what this repository actually
+`runtime/decision-log.md` exists so a reader can see what this repository actually
 decided about itself. A published page that is edited by hand drifts from the
 append-only ledger it claims to show, and a drifted page is worse than none: it
 reads as evidence while asserting something the ledger does not.
@@ -23,7 +23,7 @@ from signal_growth.decision_log import render_decision_log  # noqa: E402
 
 
 GATE_LOG = ROOT / "harness" / "decisions.jsonl"
-DOCUMENT = ROOT / "docs" / "decision-log.md"
+DOCUMENT = ROOT / "runtime" / "decision-log.md"
 
 
 class DecisionLogTests(unittest.TestCase):
@@ -34,7 +34,7 @@ class DecisionLogTests(unittest.TestCase):
         self.assertEqual(
             render_decision_log(self.records),
             DOCUMENT.read_text(encoding="utf-8"),
-            "docs/decision-log.md is stale; run python3 scripts/render_decision_log.py",
+            "runtime/decision-log.md is stale; run python3 scripts/render_decision_log.py",
         )
 
     def test_every_recorded_decision_is_published(self) -> None:

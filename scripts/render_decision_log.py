@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate `docs/decision-log.md` from the append-only gate log.
+"""Regenerate `runtime/decision-log.md` from the append-only gate log.
 
 The gate log is the source; the document is the projection. This script refuses
 to render a log that fails `contracts/gate-decision.schema.json`, so an invalid
@@ -25,7 +25,7 @@ from signal_growth.decision_log import render_decision_log  # noqa: E402
 
 
 GATE_LOG = ROOT / "harness" / "decisions.jsonl"
-DOCUMENT = ROOT / "docs" / "decision-log.md"
+DOCUMENT = ROOT / "runtime" / "decision-log.md"
 
 
 def main() -> int:
@@ -41,7 +41,7 @@ def main() -> int:
     if issues:
         print(render_issues(issues), file=sys.stderr)
         print(
-            "gate log is invalid; refusing to render docs/decision-log.md",
+            "gate log is invalid; refusing to render runtime/decision-log.md",
             file=sys.stderr,
         )
         return 1
@@ -51,7 +51,7 @@ def main() -> int:
         current = DOCUMENT.read_text(encoding="utf-8") if DOCUMENT.exists() else ""
         if current != rendered:
             print(
-                "docs/decision-log.md is out of date; "
+                "runtime/decision-log.md is out of date; "
                 "run python3 scripts/render_decision_log.py",
                 file=sys.stderr,
             )

@@ -110,7 +110,7 @@ server 준비 순서:
 
 2026-07-26 기준 이 여섯 단계는 Kakao 관리자 화면이 아닌 합성 HTTP client로
 완료했다. 현재 검증 Preview와 request ID는
-[verification](verification.md)에 기록한다. 다음 단계는 동일한 endpoint를
+[verification](VERIFICATION.md)에 기록한다. 다음 단계는 동일한 endpoint를
 Chatbot Admin Center skill에 연결하는 것이다.
 
 Supabase secret key는 backend에서 RLS를 우회할 수 있으므로 브라우저,
@@ -120,7 +120,7 @@ repository, Kakao header에 넣지 않는다. Kakao header에는 별도로 생�
 `STG_APPROVAL_REF`에는 `APR-KAKAO-TEST-001`처럼 승인 기록을 가리키는
 비민감 ID를 입력한다. 원문 승인 메모나 이름을 넣지 않는다. 저장된 행은
 7일 뒤 삭제 가능 상태가 되지만 자동 삭제되지는 않는다. 실제 삭제 전에는
-[retention runbook](operations/kakao-test-retention.md)의 조회·승인 절차를
+private retention runbook의 조회·승인 절차를
 따른다.
 
 공식 문서:

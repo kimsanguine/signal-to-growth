@@ -5,7 +5,7 @@ The gate log is append-only and machine-shaped: one JSON object per line, with
 right for validation and wrong for a reader deciding whether to trust this
 repository, so this module projects it into Markdown.
 
-The projection is derived, never authored. `docs/decision-log.md` is generated
+The projection is derived, never authored. `runtime/decision-log.md` is generated
 from the gate log and a test compares the two, so the published page cannot
 drift into saying something the ledger does not.
 """
