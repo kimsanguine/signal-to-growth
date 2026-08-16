@@ -73,6 +73,25 @@ ConsultTalk or native Channel 1:1 counselor chat.
 
 Read-only adapters may build and validate backfill requests, but actual network access requires an approved test connection. Reply, send, assignment, template mutation, and fallback stay disabled without explicit human approval.
 
+## hplan reference loop
+
+The hplan integration is a reference bridge, not a shared decision ledger.
+
+```text
+hplan approved Build Gate Profile v0
+  -> imported URI + fingerprint reference
+  -> Signal to Growth experiment, metric, decision, evidence, approval, outcome
+  -> completed Profile v0 reconsideration request
+  -> human hplan re-evaluation
+```
+
+Import accepts only canonical forward-capable hplan statuses and records no
+copied hplan decision, evidence, or gate status. Reconsideration requires the
+same imported opaque handoff reference on the executed action and mature,
+conclusive outcome, plus locally resolvable metric, decision, evidence, and
+human-approval provenance. It only requests human review; it never creates a
+new hplan `GO`/`HOLD` result or an automatic growth decision.
+
 Webhook and polling are recovery pairs. A provider acceptance response never proves delivery, and fallback transport is recorded as a separate attempt.
 
 PMF Radar may operate the long-running inbox, retry, raw-retention, and operator
