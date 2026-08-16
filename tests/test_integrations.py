@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from signal_growth import integrations  # noqa: E402
-from signal_growth.append_only import verify_append_chain  # noqa: E402
+from signal_growth.append_only import append_record, verify_append_chain  # noqa: E402
 from signal_growth.integrations import (  # noqa: E402
     CHAINED_INTEGRATION_FILES,
     IntegrationContractError,
@@ -123,6 +123,10 @@ class IntegrationTests(unittest.TestCase):
                 )
                 + "\n",
                 encoding="utf-8",
+            )
+            shutil.copyfile(
+                HPLAN_FLOW / "completed-growth" / "metrics.jsonl",
+                artifacts / "metrics.jsonl",
             )
 
             profile = build_hplan_reconsideration(
@@ -242,6 +246,28 @@ class IntegrationTests(unittest.TestCase):
                 import_hplan_handoff(profile_path, output_directory=bridge, write=True)
             self.assertEqual(before, ledger.read_bytes())
 
+    def test_hplan_handoff_rejects_conflicting_duplicate_source_records(self) -> None:
+        """Checking only the first duplicate would hide a conflicting replay."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            ledger = bridge / "integration-references.jsonl"
+            recorded = json.loads(ledger.read_text(encoding="utf-8"))
+            conflict = {
+                **recorded,
+                "context": {
+                    **recorded["context"],
+                    "source_fingerprint": "sha256:" + "0" * 64,
+                },
+            }
+            append_record(ledger, conflict)
+
+            with self.assertRaises(IntegrationContractError):
+                import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+
     def test_hplan_import_refuses_unsafe_output_paths_without_writing(self) -> None:
         """Allowing traversal or symlink targets would bypass the write boundary."""
         with tempfile.TemporaryDirectory() as directory:
@@ -265,6 +291,21 @@ class IntegrationTests(unittest.TestCase):
                 import_hplan_handoff(profile_path, output_directory=linked, write=True)
             self.assertFalse((target / "integration-references.jsonl").exists())
 
+            nested_target = root / "nested-target"
+            nested_target.mkdir()
+            nested_link = root / "nested-link"
+            nested_link.symlink_to(nested_target, target_is_directory=True)
+            with self.assertRaises(IntegrationContractError):
+                import_hplan_handoff(
+                    profile_path,
+                    output_directory=nested_link / "bridge",
+                    write=True,
+                )
+            self.assertFalse((nested_target / "bridge").exists())
+
+            with self.assertRaises(IntegrationContractError):
+                import_hplan_handoff(profile_path, output_directory=Path("/"), write=True)
+
             bridge = root / "bridge"
             bridge.mkdir()
             linked_ledger = bridge / "integration-references.jsonl"
@@ -287,6 +328,54 @@ class IntegrationTests(unittest.TestCase):
             outcome = json.loads(outcome_path.read_text(encoding="utf-8"))
             outcome["maturity_status"] = "not_mature"
             outcome_path.write_text(json.dumps(outcome) + "\n", encoding="utf-8")
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_requires_a_metric_ledger_binding_action_and_outcome(self) -> None:
+        """Without a metric contract, the handoff would overstate an outcome."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            (artifacts / "metrics.jsonl").unlink()
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_rejects_a_metric_not_declared_by_the_executed_action(self) -> None:
+        """A valid but unrelated metric must not be exported as outcome support."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            action_path = artifacts / "actions.jsonl"
+            action = json.loads(action_path.read_text(encoding="utf-8"))
+            action["metric_ids"] = ["MET-20260817-999"]
+            action_path.write_text(
+                json.dumps(integrations.chain_records([action])[0]) + "\n",
+                encoding="utf-8",
+            )
 
             with self.assertRaises(IntegrationContractError):
                 build_hplan_reconsideration(

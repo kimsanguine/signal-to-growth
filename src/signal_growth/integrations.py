@@ -95,8 +95,17 @@ def _validate_hplan_profile(profile: Mapping[str, Any]) -> dict[str, Any]:
 def _safe_hplan_output_directory(output_directory: Path, input_path: Path) -> Path:
     if ".." in output_directory.parts:
         raise IntegrationContractError("output directory path traversal is not allowed")
-    if output_directory.is_symlink():
-        raise IntegrationContractError("output directory must not be a symlink")
+    absolute_directory = output_directory.absolute()
+    if absolute_directory == Path(absolute_directory.anchor):
+        raise IntegrationContractError("output directory must not be the filesystem root")
+    current = Path(absolute_directory.anchor)
+    for component in absolute_directory.parts[1:]:
+        current /= component
+        # macOS exposes system aliases such as /var at the filesystem root.
+        # They are outside the caller's controllable output path; every deeper
+        # symlink is rejected before a directory or ledger can be created.
+        if current.is_symlink() and current.parent != Path(current.anchor):
+            raise IntegrationContractError("output directory must not contain symlinks")
     if output_directory.exists() and not output_directory.is_dir():
         raise IntegrationContractError("output directory must be a directory")
     output_path = output_directory / HPLAN_REFERENCE_FILENAME
@@ -171,7 +180,10 @@ def import_hplan_handoff(
             if item.get("system") == "hplan" and item.get("external_id") == source_record_ref
         ]
         if matching:
-            if matching[0].get("context", {}).get("source_fingerprint") != fingerprint:
+            fingerprints = {
+                item.get("context", {}).get("source_fingerprint") for item in matching
+            }
+            if fingerprints != {fingerprint}:
                 raise IntegrationContractError("hplan handoff replay conflicts with recorded source")
             duplicate = True
 
@@ -214,7 +226,10 @@ def _select_unique_record(
 
 
 def _read_validated_records(path: Path, schema_filename: str) -> list[dict[str, Any]]:
-    records = _read_jsonl(path)
+    try:
+        records = _read_jsonl(path)
+    except OSError as exc:
+        raise IntegrationContractError(f"{path.name}: unable to read ledger") from exc
     chain_issues = verify_append_chain(records, path.name)
     if chain_issues:
         raise IntegrationContractError(
@@ -299,6 +314,19 @@ def build_hplan_reconsideration(
     )
     if action["status"] != "executed":
         raise IntegrationContractError("outcome action must be executed")
+    if outcome["metric_id"] not in action["metric_ids"]:
+        raise IntegrationContractError("outcome metric must be declared by the executed action")
+
+    metrics = _read_validated_records(
+        artifact_directory / "metrics.jsonl",
+        "metric.schema.json",
+    )
+    _select_unique_record(
+        metrics,
+        field="metric_id",
+        value=outcome["metric_id"],
+        label="metric",
+    )
 
     profile = {
         "profile_version": "0.1",
