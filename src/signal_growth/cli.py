@@ -20,6 +20,8 @@ from .contracts import validate_artifact_directory
 from .integrations import (
     IntegrationContractError,
     build_hplan_intake,
+    build_hplan_reconsideration,
+    import_hplan_handoff,
     import_pmf_radar,
     write_json,
 )
@@ -172,6 +174,20 @@ def command_import_pmf_radar(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_import_hplan_handoff(args: argparse.Namespace) -> int:
+    try:
+        report = import_hplan_handoff(
+            args.input,
+            output_directory=args.output_directory,
+            write=args.write,
+        )
+    except (OSError, IntegrationContractError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0
+
+
 def command_export_hplan(args: argparse.Namespace) -> int:
     try:
         brief = build_hplan_intake(
@@ -199,6 +215,22 @@ def command_export_hplan(args: argparse.Namespace) -> int:
     except (OSError, ValueError, IntegrationContractError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
+    return 0
+
+
+def command_export_hplan_reconsideration(args: argparse.Namespace) -> int:
+    try:
+        profile = build_hplan_reconsideration(
+            args.artifacts,
+            integration_directory=args.integration_directory,
+            project_id=args.project_id,
+            owner=args.owner,
+            outcome_id=args.outcome_id,
+        )
+    except (OSError, IntegrationContractError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print(json.dumps(profile, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -291,6 +323,16 @@ def build_parser() -> argparse.ArgumentParser:
     import_pmf.add_argument("--force", action="store_true")
     import_pmf.set_defaults(func=command_import_pmf_radar)
 
+    import_hplan = subparsers.add_parser("import-hplan-handoff")
+    import_hplan.add_argument("--input", required=True, type=Path)
+    import_hplan.add_argument("--output-directory", type=Path)
+    import_hplan.add_argument(
+        "--write",
+        action="store_true",
+        help="Append a validated hplan reference. The default is a dry run.",
+    )
+    import_hplan.set_defaults(func=command_import_hplan_handoff)
+
     export_hplan = subparsers.add_parser("export-hplan")
     export_hplan.add_argument("--artifacts", required=True, type=Path)
     export_hplan.add_argument("--decision-id")
@@ -308,6 +350,18 @@ def build_parser() -> argparse.ArgumentParser:
     export_hplan.add_argument("--require-ready", action="store_true")
     export_hplan.add_argument("--force", action="store_true")
     export_hplan.set_defaults(func=command_export_hplan)
+
+    export_reconsideration = subparsers.add_parser("export-hplan-reconsideration")
+    export_reconsideration.add_argument("--artifacts", required=True, type=Path)
+    export_reconsideration.add_argument(
+        "--integration-directory",
+        required=True,
+        type=Path,
+    )
+    export_reconsideration.add_argument("--project-id", required=True)
+    export_reconsideration.add_argument("--owner", required=True)
+    export_reconsideration.add_argument("--outcome-id")
+    export_reconsideration.set_defaults(func=command_export_hplan_reconsideration)
 
     demo = subparsers.add_parser("demo")
     demo.add_argument("root", type=Path, nargs="?", default=Path.cwd())

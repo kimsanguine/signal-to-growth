@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/hplan-growth-handoff-profile.schema.json",
+  "title": "Accepted hplan Build Gate to Growth Handoff",
+  "description": "The fail-closed consumer contract for an approved hplan Build Gate reference.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_version",
+    "project_id",
+    "source_system",
+    "source_record_ref",
+    "handoff_kind",
+    "status",
+    "evidence_refs",
+    "metric_refs",
+    "owner",
+    "review_at"
+  ],
+  "properties": {
+    "profile_version": {"const": "0.1"},
+    "project_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "source_system": {"const": "hplan"},
+    "source_record_ref": {
+      "type": "string",
+      "pattern": "^hplan://checkpoint/[A-Za-z0-9][A-Za-z0-9._-]{0,191}$"
+    },
+    "handoff_kind": {"const": "build_gate_to_growth"},
+    "status": {"enum": ["build", "CONDITIONAL_GO"]},
+    "evidence_refs": {"type": "array", "maxItems": 0},
+    "metric_refs": {"type": "array", "maxItems": 0},
+    "owner": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "review_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|\\+00:00)$"
+    }
+  }
+}

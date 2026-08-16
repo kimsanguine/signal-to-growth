@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kimsanguine/signal-to-growth/contracts/stg-hplan-reconsideration-profile.schema.json",
+  "title": "Signal to Growth Outcome Reconsideration Handoff",
+  "description": "A reference-only request for a human to reconsider an hplan gate after a completed growth outcome.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_version",
+    "project_id",
+    "source_system",
+    "source_record_ref",
+    "handoff_kind",
+    "status",
+    "evidence_refs",
+    "metric_refs",
+    "owner",
+    "review_at",
+    "reopen_reason"
+  ],
+  "properties": {
+    "profile_version": {"const": "0.1"},
+    "project_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "source_system": {"const": "signal-to-growth"},
+    "source_record_ref": {
+      "type": "string",
+      "pattern": "^stg://outcome/OUT-[0-9]{8}-[0-9]{3,}$"
+    },
+    "handoff_kind": {"const": "growth_outcome_to_reconsideration"},
+    "status": {"const": "COMPLETED"},
+    "evidence_refs": {"type": "array", "maxItems": 0},
+    "metric_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^stg://metric/MET-[0-9]{8}-[0-9]{3,}$"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "owner": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "review_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    },
+    "reopen_reason": {"type": "string", "minLength": 1, "pattern": "\\S"}
+  }
+}

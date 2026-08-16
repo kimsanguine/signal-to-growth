@@ -1,0 +1,1 @@
+{"action_id":"ACT-20260817-001","decision_id":"DEC-20260817-001","created_at":"2026-08-17T08:00:00Z","action_type":"first_user_experiment","status":"executed","owner":"fixture-owner","metric_ids":["MET-20260817-001"],"external_write":false,"approved_by":"fixture-reviewer","prev_hash":null,"record_hash":"sha256:f3a949c4557c54c36748f555942a50bf8d4061e6cf43cf654847d578347c0836"}

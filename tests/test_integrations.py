@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -16,6 +18,8 @@ from signal_growth.integrations import (  # noqa: E402
     CHAINED_INTEGRATION_FILES,
     IntegrationContractError,
     build_hplan_intake,
+    build_hplan_reconsideration,
+    import_hplan_handoff,
     import_pmf_radar,
 )
 from signal_growth.schema_validation import validate_schema_record  # noqa: E402
@@ -30,9 +34,293 @@ PMF_EXPORT = (
     / "stg-export.jsonl"
 )
 ARTIFACTS = ROOT / "fixtures" / "public-dummy" / "artifacts"
+HPLAN_FLOW = ROOT / "fixtures" / "public-dummy" / "integrations" / "hplan"
+
+
+HPLAN_PROFILE = {
+    "profile_version": "0.1",
+    "project_id": "synthetic-project-0001",
+    "source_system": "hplan",
+    "source_record_ref": "hplan://checkpoint/dec-001",
+    "handoff_kind": "build_gate_to_growth",
+    "status": "build",
+    "evidence_refs": [],
+    "metric_refs": [],
+    "owner": "fixture-owner",
+    "review_at": "2026-08-18T09:00:00Z",
+}
 
 
 class IntegrationTests(unittest.TestCase):
+    def test_hplan_handoff_is_dry_run_and_never_creates_a_growth_decision(self) -> None:
+        """A gate approval may start growth work, but it is not an STG decision.
+
+        Removing the dry-run boundary or projecting the hplan status into a
+        local decision must fail this test.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "hplan-profile.json"
+            output = root / "stg-import"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+
+            report = import_hplan_handoff(profile_path, output_directory=output)
+
+            self.assertFalse(report["write_performed"])
+            self.assertEqual("build", report["source_status"])
+            self.assertEqual([], report["created_decision_ids"])
+            self.assertFalse(output.exists())
+
+    def test_completed_growth_outcome_creates_only_a_human_reconsideration_request(self) -> None:
+        """Removing completion checks or emitting a gate verdict must fail.
+
+        The profile points hplan at an STG outcome; it never turns that outcome
+        into a new hplan GO/HOLD decision.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "hplan-profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            artifacts.mkdir()
+            (artifacts / "actions.jsonl").write_text(
+                json.dumps(
+                    integrations.chain_records([{
+                        "action_id": "ACT-20260817-001",
+                        "decision_id": "DEC-20260817-001",
+                        "created_at": "2026-08-17T08:00:00Z",
+                        "action_type": "first_user_experiment",
+                        "status": "executed",
+                        "owner": "growth-owner",
+                        "metric_ids": ["MET-20260817-001"],
+                        "external_write": False,
+                        "approved_by": "fixture-reviewer",
+                    }])[0]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (artifacts / "outcomes.jsonl").write_text(
+                json.dumps(
+                    integrations.chain_records([{
+                        "outcome_id": "OUT-20260817-001",
+                        "action_id": "ACT-20260817-001",
+                        "metric_id": "MET-20260817-001",
+                        "observed_at": "2026-08-17T09:00:00Z",
+                        "value": 4,
+                        "sample_size": 12,
+                        "maturity_status": "mature",
+                        "query_version": "synthetic-v1",
+                        "comparison": "worse",
+                        "conclusion": "change",
+                        "next_decision_id": None,
+                        "interpretation": "Synthetic completed cohort needs a human review.",
+                        "evidence_ids": [],
+                        "recorded_by": "fixture-reviewer",
+                    }])[0]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            profile = build_hplan_reconsideration(
+                artifacts,
+                integration_directory=bridge,
+                project_id="synthetic-project-0001",
+                owner="growth-owner",
+                outcome_id="OUT-20260817-001",
+            )
+
+            self.assertEqual("signal-to-growth", profile["source_system"])
+            self.assertEqual("growth_outcome_to_reconsideration", profile["handoff_kind"])
+            self.assertEqual("COMPLETED", profile["status"])
+            self.assertEqual([], profile["evidence_refs"])
+            self.assertEqual(["stg://metric/MET-20260817-001"], profile["metric_refs"])
+            self.assertNotIn("decision", profile)
+            self.assertNotIn("gate_decision", profile)
+
+    def test_hplan_reference_loop_runs_through_the_public_synthetic_fixture(self) -> None:
+        """A removed CLI command or an automatic gate verdict must fail.
+
+        This is intentionally a public synthetic loop: approved hplan reference
+        -> STG import -> completed experiment outcome -> human reconsideration.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            bridge = Path(directory) / "bridge"
+            imported = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/stg.py",
+                    "import-hplan-handoff",
+                    "--input",
+                    str(HPLAN_FLOW / "approved-build-gate.json"),
+                    "--output-directory",
+                    str(bridge),
+                    "--write",
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, imported.returncode, imported.stderr)
+
+            exported = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/stg.py",
+                    "export-hplan-reconsideration",
+                    "--artifacts",
+                    str(HPLAN_FLOW / "completed-growth"),
+                    "--integration-directory",
+                    str(bridge),
+                    "--project-id",
+                    "synthetic-project-0001",
+                    "--owner",
+                    "fixture-owner",
+                    "--outcome-id",
+                    "OUT-20260817-001",
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, exported.returncode, exported.stderr)
+            profile = json.loads(exported.stdout)
+            self.assertEqual("COMPLETED", profile["status"])
+            self.assertNotIn("decision", profile)
+
+    def test_hplan_handoff_rejects_malformed_wrong_and_unsafe_profiles(self) -> None:
+        """Weakening the accepted hplan envelope must fail these cases."""
+        cases = {
+            "malformed": "{",
+            "wrong-source": {**HPLAN_PROFILE, "source_system": "signal-to-growth"},
+            "wrong-kind": {**HPLAN_PROFILE, "handoff_kind": "growth_outcome_to_reconsideration"},
+            "wrong-status": {**HPLAN_PROFILE, "status": "GO"},
+            "unsafe-reference": {
+                **HPLAN_PROFILE,
+                "source_record_ref": "hplan://checkpoint/../decision",
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, payload in cases.items():
+                with self.subTest(name=name):
+                    path = root / f"{name}.json"
+                    path.write_text(
+                        payload if isinstance(payload, str) else json.dumps(payload),
+                        encoding="utf-8",
+                    )
+                    with self.assertRaises(IntegrationContractError):
+                        import_hplan_handoff(path)
+
+    def test_hplan_handoff_replay_is_idempotent_but_conflicts_fail_closed(self) -> None:
+        """Dropping replay protection could silently replace source authority."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            ledger = bridge / "integration-references.jsonl"
+            before = ledger.read_bytes()
+
+            replay = import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+
+            self.assertTrue(replay["duplicate"])
+            self.assertFalse(replay["write_performed"])
+            self.assertEqual(before, ledger.read_bytes())
+
+            profile_path.write_text(
+                json.dumps({**HPLAN_PROFILE, "status": "CONDITIONAL_GO"}),
+                encoding="utf-8",
+            )
+            with self.assertRaises(IntegrationContractError):
+                import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            self.assertEqual(before, ledger.read_bytes())
+
+    def test_hplan_import_refuses_unsafe_output_paths_without_writing(self) -> None:
+        """Allowing traversal or symlink targets would bypass the write boundary."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            escaped = root / "escaped"
+            with self.assertRaises(IntegrationContractError):
+                import_hplan_handoff(
+                    profile_path,
+                    output_directory=root / "safe" / ".." / "escaped",
+                    write=True,
+                )
+            self.assertFalse(escaped.exists())
+
+            target = root / "target"
+            target.mkdir()
+            linked = root / "linked"
+            linked.symlink_to(target, target_is_directory=True)
+            with self.assertRaises(IntegrationContractError):
+                import_hplan_handoff(profile_path, output_directory=linked, write=True)
+            self.assertFalse((target / "integration-references.jsonl").exists())
+
+            bridge = root / "bridge"
+            bridge.mkdir()
+            linked_ledger = bridge / "integration-references.jsonl"
+            linked_ledger.symlink_to(root / "outside-ledger.jsonl")
+            with self.assertRaises(IntegrationContractError):
+                import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            self.assertFalse((root / "outside-ledger.jsonl").exists())
+
+    def test_reconsideration_refuses_an_incomplete_outcome(self) -> None:
+        """Treating a not-mature cohort as completed would create false certainty."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            outcome_path = artifacts / "outcomes.jsonl"
+            outcome = json.loads(outcome_path.read_text(encoding="utf-8"))
+            outcome["maturity_status"] = "not_mature"
+            outcome_path.write_text(json.dumps(outcome) + "\n", encoding="utf-8")
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_refuses_a_tampered_outcome_ledger(self) -> None:
+        """Removing the append-chain check would accept rewritten outcomes."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            outcome_path = artifacts / "outcomes.jsonl"
+            outcome = json.loads(outcome_path.read_text(encoding="utf-8"))
+            outcome["value"] = 999
+            outcome_path.write_text(json.dumps(outcome) + "\n", encoding="utf-8")
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
     def test_pmf_import_is_dry_run_by_default(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
