@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -127,6 +130,10 @@ class IntegrationTests(unittest.TestCase):
             shutil.copyfile(
                 HPLAN_FLOW / "completed-growth" / "metrics.jsonl",
                 artifacts / "metrics.jsonl",
+            )
+            shutil.copyfile(
+                HPLAN_FLOW / "completed-growth" / "decisions.jsonl",
+                artifacts / "decisions.jsonl",
             )
 
             profile = build_hplan_reconsideration(
@@ -268,6 +275,95 @@ class IntegrationTests(unittest.TestCase):
             with self.assertRaises(IntegrationContractError):
                 import_hplan_handoff(profile_path, output_directory=bridge, write=True)
 
+    def test_hplan_handoff_rejects_a_symlink_swap_after_preflight(self) -> None:
+        """A preflight-only check can be raced into writing outside its target."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            outside = root / "outside"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            outside.mkdir()
+            original = integrations._safe_hplan_output_directory
+
+            def swap_after_preflight(output: Path, source: Path) -> Path:
+                output_path = original(output, source)
+                bridge.symlink_to(outside, target_is_directory=True)
+                return output_path
+
+            with patch.object(
+                integrations,
+                "_safe_hplan_output_directory",
+                side_effect=swap_after_preflight,
+            ):
+                with self.assertRaises(IntegrationContractError):
+                    import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            self.assertFalse((outside / "integration-references.jsonl").exists())
+
+    def test_concurrent_first_hplan_import_writes_one_reference(self) -> None:
+        """Checking before a separate append lock would let two first imports through."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            start = threading.Barrier(2)
+            reports: list[dict] = []
+            errors: list[BaseException] = []
+
+            def run_import() -> None:
+                try:
+                    start.wait(timeout=5)
+                    reports.append(
+                        import_hplan_handoff(
+                            profile_path,
+                            output_directory=bridge,
+                            write=True,
+                        )
+                    )
+                except BaseException as exc:  # Test captures thread failure for assertion.
+                    errors.append(exc)
+
+            threads = [threading.Thread(target=run_import) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(timeout=5)
+
+            self.assertEqual([], errors)
+            self.assertEqual(2, len(reports))
+            self.assertEqual(1, sum(report["write_performed"] for report in reports))
+            self.assertEqual(1, sum(report["duplicate"] for report in reports))
+            references = [
+                json.loads(line)
+                for line in (bridge / "integration-references.jsonl")
+                .read_text(encoding="utf-8")
+                .splitlines()
+                if line.strip()
+            ]
+            self.assertEqual(1, len(references))
+
+    def test_hplan_import_anchors_a_relative_output_at_the_filesystem_root_fd(self) -> None:
+        """A relative path must not make the dirfd walk start from the caller cwd."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            previous_directory = Path.cwd()
+            try:
+                os.chdir(root)
+                report = import_hplan_handoff(
+                    profile_path,
+                    output_directory=Path("bridge"),
+                    write=True,
+                )
+            finally:
+                os.chdir(previous_directory)
+
+            self.assertTrue(report["write_performed"])
+            self.assertTrue((root / "bridge" / "integration-references.jsonl").is_file())
+            self.assertFalse((root / "private").exists())
+
     def test_hplan_import_refuses_unsafe_output_paths_without_writing(self) -> None:
         """Allowing traversal or symlink targets would bypass the write boundary."""
         with tempfile.TemporaryDirectory() as directory:
@@ -349,6 +445,57 @@ class IntegrationTests(unittest.TestCase):
             import_hplan_handoff(profile_path, output_directory=bridge, write=True)
             shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
             (artifacts / "metrics.jsonl").unlink()
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_requires_the_executed_action_decision_ledger(self) -> None:
+        """An action ID alone is not evidence of an approved growth decision."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            (artifacts / "decisions.jsonl").unlink()
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_rejects_an_unapproved_action_decision(self) -> None:
+        """The executed action must bind to an approved decision, not just an ID."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            decisions = [
+                json.loads(line)
+                for line in (artifacts / "decisions.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            decisions[0]["status"] = "draft"
+            (artifacts / "decisions.jsonl").write_text(
+                "\n".join(json.dumps(record) for record in integrations.chain_records(decisions)) + "\n",
+                encoding="utf-8",
+            )
 
             with self.assertRaises(IntegrationContractError):
                 build_hplan_reconsideration(

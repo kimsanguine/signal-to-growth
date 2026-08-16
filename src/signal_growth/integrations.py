@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from .append_only import append_record, chain_records, verify_append_chain
+from .append_only import chain_records, compute_record_hash, verify_append_chain
 from .connector_validation import validate_cs_event_record
 from .contracts import load_records, validate_artifact_directory
 from .schema_validation import validate_schema_record
@@ -116,11 +118,87 @@ def _safe_hplan_output_directory(output_directory: Path, input_path: Path) -> Pa
     return output_path
 
 
-def _load_hplan_references(path: Path) -> list[dict[str, Any]]:
-    if not path.exists():
-        return []
-    records = _read_jsonl(path)
-    issues = verify_append_chain(records, path.name)
+def _hplan_output_components(output_directory: Path) -> list[str]:
+    absolute_directory = output_directory.absolute()
+    components = list(absolute_directory.parts[1:])
+    # `/var` is a macOS root-level alias for `/private/var`.  Convert only that
+    # OS-owned alias; any user-controlled symlink below the root is opened with
+    # O_NOFOLLOW and rejected rather than resolved.
+    if components[:1] == ["var"] and Path("/var").is_symlink():
+        return ["private", "var", *components[1:]]
+    return components
+
+
+def _open_hplan_output_directory(output_directory: Path) -> int:
+    """Open/create the output directory without following caller path symlinks."""
+    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0)
+    absolute_directory = output_directory.absolute()
+    try:
+        descriptor = os.open(Path(absolute_directory.anchor), os.O_RDONLY | os.O_DIRECTORY)
+    except OSError as exc:
+        raise IntegrationContractError("unable to open output root") from exc
+    try:
+        for component in _hplan_output_components(output_directory):
+            child: int | None = None
+            for _ in range(3):
+                try:
+                    os.mkdir(component, 0o700, dir_fd=descriptor)
+                except FileExistsError:
+                    pass
+                try:
+                    child = os.open(component, flags, dir_fd=descriptor)
+                    break
+                except FileNotFoundError:
+                    # A concurrent first import may have won mkdir but not yet
+                    # made the child visible. Retry the no-follow open; no path
+                    # is followed and failure after this stays closed.
+                    continue
+                except OSError as exc:
+                    raise IntegrationContractError(
+                        "output directory must not contain symlinks or non-directories"
+                    ) from exc
+            if child is None:
+                raise IntegrationContractError("unable to open output directory safely")
+            os.close(descriptor)
+            descriptor = child
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _read_descriptor_text(descriptor: int) -> str:
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    chunks: list[bytes] = []
+    while chunk := os.read(descriptor, 65_536):
+        chunks.append(chunk)
+    try:
+        return b"".join(chunks).decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise IntegrationContractError("integration reference ledger is not UTF-8") from exc
+
+
+def _parse_reference_text(text: str, label: str) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for line_number, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise IntegrationContractError(
+                f"{label}[{line_number}]: invalid JSON: {exc.msg}"
+            ) from exc
+        if not isinstance(record, dict):
+            raise IntegrationContractError(f"{label}[{line_number}]: expected object")
+        records.append(record)
+    return records
+
+
+def _validate_hplan_references(records: list[dict[str, Any]], label: str) -> None:
+    if not records:
+        return
+    issues = verify_append_chain(records, HPLAN_REFERENCE_FILENAME)
     if issues:
         raise IntegrationContractError(
             "; ".join(f"{location}: {message}" for location, message in issues)
@@ -128,9 +206,99 @@ def _load_hplan_references(path: Path) -> list[dict[str, Any]]:
     for index, record in enumerate(records, 1):
         schema_issues = validate_schema_record("integration-reference.schema.json", record)
         if schema_issues:
-            raise IntegrationContractError(
-                f"{path.name}[{index}]: " + "; ".join(schema_issues)
-            )
+            raise IntegrationContractError(f"{label}[{index}]: " + "; ".join(schema_issues))
+
+
+def _matching_hplan_references(
+    records: list[dict[str, Any]],
+    source_record_ref: str,
+    fingerprint: str,
+) -> bool:
+    matching = [
+        item
+        for item in records
+        if item.get("system") == "hplan" and item.get("external_id") == source_record_ref
+    ]
+    if not matching:
+        return False
+    fingerprints = {item.get("context", {}).get("source_fingerprint") for item in matching}
+    if fingerprints != {fingerprint}:
+        raise IntegrationContractError("hplan handoff replay conflicts with recorded source")
+    return True
+
+
+def _append_hplan_reference_atomically(
+    output_directory: Path,
+    reference: Mapping[str, Any],
+    *,
+    source_record_ref: str,
+    fingerprint: str,
+) -> bool:
+    """Lock, re-check, and append through directory FDs; return duplicate state."""
+    directory_fd = _open_hplan_output_directory(output_directory)
+    lock_fd: int | None = None
+    ledger_fd: int | None = None
+    try:
+        lock_flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+        for _ in range(3):
+            try:
+                lock_fd = os.open(
+                    ".hplan-handoff.lock",
+                    lock_flags,
+                    0o600,
+                    dir_fd=directory_fd,
+                )
+                break
+            except FileNotFoundError:
+                # Concurrent creation of the first local lock can briefly be
+                # invisible on some filesystems. Retry the same no-follow open.
+                continue
+        if lock_fd is None:
+            raise IntegrationContractError("unable to open local handoff lock")
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        ledger_flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+        ledger_fd = os.open(HPLAN_REFERENCE_FILENAME, ledger_flags, 0o600, dir_fd=directory_fd)
+        existing = _parse_reference_text(
+            _read_descriptor_text(ledger_fd),
+            HPLAN_REFERENCE_FILENAME,
+        )
+        _validate_hplan_references(existing, HPLAN_REFERENCE_FILENAME)
+        if _matching_hplan_references(existing, source_record_ref, fingerprint):
+            return True
+
+        previous_hash = existing[-1]["record_hash"] if existing else None
+        appended = {
+            key: value
+            for key, value in dict(reference).items()
+            if key not in {"prev_hash", "record_hash"}
+        }
+        appended["prev_hash"] = previous_hash
+        appended["record_hash"] = compute_record_hash(appended, previous_hash)
+        prefix = "" if not existing or _read_descriptor_text(ledger_fd).endswith("\n") else "\n"
+        os.lseek(ledger_fd, 0, os.SEEK_END)
+        os.write(
+            ledger_fd,
+            (prefix + json.dumps(appended, ensure_ascii=False) + "\n").encode("utf-8"),
+        )
+        os.fsync(ledger_fd)
+        return False
+    except OSError as exc:
+        raise IntegrationContractError("unable to write hplan integration reference") from exc
+    finally:
+        if lock_fd is not None:
+            fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        if ledger_fd is not None:
+            os.close(ledger_fd)
+        if lock_fd is not None:
+            os.close(lock_fd)
+        os.close(directory_fd)
+
+
+def _load_hplan_references(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    records = _read_jsonl(path)
+    _validate_hplan_references(records, path.name)
     return records
 
 
@@ -173,26 +341,22 @@ def import_hplan_handoff(
     write_path: Path | None = None
     if output_directory is not None:
         write_path = _safe_hplan_output_directory(output_directory, input_path)
-        existing = _load_hplan_references(write_path)
-        matching = [
-            item
-            for item in existing
-            if item.get("system") == "hplan" and item.get("external_id") == source_record_ref
-        ]
-        if matching:
-            fingerprints = {
-                item.get("context", {}).get("source_fingerprint") for item in matching
-            }
-            if fingerprints != {fingerprint}:
-                raise IntegrationContractError("hplan handoff replay conflicts with recorded source")
-            duplicate = True
+        if not write:
+            duplicate = _matching_hplan_references(
+                _load_hplan_references(write_path),
+                source_record_ref,
+                fingerprint,
+            )
 
     if write:
         if output_directory is None or write_path is None:
             raise IntegrationContractError("--write requires an output directory")
-        if not duplicate:
-            write_path.parent.mkdir(parents=True, exist_ok=True)
-            append_record(write_path, reference)
+        duplicate = _append_hplan_reference_atomically(
+            output_directory,
+            reference,
+            source_record_ref=source_record_ref,
+            fingerprint=fingerprint,
+        )
 
     return {
         "source_system": "hplan",
@@ -314,6 +478,21 @@ def build_hplan_reconsideration(
     )
     if action["status"] != "executed":
         raise IntegrationContractError("outcome action must be executed")
+    decision_id = action["decision_id"]
+    if not isinstance(decision_id, str):
+        raise IntegrationContractError("executed action must name a decision")
+    decisions = _read_validated_records(
+        artifact_directory / "decisions.jsonl",
+        "decision.schema.json",
+    )
+    decision = _select_unique_record(
+        decisions,
+        field="decision_id",
+        value=decision_id,
+        label="decision",
+    )
+    if decision["status"] != "approved":
+        raise IntegrationContractError("executed action decision must be approved")
     if outcome["metric_id"] not in action["metric_ids"]:
         raise IntegrationContractError("outcome metric must be declared by the executed action")
 
