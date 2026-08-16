@@ -3,6 +3,27 @@
 This file records user-visible changes. Signal to Growth follows semantic
 versioning once a version is tagged.
 
+## 0.5.0
+
+### Added
+
+- A fail-closed hplan Profile v0 reference loop: Signal to Growth can import a
+  `build_gate_to_growth` handoff without copying hplan decisions, evidence, or
+  gate status, then emit a completed-outcome reconsideration request for human
+  review only.
+- A public synthetic end-to-end fixture for hplan handoff import, executed
+  experiment, mature outcome, and outbound reconsideration.
+
+### Security
+
+- Handoff-ledger writes now use no-follow directory descriptors and a local
+  lock, rejecting symlink swaps, conflicting replays, and concurrent duplicate
+  first imports.
+- Outbound reconsideration now requires an exact opaque hplan handoff binding
+  on its action and outcome, plus a chained, locally resolvable STG decision,
+  evidence, metric, and scoped human approval. It never creates a new hplan
+  GO/HOLD verdict or a growth decision automatically.
+
 ## 0.4.3
 
 ### Changed

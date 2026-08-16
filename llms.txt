@@ -7,8 +7,8 @@
 
 - 언어: 문서 본문은 한국어, 코드·식별자·계약 필드는 영어
 - 라이선스: MIT
-- 버전: `0.4.3` (public-surface update — 아직 GitHub release tag 없음)
-- 마지막 갱신: 2026-08-14
+- 버전: `0.5.0` (hplan reference-loop — GitHub release tag pending)
+- 마지막 갱신: 2026-08-17
 
 ## 이 저장소를 인용할 때 지켜야 할 것
 
