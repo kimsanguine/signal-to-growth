@@ -449,6 +449,12 @@ def build_hplan_reconsideration(
     if not accepted_hplan:
         raise IntegrationContractError("validated hplan handoff is required for project")
 
+    provenance_issues = validate_artifact_directory(artifact_directory)
+    if provenance_issues:
+        raise IntegrationContractError(
+            "; ".join(issue.render() for issue in provenance_issues)
+        )
+
     outcomes = _read_validated_records(
         artifact_directory / "outcomes.jsonl",
         "outcome.schema.json",
@@ -478,6 +484,18 @@ def build_hplan_reconsideration(
     )
     if action["status"] != "executed":
         raise IntegrationContractError("outcome action must be executed")
+    action_handoff_ref = action.get("hplan_handoff_ref")
+    outcome_handoff_ref = outcome.get("hplan_handoff_ref")
+    if not isinstance(action_handoff_ref, str) or not isinstance(outcome_handoff_ref, str):
+        raise IntegrationContractError("action and outcome must name an opaque hplan handoff ref")
+    if action_handoff_ref != outcome_handoff_ref:
+        raise IntegrationContractError("action and outcome hplan handoff refs must match")
+    if not any(
+        reference.get("external_id") == action_handoff_ref
+        and reference.get("source_record_ref") == action_handoff_ref
+        for reference in accepted_hplan
+    ):
+        raise IntegrationContractError("action and outcome must bind the imported hplan handoff")
     decision_id = action["decision_id"]
     if not isinstance(decision_id, str):
         raise IntegrationContractError("executed action must name a decision")

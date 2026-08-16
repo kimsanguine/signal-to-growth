@@ -33,6 +33,11 @@
       "type": "string",
       "pattern": "^MET-[0-9]{8}-[0-9]{3,}$"
     },
+    "hplan_handoff_ref": {
+      "type": "string",
+      "pattern": "^hplan://checkpoint/[A-Za-z0-9][A-Za-z0-9._-]{0,191}$",
+      "description": "Opaque hplan handoff reference required when this outcome is used for hplan reconsideration."
+    },
     "observed_at": {"type": "string", "format": "date-time"},
     "value": {
       "type": ["number", "string", "boolean", "object", "null"]

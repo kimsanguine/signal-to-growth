@@ -44,7 +44,7 @@ HPLAN_PROFILE = {
     "profile_version": "0.1",
     "project_id": "synthetic-project-0001",
     "source_system": "hplan",
-    "source_record_ref": "hplan://checkpoint/dec-001",
+    "source_record_ref": "hplan://checkpoint/synthetic-dec-0001",
     "handoff_kind": "build_gate_to_growth",
     "status": "build",
     "evidence_refs": [],
@@ -98,8 +98,9 @@ class IntegrationTests(unittest.TestCase):
                         "status": "executed",
                         "owner": "growth-owner",
                         "metric_ids": ["MET-20260817-001"],
+                        "hplan_handoff_ref": HPLAN_PROFILE["source_record_ref"],
                         "external_write": False,
-                        "approved_by": "fixture-reviewer",
+                        "approved_by": "APR-HPLAN-FIXTURE-001",
                     }])[0]
                 )
                 + "\n",
@@ -111,6 +112,7 @@ class IntegrationTests(unittest.TestCase):
                         "outcome_id": "OUT-20260817-001",
                         "action_id": "ACT-20260817-001",
                         "metric_id": "MET-20260817-001",
+                        "hplan_handoff_ref": HPLAN_PROFILE["source_record_ref"],
                         "observed_at": "2026-08-17T09:00:00Z",
                         "value": 4,
                         "sample_size": 12,
@@ -134,6 +136,18 @@ class IntegrationTests(unittest.TestCase):
             shutil.copyfile(
                 HPLAN_FLOW / "completed-growth" / "decisions.jsonl",
                 artifacts / "decisions.jsonl",
+            )
+            shutil.copyfile(
+                HPLAN_FLOW / "completed-growth" / "evidence.jsonl",
+                artifacts / "evidence.jsonl",
+            )
+            shutil.copyfile(
+                HPLAN_FLOW / "completed-growth" / "approvals.jsonl",
+                artifacts / "approvals.jsonl",
+            )
+            shutil.copyfile(
+                HPLAN_FLOW / "completed-growth" / "evidence-source.txt",
+                artifacts / "evidence-source.txt",
             )
 
             profile = build_hplan_reconsideration(
@@ -494,6 +508,114 @@ class IntegrationTests(unittest.TestCase):
             decisions[0]["status"] = "draft"
             (artifacts / "decisions.jsonl").write_text(
                 "\n".join(json.dumps(record) for record in integrations.chain_records(decisions)) + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_rejects_a_foreign_hplan_handoff_reference(self) -> None:
+        """A mature local outcome cannot be relabeled as another hplan project's result."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            for filename in ("actions.jsonl", "outcomes.jsonl"):
+                path = artifacts / filename
+                records = [
+                    json.loads(line)
+                    for line in path.read_text(encoding="utf-8").splitlines()
+                    if line.strip()
+                ]
+                records[0]["hplan_handoff_ref"] = "hplan://checkpoint/foreign-project"
+                path.write_text(
+                    "\n".join(json.dumps(record) for record in integrations.chain_records(records)) + "\n",
+                    encoding="utf-8",
+                )
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_requires_decision_evidence_and_approval_provenance(self) -> None:
+        """An approved decision must resolve its evidence and human approval ledgers."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            (artifacts / "evidence.jsonl").unlink(missing_ok=True)
+            (artifacts / "approvals.jsonl").unlink(missing_ok=True)
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_rejects_an_unknown_decision_evidence_reference(self) -> None:
+        """A chained decision cannot invent an evidence ID absent from STG's ledger."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            path = artifacts / "decisions.jsonl"
+            decisions = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            decisions[0]["evidence_ids"] = ["EV-20260817-999"]
+            path.write_text(
+                "\n".join(json.dumps(record) for record in integrations.chain_records(decisions)) + "\n",
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(IntegrationContractError):
+                build_hplan_reconsideration(
+                    artifacts,
+                    integration_directory=bridge,
+                    project_id="synthetic-project-0001",
+                    owner="growth-owner",
+                    outcome_id="OUT-20260817-001",
+                )
+
+    def test_reconsideration_rejects_a_misscoped_decision_approval(self) -> None:
+        """An approved decision needs an approval scope naming that exact decision."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile_path = root / "profile.json"
+            bridge = root / "bridge"
+            artifacts = root / "artifacts"
+            profile_path.write_text(json.dumps(HPLAN_PROFILE), encoding="utf-8")
+            import_hplan_handoff(profile_path, output_directory=bridge, write=True)
+            shutil.copytree(HPLAN_FLOW / "completed-growth", artifacts)
+            path = artifacts / "approvals.jsonl"
+            approvals = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            approvals[0]["scope"]["decision_ids"] = ["DEC-20260817-999"]
+            path.write_text(
+                "\n".join(json.dumps(record) for record in integrations.chain_records(approvals)) + "\n",
                 encoding="utf-8",
             )
 
