@@ -187,5 +187,52 @@ class KoreanSignalsDetectedTest(unittest.TestCase):
         self.assertGreater(cited["breakdown"]["statistical_density"], 0)
 
 
+class SectionHeaderExtractionTest(unittest.TestCase):
+    """Section-scoped <header> holds real content, not page chrome.
+
+    WHY: the extractor used to decompose every <header>. Sites that wrap a
+    section's H2 and lead paragraph in <header class="section-head"> (a common
+    and valid pattern) therefore lost every heading. The blocks did not vanish
+    — they silently merged into the preceding heading's block, so the page
+    still produced a plausible score while question-form headings and
+    answer-first lead paragraphs were invisible. Real crawlers keep them.
+    """
+
+    HTML = """
+    <html><body>
+      <header id="chrome"><nav>site nav</nav><p>page chrome text that should go away</p></header>
+      <section>
+        <header class="section-head"><h2>서비스란 무엇인가?</h2>
+          <p>서비스란 팀의 반복 업무를 검증 가능한 루프로 바꾸는 도구입니다. 실측 결과 22개 사례에서 오류 3건을 확인했습니다.</p>
+        </header>
+        <p>예를 들어 문서 분류에서는 승인 전에 오분류가 걸러집니다. 첫째 목표를 합의하고 둘째 권한을 연결하며 셋째 사람이 검토합니다.</p>
+      </section>
+    </body></html>
+    """
+
+    def _analyze(self):
+        class _Resp:
+            text = self.HTML
+            def raise_for_status(self):
+                return None
+
+        original = _mod.requests.get
+        _mod.requests.get = lambda *a, **k: _Resp()
+        try:
+            return _mod.analyze_page_citability("https://example.test/page")
+        finally:
+            _mod.requests.get = original
+
+    def test_section_header_heading_is_preserved(self):
+        result = self._analyze()
+        headings = [b.get("heading") for b in result["all_blocks"]]
+        self.assertIn("서비스란 무엇인가?", headings)
+
+    def test_page_root_header_is_still_dropped(self):
+        result = self._analyze()
+        blob = " ".join(b.get("preview", "") for b in result["all_blocks"])
+        self.assertNotIn("page chrome text", blob)
+
+
 if __name__ == "__main__":
     unittest.main()

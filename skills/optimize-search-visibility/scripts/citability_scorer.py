@@ -366,11 +366,18 @@ def analyze_page_citability(url: str) -> dict:
 
     soup = BeautifulSoup(response.text, "lxml")
 
-    # Remove non-content elements
-    for element in soup.find_all(
-        ["script", "style", "nav", "footer", "header", "aside", "form"]
-    ):
+    # Remove non-content elements.
+    # header/footer are page chrome ONLY at the page root. Nested inside
+    # section/article/main they are sectioning-content headers that hold the
+    # real H2 and its lead paragraph — decomposing those silently deletes the
+    # page's headings, which merges every block into its predecessor and hides
+    # question-form headings from scoring. Real crawlers do not strip them.
+    for element in soup.find_all(["script", "style", "nav", "aside", "form"]):
         element.decompose()
+
+    for element in soup.find_all(["header", "footer"]):
+        if not element.find_parent(["section", "article", "main"]):
+            element.decompose()
 
     # Extract content blocks
     blocks = []
