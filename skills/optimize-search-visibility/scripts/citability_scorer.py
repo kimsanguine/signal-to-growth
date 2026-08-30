@@ -8,6 +8,14 @@ Based on research showing optimal AI-cited passages are:
 - Self-contained (extractable without context)
 - Fact-rich with specific statistics
 - Structured with clear answer patterns
+
+LANGUAGE NOTE: the research bands above are measured in ENGLISH words. Korean is
+written in 어절 (whitespace-delimited phrases) which carry more information per
+token, so an untranslated threshold silently under-scores Korean pages. Every
+count-based band is therefore scaled by KO_WORD_FACTOR, and every English-only
+regex has a Korean counterpart. Without both, a Korean page is penalised on
+length while being handed free marks on pronoun density (the English pronoun
+regex matches nothing), which makes the total meaningless rather than merely low.
 """
 
 import sys
@@ -23,10 +31,37 @@ except ImportError:
     sys.exit(1)
 
 
+# Korean 어절 -> English word equivalence for the research bands.
+# 0.6 is an approximation for technical prose (1 어절 ~ 1.6-1.7 English words).
+# CALIBRATION PENDING: refine against a measured bilingual pair corpus. Exposed
+# as a named constant so the tuning is one edit, not a hunt through the bands.
+KO_WORD_FACTOR = 0.6
+
+# A passage is treated as Korean when Hangul syllables make up more than this
+# share of its letter characters. Mixed KO/EN technical prose sits well above it.
+KO_HANGUL_RATIO = 0.2
+
+
+def detect_language(text: str) -> str:
+    """Return 'ko' or 'en' from Hangul share. Only these two are calibrated."""
+    hangul = len(re.findall(r"[\uac00-\ud7a3]", text))
+    latin = len(re.findall(r"[A-Za-z]", text))
+    total = hangul + latin
+    if total == 0:
+        return "en"
+    return "ko" if (hangul / total) > KO_HANGUL_RATIO else "en"
+
+
+def _band(value: float, lang: str) -> float:
+    """Scale an English-word threshold into the passage's unit of counting."""
+    return value * KO_WORD_FACTOR if lang == "ko" else value
+
+
 def score_passage(text: str, heading: Optional[str] = None) -> dict:
     """Score a single passage for AI citability (0-100)."""
     words = text.split()
     word_count = len(words)
+    lang = detect_language(text)
 
     scores = {
         "answer_block_quality": 0,
@@ -62,6 +97,11 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
         r"\b\w+\s+means?\s",
         r"\b\w+\s+(?:can be |are )?defined\s+as\s",
         r"\bin\s+(?:simple|other)\s+(?:terms|words)\s*,",
+        # 한국어 정의문: "X란 ~이다/입니다", "~를 말한다/뜻한다/의미한다", "즉/다시 말해"
+        r"[^\s]+(?:란|이란|라는 것은)\s",
+        r"(?:을|를)\s*(?:말한다|뜻한다|의미한다|가리킨다)",
+        r"(?:즉|다시 말해|쉽게 말해|한마디로)\s*,?",
+        r"[^\s]+(?:은|는)\s+[^\s]+(?:이다|입니다)\b",
     ]
     for pattern in definition_patterns:
         if re.search(pattern, text, re.IGNORECASE):
@@ -77,6 +117,9 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
             r"\d+%",
             r"\$[\d,]+",
             r"\d+\s+(?:million|billion|thousand)",
+            # 한국어 단정 종결·정의 표지와 금액 표기
+            r"(?:입니다|이다|란|합니다|한다)\b",
+            r"\d[\d,]*\s*(?:원|만원|억원)",
         ]
     ):
         abq_score += 15
@@ -88,7 +131,8 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Clear, direct sentence structure
     sentences = re.split(r"[.!?]+", text)
     short_clear_sentences = sum(
-        1 for s in sentences if 5 <= len(s.split()) <= 25
+        1 for s in sentences
+        if _band(5, lang) <= len(s.split()) <= _band(25, lang)
     )
     if sentences:
         clarity_ratio = short_clear_sentences / len(sentences)
@@ -96,7 +140,8 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
 
     # Has specific, quotable claim
     if re.search(
-        r"(?:according to|research shows|studies? (?:show|indicate|suggest|found)|data (?:shows|indicates|suggests))",
+        r"(?:according to|research shows|studies? (?:show|indicate|suggest|found)|data (?:shows|indicates|suggests))"
+        r"|(?:에 따르면|연구 결과|조사 결과|실측 결과|측정 결과|확인됐다|확인되었다)",
         text,
         re.IGNORECASE,
     ):
@@ -110,14 +155,14 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # to statistical_density. Sub-scores re-scaled (7 + 8 + 7 = 22).
     sc_score = 0
 
-    # Optimal word count (134-167 words)
-    if 134 <= word_count <= 167:
+    # Optimal length. English 134-167 words; Korean ~80-100 어절 (KO_WORD_FACTOR).
+    if _band(134, lang) <= word_count <= _band(167, lang):
         sc_score += 7
-    elif 100 <= word_count <= 200:
+    elif _band(100, lang) <= word_count <= _band(200, lang):
         sc_score += 5
-    elif 80 <= word_count <= 250:
+    elif _band(80, lang) <= word_count <= _band(250, lang):
         sc_score += 3
-    elif word_count < 30 or word_count > 400:
+    elif word_count < _band(30, lang) or word_count > _band(400, lang):
         sc_score += 0
     else:
         sc_score += 1
@@ -125,7 +170,9 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Low pronoun density (fewer pronouns = more self-contained)
     pronoun_count = len(
         re.findall(
-            r"\b(?:it|they|them|their|this|that|these|those|he|she|his|her)\b",
+            r"\b(?:it|they|them|their|this|that|these|those|he|she|his|her)\b"
+            # 한국어 지시어. '그'·'이' 단독은 접두 오탐이 많아 제외하고 다음절만 센다.
+            r"|(?:그것|이것|저것|그런|이런|저런|그러한|이러한|해당|위의|앞서|그들|이들)",
             text,
             re.IGNORECASE,
         )
@@ -159,19 +206,27 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Sentence count and length distribution
     if sentences:
         avg_sentence_length = word_count / len(sentences)
-        if 10 <= avg_sentence_length <= 20:
+        if _band(10, lang) <= avg_sentence_length <= _band(20, lang):
             sr_score += 6
-        elif 8 <= avg_sentence_length <= 25:
+        elif _band(8, lang) <= avg_sentence_length <= _band(25, lang):
             sr_score += 4
         else:
             sr_score += 2
 
     # Contains list-like structures
-    if re.search(r"(?:first|second|third|finally|additionally|moreover|furthermore)", text, re.IGNORECASE):
+    if re.search(
+        r"(?:first|second|third|finally|additionally|moreover|furthermore)"
+        r"|(?:첫째|둘째|셋째|먼저|다음으로|마지막으로|또한|따라서|그러므로|한편)",
+        text, re.IGNORECASE,
+    ):
         sr_score += 3
 
     # Contains numbered items or bullet-like content
-    if re.search(r"(?:\d+[\.\)]\s|\b(?:step|tip|point)\s+\d+)", text, re.IGNORECASE):
+    if re.search(
+        r"(?:\d+[\.\)]\s|\b(?:step|tip|point)\s+\d+)"
+        r"|(?:\d+\s*(?:단계|번째|항목)|[①-⑳])",
+        text, re.IGNORECASE,
+    ):
         sr_score += 3
 
     # Paragraph breaks (indicates structure)
@@ -196,11 +251,17 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     sd_score += min(pct_count * 4, 10)
 
     # Dollar amounts (Statistics lever)
-    dollar_count = len(re.findall(r"\$[\d,]+(?:\.\d+)?(?:\s*(?:million|billion|M|B|K))?", text))
+    dollar_count = len(re.findall(
+        r"\$[\d,]+(?:\.\d+)?(?:\s*(?:million|billion|M|B|K))?"
+        r"|\d[\d,]*\s*(?:원|만원|억원|천만원)",
+        text))
     sd_score += min(dollar_count * 4, 7)
 
     # Other numbers with context (Statistics lever)
-    number_count = len(re.findall(r"\b\d+(?:,\d{3})*(?:\.\d+)?\s+(?:users|customers|pages|sites|companies|businesses|people|percent|times|x\b)", text, re.IGNORECASE))
+    number_count = len(re.findall(
+        r"\b\d+(?:,\d{3})*(?:\.\d+)?\s+(?:users|customers|pages|sites|companies|businesses|people|percent|times|x\b)"
+        r"|\d+(?:,\d{3})*(?:\.\d+)?\s*(?:명|건|개|배|회|줄|시간|일|주|개월|년|페이지|문항|커밋)",
+        text, re.IGNORECASE))
     sd_score += min(number_count * 2, 4)
 
     # Year references (indicates timeliness)
@@ -213,6 +274,7 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
         r"(?:according to|per|from|by)\s+[A-Z]",
         r"(?:Gartner|Forrester|McKinsey|Harvard|Stanford|MIT|Google|Microsoft|OpenAI|Anthropic)",
         r"\([A-Z][a-z]+(?:\s+\d{4})?\)",
+        r"(?:에 따르면|출처[:：]|참조[:：]|인용[:：])",
     ]
     for pattern in source_patterns:
         if re.search(pattern, text):
@@ -229,7 +291,8 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
 
     # Original data indicators
     if re.search(
-        r"(?:our (?:research|study|data|analysis|survey|findings)|we (?:found|discovered|analyzed|surveyed|measured))",
+        r"(?:our (?:research|study|data|analysis|survey|findings)|we (?:found|discovered|analyzed|surveyed|measured))"
+        r"|(?:자체\s*(?:조사|분석|측정|실측)|직접\s*(?:측정|확인|실측|조사)|실측 결과|우리가\s*(?:측정|확인|분석))",
         text,
         re.IGNORECASE,
     ):
@@ -237,14 +300,19 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
 
     # Case study or example indicators
     if re.search(
-        r"(?:case study|for example|for instance|in practice|real-world|hands-on)",
+        r"(?:case study|for example|for instance|in practice|real-world|hands-on)"
+        r"|(?:예를 들어|예컨대|사례|실제로|실무에서|현장에서)",
         text,
         re.IGNORECASE,
     ):
         us_score += 2
 
     # Specific tool/product mentions (shows practical experience)
-    if re.search(r"(?:using|with|via|through)\s+[A-Z][a-z]+", text):
+    if re.search(
+        r"(?:using|with|via|through)\s+[A-Z][a-z]+"
+        r"|[A-Z][A-Za-z]+(?:을|를|으로|로|에서)\s",
+        text,
+    ):
         us_score += 2
 
     scores["uniqueness_signals"] = min(us_score, 8)
@@ -271,7 +339,9 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
 
     return {
         "heading": heading,
+        "language": lang,
         "word_count": word_count,
+        "word_unit": "eojeol" if lang == "ko" else "word",
         "total_score": total,
         "grade": grade,
         "label": label,
@@ -307,12 +377,16 @@ def analyze_page_citability(url: str) -> dict:
     current_heading = "Introduction"
     current_paragraphs = []
 
+    page_lang = detect_language(soup.get_text(" ", strip=True)[:4000])
+    min_block = int(_band(20, page_lang))
+    min_para = int(_band(5, page_lang))
+
     for element in soup.find_all(["h1", "h2", "h3", "h4", "p", "ul", "ol", "table"]):
         if element.name.startswith("h"):
             # Save previous section
             if current_paragraphs:
                 combined = " ".join(current_paragraphs)
-                if len(combined.split()) >= 20:
+                if len(combined.split()) >= min_block:
                     blocks.append(
                         {"heading": current_heading, "content": combined}
                     )
@@ -320,13 +394,13 @@ def analyze_page_citability(url: str) -> dict:
             current_paragraphs = []
         else:
             text = element.get_text(strip=True)
-            if text and len(text.split()) >= 5:
+            if text and len(text.split()) >= min_para:
                 current_paragraphs.append(text)
 
     # Last block
     if current_paragraphs:
         combined = " ".join(current_paragraphs)
-        if len(combined.split()) >= 20:
+        if len(combined.split()) >= min_block:
             blocks.append({"heading": current_heading, "content": combined})
 
     # Score each block
@@ -343,7 +417,9 @@ def analyze_page_citability(url: str) -> dict:
 
         # Optimal passage count (134-167 words)
         optimal_count = sum(
-            1 for b in scored_blocks if 134 <= b["word_count"] <= 167
+            1 for b in scored_blocks
+            if _band(134, b.get("language", "en")) <= b["word_count"]
+            <= _band(167, b.get("language", "en"))
         )
     else:
         avg_score = 0
