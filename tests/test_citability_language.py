@@ -22,15 +22,16 @@ These tests pin the intent, not the implementation:
     lose points it deserves to lose.
 """
 
-import os
-import sys
+from __future__ import annotations
+
 import importlib.util
+import sys
+import unittest
+from pathlib import Path
 
-import pytest
-
-_SCORER = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "skills", "optimize-search-visibility", "scripts", "citability_scorer.py",
+_SCORER = (
+    Path(__file__).resolve().parent.parent
+    / "skills" / "optimize-search-visibility" / "scripts" / "citability_scorer.py"
 )
 
 _spec = importlib.util.spec_from_file_location("citability_scorer", _SCORER)
@@ -38,12 +39,14 @@ _mod = importlib.util.module_from_spec(_spec)
 sys.modules["citability_scorer"] = _mod
 try:
     _spec.loader.exec_module(_mod)
+    _LOAD_ERROR = None
 except SystemExit:  # scorer exits when requests/bs4 are absent
-    pytest.skip("citability_scorer dependencies missing", allow_module_level=True)
+    _LOAD_ERROR = "citability_scorer dependencies missing (requests/bs4)"
 
-detect_language = _mod.detect_language
-score_passage = _mod.score_passage
-KO_WORD_FACTOR = _mod.KO_WORD_FACTOR
+
+def setUpModule() -> None:
+    if _LOAD_ERROR:
+        raise unittest.SkipTest(_LOAD_ERROR)
 
 
 KO_PASSAGE = (
@@ -67,100 +70,122 @@ EN_PASSAGE = (
 )
 
 
-class TestLanguageDetection:
-    def test_korean_prose_is_korean(self):
-        assert detect_language(KO_PASSAGE) == "ko"
+class LanguageDetectionTest(unittest.TestCase):
+    def test_korean_prose_is_korean(self) -> None:
+        self.assertEqual(_mod.detect_language(KO_PASSAGE), "ko")
 
-    def test_english_prose_is_english(self):
-        assert detect_language(EN_PASSAGE) == "en"
+    def test_english_prose_is_english(self) -> None:
+        self.assertEqual(_mod.detect_language(EN_PASSAGE), "en")
 
-    def test_korean_with_heavy_english_tech_terms_still_korean(self):
+    def test_korean_with_heavy_english_tech_terms_still_korean(self) -> None:
         # Korean technical writing is full of Latin-script product names.
-        # Those must not flip the passage to the English bands.
+        # Those must not flip the passage onto the English bands.
         text = "Claude Code와 LangGraph, Supabase를 연결해 에이전트 루프를 구성합니다."
-        assert detect_language(text) == "ko"
+        self.assertEqual(_mod.detect_language(text), "ko")
 
-    def test_empty_text_defaults_to_english(self):
+    def test_no_letters_defaults_to_english(self) -> None:
         # No signal must not raise; English is the calibrated default.
-        assert detect_language("") == "en"
-        assert detect_language("123 456 !!!") == "en"
+        self.assertEqual(_mod.detect_language(""), "en")
+        self.assertEqual(_mod.detect_language("123 456 !!!"), "en")
 
 
-class TestEnglishUnchanged:
+class EnglishUnchangedTest(unittest.TestCase):
     """Regression guard: the English corpus must score as it did before."""
 
-    def test_english_optimal_band_is_still_134_to_167(self):
-        band = _mod._band
-        assert band(134, "en") == 134
-        assert band(167, "en") == 167
+    def test_english_optimal_band_is_still_134_to_167(self) -> None:
+        self.assertEqual(_mod._band(134, "en"), 134)
+        self.assertEqual(_mod._band(167, "en"), 167)
 
-    def test_english_passage_reports_word_unit(self):
-        r = score_passage(EN_PASSAGE, heading="What is Loop Engineering?")
-        assert r["language"] == "en"
-        assert r["word_unit"] == "word"
+    def test_english_passage_reports_word_unit(self) -> None:
+        result = _mod.score_passage(EN_PASSAGE, heading="What is Loop Engineering?")
+        self.assertEqual(result["language"], "en")
+        self.assertEqual(result["word_unit"], "word")
 
-    def test_english_scoring_contract_keys_preserved(self):
-        # distribution.py and output-contract.md depend on these.
-        r = score_passage(EN_PASSAGE)
-        for key in ("heading", "word_count", "total_score", "grade", "label",
-                    "breakdown", "preview"):
-            assert key in r
+    def test_scoring_contract_keys_preserved(self) -> None:
+        # distribution.py and references/output-contract.md depend on these.
+        result = _mod.score_passage(EN_PASSAGE)
+        for key in (
+            "heading", "word_count", "total_score", "grade", "label",
+            "breakdown", "preview",
+        ):
+            self.assertIn(key, result)
 
 
-class TestKoreanBands:
-    def test_korean_bands_are_scaled_down(self):
-        band = _mod._band
-        assert band(134, "ko") == pytest.approx(134 * KO_WORD_FACTOR)
-        assert band(134, "ko") < 134
+class KoreanBandsTest(unittest.TestCase):
+    def test_korean_bands_are_scaled_down(self) -> None:
+        self.assertAlmostEqual(
+            _mod._band(134, "ko"), 134 * _mod.KO_WORD_FACTOR, places=6
+        )
+        self.assertLess(_mod._band(134, "ko"), 134)
 
-    def test_korean_passage_reports_eojeol_unit(self):
-        r = score_passage(KO_PASSAGE, heading="Loop Engineering이란?")
-        assert r["language"] == "ko"
-        assert r["word_unit"] == "eojeol"
+    def test_korean_passage_reports_eojeol_unit(self) -> None:
+        result = _mod.score_passage(KO_PASSAGE, heading="Loop Engineering이란?")
+        self.assertEqual(result["language"], "ko")
+        self.assertEqual(result["word_unit"], "eojeol")
 
-    def test_korean_passage_is_not_length_penalised_like_english(self):
+    def test_korean_passage_is_not_length_penalised_like_english(self) -> None:
         """The core defect: same content, same size, wildly different score.
 
-        The Korean passage is a faithful equivalent of the English one. Under
-        the unscaled English bands the Korean version lands in the
-        'word_count < 30' zero-point zone purely because 어절 count is lower.
-        With scaling, its self_containment length credit must be non-zero.
+        Under the unscaled English bands this passage lands in the
+        'word_count < 30' zero-point zone purely because 어절 count is lower
+        than word count. With scaling its length credit must be non-zero.
         """
-        ko = score_passage(KO_PASSAGE)
-        assert ko["breakdown"]["self_containment"] > 0
+        korean = _mod.score_passage(KO_PASSAGE)
+        self.assertGreater(korean["breakdown"]["self_containment"], 0)
 
-    def test_korean_and_english_equivalents_score_comparably(self):
-        ko = score_passage(KO_PASSAGE)
-        en = score_passage(EN_PASSAGE)
-        # Not identical — the two languages trip different sub-signals — but a
-        # faithful translation must not fall a whole grade band apart.
-        assert abs(ko["total_score"] - en["total_score"]) < 25
+    def test_korean_and_english_equivalents_score_comparably(self) -> None:
+        korean = _mod.score_passage(KO_PASSAGE)
+        english = _mod.score_passage(EN_PASSAGE)
+        # Not identical, since the two languages trip different sub-signals,
+        # but a faithful translation must not fall a whole grade band apart.
+        self.assertLess(abs(korean["total_score"] - english["total_score"]), 25)
 
 
-class TestKoreanSignalsAreActuallyDetected:
-    """Korean must be able to LOSE points, not just gain them."""
+class KoreanSignalsDetectedTest(unittest.TestCase):
+    """Korean must be able to LOSE points, not only gain them."""
 
-    def test_korean_demonstratives_count_as_pronouns(self):
+    def test_korean_demonstratives_count_as_pronouns(self) -> None:
         # Before the fix the English-only regex matched nothing here, so this
-        # passage collected the full pronoun sub-score despite being vague.
+        # vague passage collected the full pronoun sub-score.
         vague = " ".join([
             "그것은 이런 방식으로 동작합니다.",
             "이러한 그것들은 해당 위의 그런 저런 이것 저것을 그러한 이들 그들과 함께 씁니다.",
         ] * 3)
-        opaque = score_passage(vague)
-        specific = score_passage(KO_PASSAGE)
-        assert opaque["breakdown"]["self_containment"] < specific["breakdown"]["self_containment"]
+        opaque = _mod.score_passage(vague)
+        specific = _mod.score_passage(KO_PASSAGE)
+        self.assertLess(
+            opaque["breakdown"]["self_containment"],
+            specific["breakdown"]["self_containment"],
+        )
 
-    def test_korean_definition_pattern_scores_answer_block(self):
-        defined = score_passage("Loop Engineering이란 팀의 반복 업무를 검증 가능한 루프로 바꾸는 방법론입니다.")
-        undefined = score_passage("이 페이지에서는 여러 가지를 다룹니다. 아래를 참고하세요.")
-        assert defined["breakdown"]["answer_block_quality"] > undefined["breakdown"]["answer_block_quality"]
+    def test_korean_definition_pattern_scores_answer_block(self) -> None:
+        defined = _mod.score_passage(
+            "Loop Engineering이란 팀의 반복 업무를 검증 가능한 루프로 바꾸는 방법론입니다."
+        )
+        undefined = _mod.score_passage("이 페이지에서는 여러 가지를 다룹니다. 아래를 참고하세요.")
+        self.assertGreater(
+            defined["breakdown"]["answer_block_quality"],
+            undefined["breakdown"]["answer_block_quality"],
+        )
 
-    def test_korean_units_count_as_statistics(self):
-        with_stats = score_passage("실측 결과 22개 에이전트에서 오류 3건을 확인했고 비용은 12만원 절감됐습니다.")
-        without = score_passage("에이전트를 여러 개 운영하며 오류를 줄였고 비용도 아꼈습니다.")
-        assert with_stats["breakdown"]["statistical_density"] > without["breakdown"]["statistical_density"]
+    def test_korean_units_count_as_statistics(self) -> None:
+        with_stats = _mod.score_passage(
+            "실측 결과 22개 에이전트에서 오류 3건을 확인했고 비용은 12만원 절감됐습니다."
+        )
+        without_stats = _mod.score_passage(
+            "에이전트를 여러 개 운영하며 오류를 줄였고 비용도 아꼈습니다."
+        )
+        self.assertGreater(
+            with_stats["breakdown"]["statistical_density"],
+            without_stats["breakdown"]["statistical_density"],
+        )
 
-    def test_korean_source_attribution_counts(self):
-        cited = score_passage("Princeton GEO 연구에 따르면 통계 추가는 인용률을 40% 높입니다.")
-        assert cited["breakdown"]["statistical_density"] > 0
+    def test_korean_source_attribution_counts(self) -> None:
+        cited = _mod.score_passage(
+            "Princeton GEO 연구에 따르면 통계 추가는 인용률을 40% 높입니다."
+        )
+        self.assertGreater(cited["breakdown"]["statistical_density"], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
