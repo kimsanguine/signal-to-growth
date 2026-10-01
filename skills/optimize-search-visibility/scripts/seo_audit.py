@@ -76,9 +76,22 @@ def check_robots(url: str) -> dict:
 
 
 def check_sitemap(url: str) -> bool:
-    """Check if sitemap.xml exists"""
+    """Check if a sitemap exists, honoring robots.txt's declared location.
+
+    The sitemap protocol lets a site declare its sitemap at any path via a
+    robots.txt "Sitemap:" line (e.g. /sitemap-index.xml) — a hardcoded
+    /sitemap.xml check false-negatives on any site that uses a different
+    path, verified 2026-08-26 against blog.habix.ai (sitemap-index.xml).
+    """
     parsed = urllib.parse.urlparse(url)
-    sitemap_url = f"{parsed.scheme}://{parsed.netloc}/sitemap.xml"
+    robots_content, _, _ = fetch_url(f"{parsed.scheme}://{parsed.netloc}/robots.txt")
+    sitemap_url = None
+    if robots_content:
+        match = re.search(r"(?im)^sitemap:\s*(\S+)", robots_content)
+        if match:
+            sitemap_url = match.group(1).strip()
+    if not sitemap_url:
+        sitemap_url = f"{parsed.scheme}://{parsed.netloc}/sitemap.xml"
     content, _, _ = fetch_url(sitemap_url)
     if not content:
         return False

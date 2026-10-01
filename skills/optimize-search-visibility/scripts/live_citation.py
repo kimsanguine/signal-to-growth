@@ -15,11 +15,18 @@ and report the spread. This script closes that gap by calling a real LLM.
 
 ENGINES
 -------
-- OpenAI (ChatGPT) — implemented. Calls the Chat Completions REST endpoint
-  directly with stdlib urllib (no SDK, zero extra dependencies). Default model
-  is a cheap one (gpt-4o-mini), prompts are short, default N=5 — to keep cost low.
+- OpenAI (ChatGPT) — implemented. Calls the Responses API endpoint
+  (/v1/responses) with the `web_search` tool enabled, directly with stdlib
+  urllib (no SDK, zero extra dependencies). Without this tool the model only
+  answers from pretraining and can never reflect a site's live content —
+  confirmed 2026-08-26 when a same-day site change produced zero difference
+  in five repeated calls against the old chat/completions-only path. Default
+  model is a cheap one (gpt-4o-mini), prompts are short, default N=5 — to
+  keep cost low.
 - Perplexity — scaffolded. If PERPLEXITY_API_KEY is set, queries the Perplexity
   chat endpoint the same way; if not, it is explicitly SKIPPED (never silent).
+  Perplexity's `sonar` models are search-augmented by default (no separate
+  tool flag needed), so this path already reflects live web content.
 
 KEY SAFETY
 ----------
@@ -62,7 +69,7 @@ if SCRIPTS_DIR not in sys.path:
 
 from credential import get_openai_key, get_perplexity_key  # noqa: E402
 
-OPENAI_URL = "https://api.openai.com/v1/chat/completions"
+OPENAI_URL = "https://api.openai.com/v1/responses"
 OPENAI_DEFAULT_MODEL = "gpt-4o-mini"  # cheap by default to minimize cost
 
 PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions"
@@ -144,24 +151,44 @@ def _mentions(answer_text, brand, domain):
 
 
 def query_openai_once(query, api_key, model):
-    """One OpenAI call; return (answer_text, error_str)."""
+    """One OpenAI call via the Responses API with web_search enabled.
+
+    Returns (answer_text, error_str). Uses /v1/responses + tools=[{"type":
+    "web_search"}] instead of /v1/chat/completions — the plain chat endpoint
+    has no way to see the live web, so it can only ever answer from
+    pretraining. That distinction matters here specifically: this script's
+    whole purpose is to detect whether a *live* page/brand gets surfaced,
+    which is structurally impossible without a live tool call.
+    """
     payload = {
         "model": model,
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": query},
-        ],
+        "tools": [{"type": "web_search"}],
+        # Without forcing the tool, gpt-4o-mini frequently skips it and answers
+        # from pretraining alone (confirmed empirically 2026-08-26: identical
+        # stale answer with tool_choice="auto"). "required" is what actually
+        # makes this script measure live citation instead of memorized text.
+        "tool_choice": "required",
+        "instructions": SYSTEM_PROMPT,
+        "input": query,
         "temperature": 1.0,  # keep default-ish so repeated runs can vary
-        "max_tokens": 400,  # short answers -> low cost
+        "max_output_tokens": 400,  # short answers -> low cost
     }
     parsed, error = _post_json(OPENAI_URL, payload, api_key)
     if error is not None:
         return None, error
+    # The Responses API returns an `output` array that can contain a
+    # web_search_call item followed by a message item — walk it rather than
+    # assuming a fixed index, since the tool-call item's position varies.
     try:
-        text = parsed["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
+        for item in parsed.get("output", []):
+            if item.get("type") != "message":
+                continue
+            for block in item.get("content", []):
+                if block.get("type") == "output_text":
+                    return block["text"], None
+        return None, f"no output_text message in response: {json.dumps(parsed)[:300]}"
+    except (KeyError, IndexError, TypeError, AttributeError) as exc:
         return None, f"unexpected response shape: {exc}"
-    return text, None
 
 
 def query_perplexity_once(query, api_key, model):

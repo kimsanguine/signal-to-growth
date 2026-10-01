@@ -102,6 +102,9 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
         r"(?:을|를)\s*(?:말한다|뜻한다|의미한다|가리킨다)",
         r"(?:즉|다시 말해|쉽게 말해|한마디로)\s*,?",
         r"[^\s]+(?:은|는)\s+[^\s]+(?:이다|입니다)\b",
+        r"(?:가리키|의미하|뜻하)는\s",
+        r"(?:이다|입니다)[.\s]",
+        r"라고\s*(?:한다|합니다|부른다|불린다|불립니다)",
     ]
     for pattern in definition_patterns:
         if re.search(pattern, text, re.IGNORECASE):
@@ -118,8 +121,9 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
             r"\$[\d,]+",
             r"\d+\s+(?:million|billion|thousand)",
             # 한국어 단정 종결·정의 표지와 금액 표기
-            r"(?:입니다|이다|란|합니다|한다)\b",
+            r"(?:입니다|이다|란|합니다|한다|가리킨다|의미한다)\b",
             r"\d[\d,]*\s*(?:원|만원|억원)",
+            r"\d+(?:만|억|배|퍼센트)",
         ]
     ):
         abq_score += 15
@@ -141,7 +145,8 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Has specific, quotable claim
     if re.search(
         r"(?:according to|research shows|studies? (?:show|indicate|suggest|found)|data (?:shows|indicates|suggests))"
-        r"|(?:에 따르면|연구 결과|조사 결과|실측 결과|측정 결과|확인됐다|확인되었다)",
+        r"|(?:에\s*따르면|연구\s*결과|조사 결과|실측 결과|측정 결과|확인됐다|확인되었다)"
+        r"|(?:가|이)\s*(?:밝혔다|발표했다|선언했다|확인했다)",
         text,
         re.IGNORECASE,
     ):
@@ -186,8 +191,19 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
         elif pronoun_ratio < 0.06:
             sc_score += 3
 
-    # Contains named entities (proper nouns, brands, specific terms)
-    proper_nouns = len(re.findall(r"\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b", text))
+    # Contains named entities (proper nouns, brands, specific terms).
+    # `\b...\b` breaks on camelCase brands (FastCampus, GitHub: no \w/\W boundary
+    # at the internal case transition) and on a Latin noun with a Korean particle
+    # glued on ("Claude Code를": Python's \w treats Hangul as a word char, so no
+    # boundary there either). Lookaround on ASCII letters only avoids both.
+    # Korean "name + title" ("김생근 대표") is a conservative regex proxy; full
+    # Korean NER is not feasible here.
+    proper_nouns = len(
+        re.findall(r"(?<![A-Za-z])[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*(?![a-z])", text)
+    )
+    proper_nouns += len(
+        re.findall(r"[가-힣]{2,4}\s*(?:대표|교수|박사|연구원|저자|CEO|대표이사)", text)
+    )
     if proper_nouns >= 3:
         sc_score += 7
     elif proper_nouns >= 1:
@@ -216,7 +232,7 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Contains list-like structures
     if re.search(
         r"(?:first|second|third|finally|additionally|moreover|furthermore)"
-        r"|(?:첫째|둘째|셋째|먼저|다음으로|마지막으로|또한|따라서|그러므로|한편)",
+        r"|(?:첫째|둘째|셋째|먼저|다음으로|마지막으로|또한|게다가|따라서|그러므로|한편)",
         text, re.IGNORECASE,
     ):
         sr_score += 3
@@ -260,7 +276,7 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Other numbers with context (Statistics lever)
     number_count = len(re.findall(
         r"\b\d+(?:,\d{3})*(?:\.\d+)?\s+(?:users|customers|pages|sites|companies|businesses|people|percent|times|x\b)"
-        r"|\d+(?:,\d{3})*(?:\.\d+)?\s*(?:명|건|개|배|회|줄|시간|일|주|개월|년|페이지|문항|커밋)",
+        r"|\d+(?:,\d{3})*(?:\.\d+)?\s*(?:명|건|개|배|번|회|줄|시간|일|주|개월|년|종|가지|페이지|문항|커밋)",
         text, re.IGNORECASE))
     sd_score += min(number_count * 2, 4)
 
@@ -272,9 +288,14 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Named sources (Cite Sources lever, Princeton GEO +115% low-rank / +27%)
     source_patterns = [
         r"(?:according to|per|from|by)\s+[A-Z]",
-        r"(?:Gartner|Forrester|McKinsey|Harvard|Stanford|MIT|Google|Microsoft|OpenAI|Anthropic)",
+        r"(?:Gartner|Forrester|McKinsey|Harvard|Stanford|MIT|Google|Microsoft|OpenAI|Anthropic"
+        r"|IBM|Augment Code|Pragmatic Engineer|Gergely Orosz)",
         r"\([A-Z][a-z]+(?:\s+\d{4})?\)",
-        r"(?:에 따르면|출처[:：]|참조[:：]|인용[:：])",
+        r"[A-Za-z가-힣]+에\s*따르면",
+        r"(?:출처[:：]|참조[:：]|인용[:：])",
+        # Korean attribution verbs ("X가 밝혔다/발표했다/..."): a named source in
+        # this shape scored 0 on Cite Sources before (verified 2026-08-26).
+        r"[가-힣A-Za-z]+(?:가|이)\s*(?:밝혔다|발표했다|선언했다|확인했다|지적했다)",
     ]
     for pattern in source_patterns:
         if re.search(pattern, text):
@@ -292,7 +313,8 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Original data indicators
     if re.search(
         r"(?:our (?:research|study|data|analysis|survey|findings)|we (?:found|discovered|analyzed|surveyed|measured))"
-        r"|(?:자체\s*(?:조사|분석|측정|실측)|직접\s*(?:측정|확인|실측|조사)|실측 결과|우리가\s*(?:측정|확인|분석))",
+        r"|(?:(?:우리는|자체)\s*(?:연구|조사|분석|측정|실측)|직접\s*(?:측정|확인|실측|조사)|실측 결과|우리가\s*(?:측정|확인|분석))"
+        r"|(?:발견했다|확인했다|분석했다|실측했다)",
         text,
         re.IGNORECASE,
     ):
@@ -301,7 +323,7 @@ def score_passage(text: str, heading: Optional[str] = None) -> dict:
     # Case study or example indicators
     if re.search(
         r"(?:case study|for example|for instance|in practice|real-world|hands-on)"
-        r"|(?:예를 들어|예컨대|사례|실제로|실무에서|현장에서)",
+        r"|(?:예를\s*들어|예컨대|사례|실제로|실무에서|현장에서)",
         text,
         re.IGNORECASE,
     ):
