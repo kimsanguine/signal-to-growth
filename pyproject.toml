@@ -31,7 +31,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "ruff>=0.16,<0.17"
+  "ruff>=0.16,<0.18"
 ]
 # Optional third-party citability scorer for `audit-answer-visibility`. The
 # audit runs without it and reports `unknown` instead of a score, so this stays
