@@ -9,12 +9,12 @@
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-8A5CF5)](https://code.claude.com/docs/en/plugins)
 [![OpenAI Codex](https://img.shields.io/badge/OpenAI%20Codex-plugin-111111)](https://github.com/openai/plugins)
 [![Skills](https://img.shields.io/badge/skills-14-orange)](#14개-스킬)
-[![Schemas](https://img.shields.io/badge/schemas-22-orange)](#artifact-contract)
+[![Schemas](https://img.shields.io/badge/schemas-24-orange)](#artifact-contract)
 
 **성장 프롬프트 모음이 아닙니다.** 고객 인용문에서 결과까지의 참조 무결성과
 사람 승인 경계를 파일로 강제하는 작은 운영 체계입니다.
 
-**그럼 무엇인가.** 14개 스킬이 주고받는 산출물을 22개 JSON Schema로 고정한
+**그럼 무엇인가.** 14개 스킬이 주고받는 산출물을 24개 JSON Schema로 고정한
 운영 체계입니다. 인용문에는 원문 파일·줄 위치를, 지표에는 baseline과
 counter-metric을 필수 필드로 요구하고, 원장은 고쳐 쓰면 드러나는 해시 체인으로
 잇습니다. 발송·게시·배포·삭제·환불은 `policies/default-policy.json`이 기본으로
@@ -25,7 +25,7 @@ counter-metric을 필수 필드로 요구하고, 원장은 고쳐 쓰면 드러�
 - 하나의 `skills/` 소스에 **14개 스킬**이 있고, Claude Code와 OpenAI Codex가
   각자의 manifest로 같은 소스를 참조합니다. 다만 런타임이 제공하는 강제 수준은
   아직 동일하지 않습니다[^runtime-parity].
-- 산출물은 대화 기억이 아니라 **22개 JSON Schema 계약**(`contracts/`)으로
+- 산출물은 대화 기억이 아니라 **24개 JSON Schema 계약**(`contracts/`)으로
   다음 단계에 연결됩니다.
 - 발송·게시·배포·환불·삭제는 기본 정책에서 꺼져 있습니다
   (`policies/default-policy.json`의 `external_write_default: false`).
@@ -807,8 +807,9 @@ parity 90% 이상, ICP 확정). 마지막 조건의 입력인 실제 고객 인�
 
 - 14개 portable skill
 - Claude Code·Codex plugin manifest
-- `contracts/`의 22개 JSON Schema 계약 — core artifact, scoped approval,
-  first-user-loop, connector, claim ledger, visibility observation, gate decision
+- `contracts/`의 24개 JSON Schema 계약(core artifact, scoped approval,
+  first-user-loop, connector, claim ledger, visibility observation,
+  gate decision, hplan handoff 프로필 2종)
 - 전체 Draft 2020-12 schema와 exact evidence locator를 검증하는 CLI
 - 합성 한국어 fixture
 - unit·integration·negative tests
