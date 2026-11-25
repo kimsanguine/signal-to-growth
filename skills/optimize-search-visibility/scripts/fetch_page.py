@@ -244,6 +244,8 @@ def fetch_robots_txt(url: str, timeout: int = 15) -> dict:
         "OAI-SearchBot",
         "ChatGPT-User",
         "ClaudeBot",
+        "Claude-SearchBot",
+        "Claude-User",
         "anthropic-ai",
         "PerplexityBot",
         "CCBot",
