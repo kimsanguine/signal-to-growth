@@ -3,6 +3,20 @@
 This file records user-visible changes. Signal to Growth follows semantic
 versioning once a version is tagged.
 
+## 0.5.1
+
+### Fixed
+
+- `optimize-search-visibility` robots checks now audit `Claude-SearchBot` and
+  `Claude-User` alongside the other answer-engine crawlers.
+- The citability scorer now measures Korean pages (bilingual scoring) and keeps
+  a section's `<header>` as content instead of dropping the heading.
+- Fixes that existed only in the installed plugin cache are now in the source.
+
+### Changed
+
+- README and `llms.txt` state the schema count as 24.
+
 ## 0.5.0
 
 ### Added
