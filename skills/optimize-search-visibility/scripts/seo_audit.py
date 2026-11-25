@@ -68,7 +68,7 @@ def check_robots(url: str) -> dict:
     result = {"exists": False, "ai_bots": []}
     if content:
         result["exists"] = True
-        ai_bots = ["GPTBot", "PerplexityBot", "ClaudeBot", "anthropic-ai", "ChatGPT-User"]
+        ai_bots = ["GPTBot", "PerplexityBot", "ClaudeBot", "Claude-SearchBot", "Claude-User", "anthropic-ai", "ChatGPT-User"]
         for bot in ai_bots:
             if bot.lower() in content.lower():
                 result["ai_bots"].append(bot)
